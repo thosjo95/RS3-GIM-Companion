@@ -214,7 +214,7 @@ export default function PlayerCard({ player, isMe, onSetMe, onRefresh, onToast }
             </button>
             {showActivity && (
               <div style={{marginTop:6,display:'flex',flexDirection:'column',gap:3}}>
-                {activities.slice(0, 8).map((a, i) => (
+                {activities.slice(0, 20).map((a, i) => (
                   <div key={i} style={{
                     fontSize:11, padding:'4px 8px',
                     background:'var(--bg-panel-alt)', borderRadius:'var(--radius)',

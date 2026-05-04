@@ -76,7 +76,7 @@ function parseHiscores(csv) {
 }
 
 async function fetchRuneMetrics(rsn) {
-  const url = `${RUNEMETRICS_URL}?user=${encodeURIComponent(rsn)}&activities=20`;
+  const url = `${RUNEMETRICS_URL}?user=${encodeURIComponent(rsn)}&activities=100`;
   const response = await fetch(url, {
     headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
     signal: AbortSignal.timeout(8000),
