@@ -76,13 +76,40 @@ function PasswordModal({ groupName, onConfirm, onCancel, error }) {
   );
 }
 
+function ClaimToggle({ claimGroup, setClaimGroup, password, setPassword }) {
+  return (
+    <div style={{margin:'12px 0',padding:'10px 12px',background:'var(--bg-panel-alt)',border:'1px solid var(--border)',borderRadius:'var(--radius)'}}>
+      <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',marginBottom: claimGroup ? 10 : 0}}>
+        <input type="checkbox" checked={claimGroup} onChange={e => setClaimGroup(e.target.checked)}
+          style={{accentColor:'var(--gold)',width:14,height:14}} />
+        <span style={{fontWeight:600,fontSize:13,color:'var(--text-bright)'}}>🔒 Claim this group</span>
+      </label>
+      {claimGroup ? (
+        <>
+          <input className="form-input" type="password" value={password}
+            onChange={e => setPassword(e.target.value)} placeholder="Choose a group password"
+            style={{marginBottom:6}} />
+          <div style={{fontSize:11,color:'var(--text-dim)'}}>
+            Share this password with your group members. First to claim wins — once set it can't be changed without the password.
+          </div>
+        </>
+      ) : (
+        <div style={{fontSize:11,color:'var(--text-dim)'}}>
+          Anyone can view and edit this group. You can claim it later from the group settings.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Setup screen — shown when no group exists
-function SetupScreen({ onCreated, onToast, prefill, onCancel }) {
+function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup }) {
   const [step, setStep] = useState(() => prefill ? 'preview' : 'search');
   const [gimType, setGimType] = useState(prefill?.type || 'regular');
   const [gimSize, setGimSize] = useState(prefill?.size || 5);
   const [groupName, setGroupName] = useState(prefill?.name || '');
   const [password, setPassword] = useState('');
+  const [claimGroup, setClaimGroup] = useState(true);
   const [lookupResult, setLookupResult] = useState(prefill ? { found: true, groupName: prefill.name, type: prefill.type, size: prefill.size, members: prefill.members } : null);
   const [manualRsns, setManualRsns] = useState(prefill?.members?.map(m => m.rsn) || []);
   const [searching, setSearching] = useState(false);
@@ -91,6 +118,12 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel }) {
   async function handleSearch(e) {
     e.preventDefault();
     if (!groupName.trim()) return;
+    // If already tracked locally, just switch to it
+    const existing = groups?.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
+    if (existing) {
+      onSwitchToGroup?.(existing.id);
+      return;
+    }
     setSearching(true);
     try {
       const result = await api.lookupGroup(groupName.trim(), gimType, gimSize);
@@ -114,15 +147,16 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel }) {
   async function handleConfirm(memberRsns) {
     const rsns = memberRsns.map(r => r.trim()).filter(Boolean);
     if (!rsns.length) return onToast('Add at least one member RSN', 'error');
-    if (!password.trim()) return onToast('A group password is required', 'error');
+    if (claimGroup && !password.trim()) return onToast('Enter a password to claim this group, or uncheck "Claim this group"', 'error');
     setStep('setting-up');
     setSyncProgress(`Adding ${rsns.length} members and syncing hiscores…`);
     try {
-      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size: gimSize, member_rsns: rsns, password: password.trim() });
+      const pw = claimGroup ? password.trim() : undefined;
+      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size: gimSize, member_rsns: rsns, password: pw });
       if (result.failed?.length) {
         onToast(`Setup done. ${result.failed.length} member(s) couldn't sync from RS3.`, 'error');
       }
-      onCreated(result.id, password.trim());
+      onCreated(result.id, pw);
     } catch (err) {
       onToast(err.message, 'error');
       setStep(lookupResult ? 'preview' : 'manual');
@@ -180,12 +214,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel }) {
             <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:12}}>
               Hiscores will be synced automatically for all members.
             </div>
-            <div className="form-group" style={{marginBottom:12}}>
-              <label className="form-label">Group Password</label>
-              <input className="form-input" type="password" value={password}
-                onChange={e => setPassword(e.target.value)} placeholder="Choose a password for your group" />
-              <div className="text-xs text-dim mt-8">Required to make changes — share with your group members.</div>
-            </div>
+            <ClaimToggle claimGroup={claimGroup} setClaimGroup={setClaimGroup} password={password} setPassword={setPassword} />
             <div style={{display:'flex',gap:8,flexDirection:'column'}}>
               <button className="btn btn-primary" onClick={() => handleConfirm(lookupResult.members.map(m => m.rsn))}>
                 ✓ Confirm & Start Tracking
@@ -231,6 +260,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel }) {
             <div style={{display:'flex',gap:8,marginTop:4}}>
               <button className="btn btn-ghost btn-sm" onClick={() => setManualRsns(r => [...r, ''])}>+ Add member</button>
             </div>
+            <ClaimToggle claimGroup={claimGroup} setClaimGroup={setClaimGroup} password={password} setPassword={setPassword} />
             <div style={{display:'flex',gap:8,flexDirection:'column',marginTop:16}}>
               <button className="btn btn-primary" onClick={() => handleConfirm(manualRsns)}>
                 ✓ Confirm & Start Tracking
@@ -294,14 +324,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel }) {
               </div>
             </div>
 
-            <div className="form-group" style={{marginBottom:0}}>
-              <label className="form-label">Group Password</label>
-              <input className="form-input" type="password" value={password}
-                onChange={e => setPassword(e.target.value)} placeholder="Choose a password for your group" required />
-              <div className="text-xs text-dim mt-8">
-                Required to add goals, drops, and make changes. Share it with your group members.
-              </div>
-            </div>
+            <ClaimToggle claimGroup={claimGroup} setClaimGroup={setClaimGroup} password={password} setPassword={setPassword} />
           </div>
 
           <div className="modal-footer" style={{flexDirection:'column',gap:8,alignItems:'stretch'}}>
@@ -406,24 +429,28 @@ function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
           </div>
 
           <form onSubmit={handleRs3Search}>
-            <div style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
+            <div style={{display:'flex',gap:6,marginBottom:6,justifyContent:'center'}}>
               {[['regular','⚔️ Regular'],['competitive','🏆 Competitive']].map(([val,label]) => (
                 <button key={val} type="button"
                   className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setGimType(val)}>{label}</button>
               ))}
+            </div>
+            <div style={{display:'flex',gap:6,marginBottom:10,justifyContent:'center'}}>
               {[2,3,4,5].map(n => (
                 <button key={n} type="button"
                   className={`btn btn-sm ${gimSize === n ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setGimSize(n)}>{n} members</button>
               ))}
             </div>
-            <button type="submit" className="btn btn-secondary" style={{width:'100%'}}
-              disabled={searching || !query.trim()}>
-              {searching
-                ? <><span className="spinner" style={{width:12,height:12}} /> Searching RS3…</>
-                : '🔍 Search RS3 Hiscores'}
-            </button>
+            <div style={{textAlign:'center'}}>
+              <button type="submit" className="btn btn-secondary btn-sm" style={{minWidth:180}}
+                disabled={searching || !query.trim()}>
+                {searching
+                  ? <><span className="spinner" style={{width:12,height:12}} /> Searching RS3…</>
+                  : '🔍 Search RS3 Hiscores'}
+              </button>
+            </div>
           </form>
 
           {/* RS3 result */}
@@ -436,11 +463,20 @@ function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
                     {rs3Result.members?.length} members found on RS3 hiscores
                   </div>
                   {alreadyInDb ? (
-                    <div style={{display:'flex',alignItems:'center',gap:10}}>
-                      <span style={{fontSize:12,color:'var(--green-bright)',flex:1}}>✓ Already in your database</span>
-                      <button className="btn btn-primary btn-sm" onClick={() => { onSelect(alreadyInDb.id); onClose(); }}>
-                        Switch to it →
-                      </button>
+                    <div>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                        <span style={{fontSize:12,color:'var(--green-bright)',flex:1}}>
+                          ✓ Already tracked {alreadyInDb.is_claimed ? '🔒' : '🔓'}
+                        </span>
+                        <button className="btn btn-primary btn-sm" onClick={() => { onSelect(alreadyInDb.id); onClose(); }}>
+                          Switch to it →
+                        </button>
+                      </div>
+                      {!alreadyInDb.is_claimed && (
+                        <div style={{fontSize:11,color:'var(--text-dim)'}}>
+                          This group is unclaimed — switch to it and set a password to claim it.
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -641,6 +677,8 @@ export default function App() {
           onToast={pushToast}
           prefill={pendingImport}
           onCancel={groups.length > 0 ? () => { setCreatingGroup(false); setPendingImport(null); } : null}
+          groups={groups}
+          onSwitchToGroup={id => { setCreatingGroup(false); setPendingImport(null); selectGroup(id); }}
         />
         <ToastArea toasts={toasts} />
       </div>

@@ -229,7 +229,10 @@ router.get('/lookup', async (req, res) => {
 // GET /api/groups - list all groups
 router.get('/', (req, res) => {
   const groups = db.prepare(`
-    SELECT g.*, COUNT(p.id) as member_count
+    SELECT g.id, g.name, g.group_rsn, g.notes, g.gim_type, g.gim_size,
+           g.created_at, g.last_activity,
+           (g.password_hash IS NOT NULL) as is_claimed,
+           COUNT(p.id) as member_count
     FROM groups g
     LEFT JOIN players p ON p.group_id = g.id
     GROUP BY g.id
@@ -289,11 +292,10 @@ router.post('/setup', async (req, res) => {
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
   if (!member_rsns.length) return res.status(400).json({ error: 'At least one member RSN required' });
 
-  if (!password?.trim()) return res.status(400).json({ error: 'A group password is required' });
-
   const groupResult = db.prepare(
     'INSERT INTO groups (name, group_rsn, gim_type, gim_size, password_hash, last_activity) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)'
-  ).run(name.trim(), name.trim(), type, size || member_rsns.length, hashPassword(password.trim()));
+  ).run(name.trim(), name.trim(), type, size || member_rsns.length,
+    password?.trim() ? hashPassword(password.trim()) : null);
 
   const groupId = groupResult.lastInsertRowid;
 
