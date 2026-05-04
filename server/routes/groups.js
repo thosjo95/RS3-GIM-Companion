@@ -27,9 +27,31 @@ router.get('/lookup-debug', async (req, res) => {
       signal: AbortSignal.timeout(15000),
     });
     const html = await resp.text();
-    const hasNextData = html.includes('__NEXT_DATA__');
-    const snippet = html.slice(0, 2000);
-    res.json({ status: resp.status, hasNextData, htmlLength: html.length, snippet, url });
+
+    // Find context around key terms to understand the data structure
+    const findings = {};
+    for (const term of ['members', 'players', 'totalXp', 'totalLevel', 'rsn', 'displayName', 'username', 'playerName', '__next_f', 'group']) {
+      const idx = html.indexOf(`"${term}"`);
+      if (idx >= 0) {
+        findings[term] = html.slice(Math.max(0, idx - 30), idx + 300);
+      }
+    }
+
+    // Extract all self.__next_f.push calls (RSC flight chunks) - first 3
+    const flightChunks = [];
+    for (const m of html.matchAll(/self\.__next_f\.push\((\[[\s\S]*?\])\)/g)) {
+      if (flightChunks.length >= 3) break;
+      flightChunks.push(m[1].slice(0, 500));
+    }
+
+    res.json({
+      status: resp.status,
+      hasNextData: html.includes('__NEXT_DATA__'),
+      htmlLength: html.length,
+      url,
+      findings,
+      flightChunks,
+    });
   } catch (err) {
     res.json({ error: err.message, url });
   }
