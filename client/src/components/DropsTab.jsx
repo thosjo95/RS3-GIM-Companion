@@ -378,7 +378,7 @@ function DropRow({ drop, players, onDelete }) {
 
 // ── Main DropsTab ─────────────────────────────────────────────────────────────
 
-export default function DropsTab({ players, groupId, onToast }) {
+export default function DropsTab({ players, groupId, onToast, canWrite }) {
   const [drops, setDrops] = useState([]);
   const [requests, setRequests] = useState([]);
   const [showAddDrop, setShowAddDrop] = useState(false);
@@ -477,7 +477,9 @@ export default function DropsTab({ players, groupId, onToast }) {
                 <option value="obtained">Obtained</option>
                 <option value="all">All</option>
               </select>
-              <button className="btn btn-primary btn-sm" onClick={() => setShowAddReq(true)}>+ Add Request</button>
+              {canWrite
+                ? <button className="btn btn-primary btn-sm" onClick={() => setShowAddReq(true)}>+ Add Request</button>
+                : <span style={{fontSize:12,color:'var(--text-dim)'}}>🔒 Claim group to add</span>}
             </div>
           </div>
 
@@ -513,7 +515,7 @@ export default function DropsTab({ players, groupId, onToast }) {
             <div className="empty-state">
               <div className="icon">🎯</div>
               <p>{reqFilter === 'pending' ? 'No pending requests.' : 'Nothing here yet.'}</p>
-              <button className="btn btn-primary mt-12" onClick={() => setShowAddReq(true)}>+ Add Request</button>
+              {canWrite && <button className="btn btn-primary mt-12" onClick={() => setShowAddReq(true)}>+ Add Request</button>}
             </div>
           )}
         </div>
@@ -529,7 +531,7 @@ export default function DropsTab({ players, groupId, onToast }) {
                 <option value="all">All Players</option>
                 {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
               </select>
-              <button className="btn btn-primary btn-sm" onClick={() => setShowAddDrop(true)}>+ Log Drop</button>
+              {canWrite && <button className="btn btn-primary btn-sm" onClick={() => setShowAddDrop(true)}>+ Log Drop</button>}
             </div>
           </div>
 
@@ -558,7 +560,7 @@ export default function DropsTab({ players, groupId, onToast }) {
             <div className="empty-state">
               <div className="icon">💎</div>
               <p>No drops logged yet. Track your notable loots here!</p>
-              <button className="btn btn-primary mt-12" onClick={() => setShowAddDrop(true)}>+ Log First Drop</button>
+              {canWrite && <button className="btn btn-primary mt-12" onClick={() => setShowAddDrop(true)}>+ Log First Drop</button>}
             </div>
           )}
         </div>

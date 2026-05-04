@@ -233,7 +233,7 @@ function ItemGoalDetail({ goal }) {
 
 // ── Goal Row ──────────────────────────────────────────────────────────────────
 
-function GoalRow({ goal, players, onCycle, onDelete }) {
+function GoalRow({ goal, players, onCycle, onDelete, canWrite }) {
   const details = parseDetails(goal.details_json);
   const goalType = details?.goalType;
 
@@ -261,7 +261,7 @@ function GoalRow({ goal, players, onCycle, onDelete }) {
             title="Click to advance status">
             {STATUS_LABELS[goal.status]}
           </button>
-          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--red-bright)' }} onClick={() => onDelete(goal.id)}>✕</button>
+          {canWrite && <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--red-bright)' }} onClick={() => onDelete(goal.id)}>✕</button>}
         </div>
       </div>
 
@@ -282,7 +282,7 @@ function GoalRow({ goal, players, onCycle, onDelete }) {
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 
-export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast }) {
+export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast, canWrite }) {
   const [showModal, setShowModal] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSugg, setLoadingSugg] = useState(false);
@@ -353,9 +353,10 @@ export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast
           <button className="btn btn-secondary btn-sm" onClick={loadSuggestions} disabled={loadingSugg}>
             {loadingSugg ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '💡'} Suggestions
           </button>
-          <button className="btn btn-primary btn-sm" onClick={() => { setPrefill({}); setShowModal(true); }}>
-            + Add Goal
-          </button>
+          {canWrite
+            ? <button className="btn btn-primary btn-sm" onClick={() => { setPrefill({}); setShowModal(true); }}>+ Add Goal</button>
+            : <span style={{fontSize:12,color:'var(--text-dim)'}}>🔒 Claim group to add</span>
+          }
         </div>
       </div>
 
@@ -386,7 +387,7 @@ export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast
         <div className="mb-16">
           <div className="text-dim text-xs font-bold mb-8" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Group Goals</div>
           {grouped.group.map(goal => (
-            <GoalRow key={goal.id} goal={goal} players={players} onCycle={cycleStatus} onDelete={deleteGoal} />
+            <GoalRow key={goal.id} goal={goal} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />
           ))}
         </div>
       )}
@@ -396,7 +397,7 @@ export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast
         <div>
           <div className="text-dim text-xs font-bold mb-8" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Personal Goals</div>
           {grouped.personal.map(goal => (
-            <GoalRow key={goal.id} goal={goal} players={players} onCycle={cycleStatus} onDelete={deleteGoal} />
+            <GoalRow key={goal.id} goal={goal} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />
           ))}
         </div>
       )}

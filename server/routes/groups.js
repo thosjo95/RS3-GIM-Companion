@@ -243,7 +243,9 @@ router.get('/', (req, res) => {
 
 // GET /api/groups/:id - get group with players and aggregates
 router.get('/:id', (req, res) => {
-  const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(req.params.id);
+  const group = db.prepare(
+    'SELECT id, name, group_rsn, notes, gim_type, gim_size, created_at, last_activity, (password_hash IS NOT NULL) as is_claimed FROM groups WHERE id = ?'
+  ).get(req.params.id);
   if (!group) return res.status(404).json({ error: 'Group not found' });
 
   const players = db.prepare(`

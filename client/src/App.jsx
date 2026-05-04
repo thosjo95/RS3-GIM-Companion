@@ -666,6 +666,8 @@ export default function App() {
   }
 
   const isUnlocked = !!groupPasswords[activeGroupId];
+  // canWrite: must have a stored password (works for both claimed and future unclaimed groups you own)
+  const canWrite = isUnlocked;
 
   // No group yet, or creating a new one
   if (groups.length === 0 || creatingGroup) {
@@ -721,6 +723,7 @@ export default function App() {
                 groupId={activeGroupId}
                 myRsn={myRsn}
                 onSetMyRsn={setMyRsn}
+                canWrite={canWrite}
               />
               {showAddPlayer && (
                 <AddPlayerModal
