@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
-export default function Header({ group, onSynced, onToast }) {
+export default function Header({ group, onSynced, onToast, isUnlocked, onLockClick }) {
   const [syncing, setSyncing] = useState(false);
 
   async function syncAll() {
@@ -48,6 +48,15 @@ export default function Header({ group, onSynced, onToast }) {
       </div>
       <div className="header-right">
         {lastSync && <span className="last-sync">Last sync: {syncAgo}</span>}
+        {group && (
+          <button
+            className="sync-btn"
+            onClick={onLockClick}
+            title={isUnlocked ? 'Group unlocked — click to re-enter password' : 'Click to enter group password'}
+            style={{background:'transparent',border:'1px solid var(--border)',color: isUnlocked ? 'var(--gold)' : 'var(--text-dim)',minWidth:36,padding:'0 10px'}}>
+            {isUnlocked ? '🔓' : '🔒'}
+          </button>
+        )}
         {group && (
           <button className="sync-btn" onClick={syncAll} disabled={syncing}>
             {syncing ? <><span className="spinner" style={{width:14,height:14}} /> Syncing…</> : '↻ Sync All'}

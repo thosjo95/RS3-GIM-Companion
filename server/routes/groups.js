@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
+const { hashPassword, checkGroupAuth } = require('../utils/auth');
 
 function fmtXp(n) {
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -121,15 +122,28 @@ router.get('/:id', (req, res) => {
   res.json({ ...group, players, ...totals });
 });
 
+// POST /api/groups/:id/verify - check password without performing a write
+router.post('/:id/verify', (req, res) => {
+  const group = db.prepare('SELECT id, password_hash FROM groups WHERE id = ?').get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (!group.password_hash) return res.json({ ok: true });
+  const password = req.headers['x-group-password'];
+  if (!password) return res.status(401).json({ error: 'Password required' });
+  if (hashPassword(password) !== group.password_hash) return res.status(401).json({ error: 'Incorrect password' });
+  res.json({ ok: true });
+});
+
 // POST /api/groups/setup - create group + add all members + sync hiscores
 router.post('/setup', async (req, res) => {
-  const { name, type = 'regular', size, member_rsns = [] } = req.body;
+  const { name, type = 'regular', size, member_rsns = [], password } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
   if (!member_rsns.length) return res.status(400).json({ error: 'At least one member RSN required' });
 
+  if (!password?.trim()) return res.status(400).json({ error: 'A group password is required' });
+
   const groupResult = db.prepare(
-    'INSERT INTO groups (name, group_rsn, gim_type, gim_size) VALUES (?, ?, ?, ?)'
-  ).run(name.trim(), name.trim(), type, size || member_rsns.length);
+    'INSERT INTO groups (name, group_rsn, gim_type, gim_size, password_hash, last_activity) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)'
+  ).run(name.trim(), name.trim(), type, size || member_rsns.length, hashPassword(password.trim()));
 
   const groupId = groupResult.lastInsertRowid;
 
@@ -193,6 +207,7 @@ router.post('/', (req, res) => {
 
 // PUT /api/groups/:id
 router.put('/:id', (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.id)) return;
   const { name, group_rsn, notes } = req.body;
   db.prepare(
     'UPDATE groups SET name = ?, group_rsn = ?, notes = ? WHERE id = ?'
@@ -202,6 +217,7 @@ router.put('/:id', (req, res) => {
 
 // DELETE /api/groups/:id
 router.delete('/:id', (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.id)) return;
   db.prepare('UPDATE players SET group_id = NULL WHERE group_id = ?').run(req.params.id);
   db.prepare('DELETE FROM groups WHERE id = ?').run(req.params.id);
   res.json({ success: true });

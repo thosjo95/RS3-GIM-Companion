@@ -53,6 +53,23 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
+// Cleanup cron: runs at 2am every day, deletes groups inactive for 30+ days
+cron.schedule('0 2 * * *', () => {
+  try {
+    const stale = db.prepare(
+      "SELECT id FROM groups WHERE last_activity IS NOT NULL AND last_activity < datetime('now', '-30 days')"
+    ).all();
+
+    for (const group of stale) {
+      db.prepare('DELETE FROM groups WHERE id = ?').run(group.id);
+      console.log(`[cron] Deleted stale group ${group.id}`);
+    }
+    if (stale.length) console.log(`[cron] Removed ${stale.length} inactive group(s)`);
+  } catch (err) {
+    console.error(`[cron] Cleanup failed: ${err.message}`);
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`RS3 GIM Companion server running on http://localhost:${PORT}`);
 });

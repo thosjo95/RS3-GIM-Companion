@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const { checkGroupAuth } = require('../utils/auth');
+
+function playerGroupId(playerId) {
+  return db.prepare('SELECT group_id FROM players WHERE id = ?').get(playerId)?.group_id;
+}
 
 // ── Drop log ──────────────────────────────────────────────────────────────────
 
@@ -31,6 +36,9 @@ router.post('/', (req, res) => {
   if (!player_id || !item_name?.trim()) {
     return res.status(400).json({ error: 'player_id and item_name are required' });
   }
+  const groupId = req.headers['x-group-id'] || playerGroupId(player_id);
+  if (!checkGroupAuth(req, res, groupId)) return;
+
   const result = db.prepare(`
     INSERT INTO drops (player_id, item_name, boss_name, quantity, value_gp, notes)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -40,6 +48,9 @@ router.post('/', (req, res) => {
 
 // DELETE /api/drops/:id
 router.delete('/:id', (req, res) => {
+  const drop = db.prepare('SELECT player_id FROM drops WHERE id = ?').get(req.params.id);
+  const groupId = req.headers['x-group-id'] || (drop && playerGroupId(drop.player_id));
+  if (!checkGroupAuth(req, res, groupId)) return;
   db.prepare('DELETE FROM drops WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });
@@ -73,6 +84,9 @@ router.post('/requests', (req, res) => {
   if (!player_id || !item_name?.trim() || !boss_name?.trim()) {
     return res.status(400).json({ error: 'player_id, item_name, and boss_name are required' });
   }
+  const groupId = req.headers['x-group-id'] || playerGroupId(player_id);
+  if (!checkGroupAuth(req, res, groupId)) return;
+
   const result = db.prepare(`
     INSERT INTO item_requests (player_id, item_name, boss_name, priority, notes)
     VALUES (?, ?, ?, ?, ?)
@@ -82,10 +96,13 @@ router.post('/requests', (req, res) => {
 
 // PUT /api/drops/requests/:id — toggle obtained or update fields
 router.put('/requests/:id', (req, res) => {
-  const { obtained, priority, notes } = req.body;
   const existing = db.prepare('SELECT * FROM item_requests WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Request not found' });
 
+  const groupId = req.headers['x-group-id'] || playerGroupId(existing.player_id);
+  if (!checkGroupAuth(req, res, groupId)) return;
+
+  const { obtained, priority, notes } = req.body;
   const nowObtained = obtained ?? existing.obtained;
   const obtained_at = nowObtained && !existing.obtained ? new Date().toISOString() : existing.obtained_at;
 
@@ -97,6 +114,9 @@ router.put('/requests/:id', (req, res) => {
 
 // DELETE /api/drops/requests/:id
 router.delete('/requests/:id', (req, res) => {
+  const req_ = db.prepare('SELECT player_id FROM item_requests WHERE id = ?').get(req.params.id);
+  const groupId = req.headers['x-group-id'] || (req_ && playerGroupId(req_.player_id));
+  if (!checkGroupAuth(req, res, groupId)) return;
   db.prepare('DELETE FROM item_requests WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

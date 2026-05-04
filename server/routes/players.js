@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
+const { checkGroupAuth } = require('../utils/auth');
+
+function getPlayerGroupId(playerId) {
+  return db.prepare('SELECT group_id FROM players WHERE id = ?').get(playerId)?.group_id;
+}
 
 // GET /api/players
 router.get('/', (req, res) => {
@@ -50,6 +55,7 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   const { rsn, group_id } = req.body;
   if (!rsn?.trim()) return res.status(400).json({ error: 'RSN is required' });
+  if (!checkGroupAuth(req, res, group_id || req.headers['x-group-id'])) return;
 
   try {
     const result = db.prepare(
@@ -66,10 +72,11 @@ router.post('/', (req, res) => {
 
 // PUT /api/players/:id - update player (rsn, quest_points)
 router.put('/:id', (req, res) => {
-  const { rsn, quest_points, group_id } = req.body;
   const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
   if (!player) return res.status(404).json({ error: 'Player not found' });
+  if (!checkGroupAuth(req, res, player.group_id || req.headers['x-group-id'])) return;
 
+  const { rsn, quest_points, group_id } = req.body;
   db.prepare(
     'UPDATE players SET rsn = ?, quest_points = ?, group_id = ? WHERE id = ?'
   ).run(
@@ -83,6 +90,8 @@ router.put('/:id', (req, res) => {
 
 // DELETE /api/players/:id
 router.delete('/:id', (req, res) => {
+  const player = db.prepare('SELECT group_id FROM players WHERE id = ?').get(req.params.id);
+  if (!checkGroupAuth(req, res, player?.group_id || req.headers['x-group-id'])) return;
   db.prepare('DELETE FROM players WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });
@@ -91,6 +100,7 @@ router.delete('/:id', (req, res) => {
 router.post('/:id/sync', async (req, res) => {
   const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
   if (!player) return res.status(404).json({ error: 'Player not found' });
+  if (!checkGroupAuth(req, res, player.group_id || req.headers['x-group-id'])) return;
 
   try {
     const data = await fetchHiscores(player.rsn);
@@ -100,7 +110,6 @@ router.post('/:id/sync', async (req, res) => {
       'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ? WHERE id = ?'
     ).run(combat, player.id);
 
-    // Upsert skills
     const upsertSkill = db.prepare(`
       INSERT INTO skills (player_id, skill_name, level, xp, rank)
       VALUES (?, ?, ?, ?, ?)
@@ -116,7 +125,6 @@ router.post('/:id/sync', async (req, res) => {
       }
     });
 
-    // Take a snapshot for today
     const today = new Date().toISOString().slice(0, 10);
     db.prepare(`
       INSERT INTO snapshots (player_id, snapshot_date, total_xp, total_level, skills_json)
@@ -132,6 +140,8 @@ router.post('/:id/sync', async (req, res) => {
 
 // POST /api/players/sync-all - sync all players in a group
 router.post('/sync-all/:groupId', async (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.groupId)) return;
+
   const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(req.params.groupId);
   const results = [];
 

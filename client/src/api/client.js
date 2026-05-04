@@ -1,12 +1,33 @@
 const BASE = '/api';
 
+let _groupId = null;
+let _groupPassword = null;
+let _onUnauthorized = null;
+
+export function setGroupContext(groupId, password) {
+  _groupId = groupId ? String(groupId) : null;
+  _groupPassword = password || null;
+}
+
+export function setOnUnauthorized(cb) {
+  _onUnauthorized = cb;
+}
+
 async function request(path, options = {}) {
+  const authHeaders = {};
+  if (_groupId) authHeaders['X-Group-Id'] = _groupId;
+  if (_groupPassword) authHeaders['X-Group-Password'] = _groupPassword;
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...authHeaders, ...options.headers },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && _onUnauthorized) {
+    _onUnauthorized(data.error);
+    throw new Error(data.error || 'Unauthorized');
+  }
   if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`);
   return data;
 }
@@ -20,6 +41,7 @@ export const api = {
   deleteGroup: (id) => request(`/groups/${id}`, { method: 'DELETE' }),
   lookupGroup: (name, type, size) => request(`/groups/lookup?name=${encodeURIComponent(name)}&type=${type}&size=${size}`),
   setupGroup: (body) => request('/groups/setup', { method: 'POST', body }),
+  verifyGroup: (id) => request(`/groups/${id}/verify`, { method: 'POST' }),
 
   // Players
   getPlayers: () => request('/players'),

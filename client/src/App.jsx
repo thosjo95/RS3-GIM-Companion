@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { api } from './api/client';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { api, setGroupContext, setOnUnauthorized } from './api/client';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import AddPlayerModal from './components/AddPlayerModal';
@@ -23,12 +23,66 @@ function fmtXp(n) {
   return String(n);
 }
 
+// Password modal — shown when group password is needed or incorrect
+function PasswordModal({ groupName, onConfirm, onCancel, error }) {
+  const [pw, setPw] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [localError, setLocalError] = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!pw.trim()) return;
+    setChecking(true);
+    setLocalError('');
+    try {
+      await onConfirm(pw.trim());
+    } catch (err) {
+      setLocalError(err.message || 'Incorrect password');
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal" style={{maxWidth:380}}>
+        <div className="modal-header">
+          <span className="modal-title">🔒 Group Password</span>
+          {onCancel && <button className="btn btn-ghost btn-sm" onClick={onCancel}>✕</button>}
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <p style={{color:'var(--text-dim)',fontSize:13,marginBottom:16}}>
+              Enter the password for <strong style={{color:'var(--text-bright)'}}>{groupName}</strong> to make changes.
+            </p>
+            <div className="form-group" style={{marginBottom:0}}>
+              <label className="form-label">Password</label>
+              <input className="form-input" type="password" value={pw}
+                onChange={e => setPw(e.target.value)} autoFocus placeholder="Group password" />
+            </div>
+            {(localError || error) && (
+              <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{localError || error}</div>
+            )}
+          </div>
+          <div className="modal-footer">
+            {onCancel && <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>}
+            <button type="submit" className="btn btn-primary" disabled={checking || !pw.trim()}>
+              {checking ? <span className="spinner" style={{width:12,height:12}} /> : 'Unlock'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // Setup screen — shown when no group exists
 function SetupScreen({ onCreated, onToast }) {
   const [step, setStep] = useState('search'); // 'search' | 'preview' | 'manual' | 'setting-up'
   const [gimType, setGimType] = useState('regular');
   const [gimSize, setGimSize] = useState(5);
   const [groupName, setGroupName] = useState('');
+  const [password, setPassword] = useState('');
   const [lookupResult, setLookupResult] = useState(null);
   const [manualRsns, setManualRsns] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -60,14 +114,15 @@ function SetupScreen({ onCreated, onToast }) {
   async function handleConfirm(memberRsns) {
     const rsns = memberRsns.map(r => r.trim()).filter(Boolean);
     if (!rsns.length) return onToast('Add at least one member RSN', 'error');
+    if (!password.trim()) return onToast('A group password is required', 'error');
     setStep('setting-up');
     setSyncProgress(`Adding ${rsns.length} members and syncing hiscores…`);
     try {
-      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size: gimSize, member_rsns: rsns });
+      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size: gimSize, member_rsns: rsns, password: password.trim() });
       if (result.failed?.length) {
         onToast(`Setup done. ${result.failed.length} member(s) couldn't sync from RS3.`, 'error');
       }
-      onCreated(result.id);
+      onCreated(result.id, password.trim());
     } catch (err) {
       onToast(err.message, 'error');
       setStep(lookupResult ? 'preview' : 'manual');
@@ -218,7 +273,7 @@ function SetupScreen({ onCreated, onToast }) {
               </div>
             </div>
 
-            <div className="form-group" style={{marginBottom:0}}>
+            <div className="form-group">
               <label className="form-label">Group Name (exact in-game name)</label>
               <input className="form-input" value={groupName} onChange={e => setGroupName(e.target.value)}
                 placeholder="e.g. True Deciples" required autoFocus />
@@ -228,6 +283,15 @@ function SetupScreen({ onCreated, onToast }) {
                   target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>
                   RS3 GIM hiscores
                 </a> exactly.
+              </div>
+            </div>
+
+            <div className="form-group" style={{marginBottom:0}}>
+              <label className="form-label">Group Password</label>
+              <input className="form-input" type="password" value={password}
+                onChange={e => setPassword(e.target.value)} placeholder="Choose a password for your group" required />
+              <div className="text-xs text-dim mt-8">
+                Required to add goals, drops, and make changes. Share it with your group members.
               </div>
             </div>
           </div>
@@ -276,6 +340,10 @@ function Sidebar({ groups, activeGroupId, onSelect, onNewGroup }) {
   );
 }
 
+function loadStoredPasswords() {
+  try { return JSON.parse(localStorage.getItem('groupPasswords') || '{}'); } catch { return {}; }
+}
+
 export default function App() {
   const [groups, setGroups] = useState([]);
   const [activeGroupId, setActiveGroupId] = useState(null);
@@ -287,11 +355,35 @@ export default function App() {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [toasts, pushToast] = useToasts();
   const [myRsn, setMyRsnState] = useState(() => localStorage.getItem('myRsn') || '');
+  const [groupPasswords, setGroupPasswordsState] = useState(loadStoredPasswords);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
 
   function setMyRsn(rsn) {
     setMyRsnState(rsn);
     localStorage.setItem('myRsn', rsn);
   }
+
+  function saveGroupPassword(groupId, pw) {
+    const updated = { ...loadStoredPasswords(), [groupId]: pw };
+    localStorage.setItem('groupPasswords', JSON.stringify(updated));
+    setGroupPasswordsState(updated);
+    setGroupContext(groupId, pw);
+  }
+
+  // Keep API group context in sync with active group + stored password
+  useEffect(() => {
+    const pw = groupPasswords[activeGroupId] || null;
+    setGroupContext(activeGroupId, pw);
+  }, [activeGroupId, groupPasswords]);
+
+  // Register 401 handler once
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      setShowPasswordModal(true);
+    });
+  }, []);
 
   async function loadGroups() {
     try {
@@ -342,7 +434,8 @@ export default function App() {
     }
   }, [activeGroupId]);
 
-  function handleGroupCreated(id) {
+  function handleGroupCreated(id, password) {
+    if (password) saveGroupPassword(id, password);
     setCreatingGroup(false);
     loadGroups().then(() => setActiveGroupId(id));
   }
@@ -350,6 +443,15 @@ export default function App() {
   function selectGroup(id) {
     setActiveGroupId(id);
     setActiveTab('overview');
+  }
+
+  async function handlePasswordSubmit(pw) {
+    // Verify password before saving
+    setGroupContext(activeGroupId, pw);
+    await api.verifyGroup(activeGroupId); // throws if wrong
+    saveGroupPassword(activeGroupId, pw);
+    setShowPasswordModal(false);
+    pushToast('Password saved — you can now make changes', 'success');
   }
 
   if (loading) {
@@ -360,6 +462,8 @@ export default function App() {
       </div>
     );
   }
+
+  const isUnlocked = !!groupPasswords[activeGroupId];
 
   // No group yet, or creating a new one
   if (groups.length === 0 || creatingGroup) {
@@ -374,7 +478,8 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header group={group} onSynced={refresh} onToast={pushToast} />
+      <Header group={group} onSynced={refresh} onToast={pushToast}
+        isUnlocked={isUnlocked} onLockClick={() => setShowPasswordModal(true)} />
       <div className="main-layout">
         <Sidebar
           groups={groups}
@@ -424,6 +529,13 @@ export default function App() {
           )}
         </main>
       </div>
+      {showPasswordModal && (
+        <PasswordModal
+          groupName={group?.name || 'this group'}
+          onConfirm={handlePasswordSubmit}
+          onCancel={() => setShowPasswordModal(false)}
+        />
+      )}
       <ToastArea toasts={toasts} />
     </div>
   );

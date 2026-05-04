@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { generateSuggestedGoals } = require('../services/runescape');
+const { checkGroupAuth } = require('../utils/auth');
+
+function goalGroupId(goalId) {
+  const goal = db.prepare('SELECT owner_id FROM goals WHERE id = ?').get(goalId);
+  if (!goal?.owner_id) return null;
+  return db.prepare('SELECT group_id FROM players WHERE id = ?').get(goal.owner_id)?.group_id;
+}
 
 // GET /api/goals?group_id=X
 router.get('/', (req, res) => {
@@ -26,7 +33,6 @@ router.get('/', (req, res) => {
     `).all();
   }
 
-  // Attach contributors
   for (const goal of goals) {
     goal.contributors = db.prepare(`
       SELECT p.id, p.rsn FROM goal_contributors gc
@@ -42,6 +48,10 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   const { type, owner_id, title, description, category, skill, target_value, priority, contributor_ids, details_json } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
+
+  const groupId = req.headers['x-group-id']
+    || (owner_id && db.prepare('SELECT group_id FROM players WHERE id = ?').get(owner_id)?.group_id);
+  if (!checkGroupAuth(req, res, groupId)) return;
 
   const result = db.prepare(`
     INSERT INTO goals (type, owner_id, title, description, category, skill, target_value, priority, details_json)
@@ -74,6 +84,9 @@ router.put('/:id', (req, res) => {
   const { title, description, category, skill, target_value, current_value, status, priority, contributor_ids, details_json } = req.body;
   const goal = db.prepare('SELECT * FROM goals WHERE id = ?').get(req.params.id);
   if (!goal) return res.status(404).json({ error: 'Goal not found' });
+
+  const groupId = req.headers['x-group-id'] || goalGroupId(req.params.id);
+  if (!checkGroupAuth(req, res, groupId)) return;
 
   const completed_at = status === 'complete' && goal.status !== 'complete'
     ? new Date().toISOString()
@@ -112,6 +125,8 @@ router.put('/:id', (req, res) => {
 
 // DELETE /api/goals/:id
 router.delete('/:id', (req, res) => {
+  const groupId = req.headers['x-group-id'] || goalGroupId(req.params.id);
+  if (!checkGroupAuth(req, res, groupId)) return;
   db.prepare('DELETE FROM goals WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

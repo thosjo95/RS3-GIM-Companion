@@ -108,6 +108,8 @@ db.exec(`
 try { db.exec('ALTER TABLE goals ADD COLUMN details_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_size INTEGER DEFAULT 5'); } catch {}
+try { db.exec('ALTER TABLE groups ADD COLUMN password_hash TEXT'); } catch {}
+try { db.exec('ALTER TABLE groups ADD COLUMN last_activity DATETIME'); } catch {}
 
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {
