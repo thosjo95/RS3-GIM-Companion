@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
-export default function Header({ group, onSynced, onToast, isUnlocked, onLockClick }) {
+export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick }) {
   const [syncing, setSyncing] = useState(false);
 
   async function syncAll() {
@@ -40,6 +40,8 @@ export default function Header({ group, onSynced, onToast, isUnlocked, onLockCli
       })()
     : 'never';
 
+  const showClaimNudge = group && !isClaimed && !isUnlocked;
+
   return (
     <header className="header">
       <div className="header-logo">
@@ -48,15 +50,38 @@ export default function Header({ group, onSynced, onToast, isUnlocked, onLockCli
       </div>
       <div className="header-right">
         {lastSync && <span className="last-sync">Last sync: {syncAgo}</span>}
+
+        {/* "Claim now" nudge — visible only when unclaimed */}
+        {showClaimNudge && (
+          <span style={{
+            fontSize: 11, color: 'var(--gold)', fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 4,
+            animation: 'pulse 2s ease-in-out infinite',
+          }}>
+            Claim now →
+          </span>
+        )}
+
+        {/* Lock button — always shown when a group is loaded */}
         {group && (
           <button
             className="sync-btn"
-            onClick={onLockClick}
-            title={isUnlocked ? 'Group unlocked — click to re-enter password' : 'Click to enter group password'}
-            style={{background:'transparent',border:'1px solid var(--border)',color: isUnlocked ? 'var(--gold)' : 'var(--text-dim)',minWidth:36,padding:'0 10px'}}>
-            {isUnlocked ? '🔓' : '🔒'}
+            onClick={isClaimed ? onLockClick : onClaimClick}
+            title={
+              !isClaimed ? 'Claim this group to protect it with a secret'
+              : isUnlocked ? `Unlocked as ${myRsn || 'unknown'} — click to re-enter secret`
+              : 'Enter group secret to unlock'
+            }
+            style={{
+              background: 'transparent',
+              border: `1px solid ${isUnlocked ? 'var(--gold)' : showClaimNudge ? 'var(--gold)' : 'var(--border)'}`,
+              color: isUnlocked ? 'var(--gold)' : showClaimNudge ? 'var(--gold)' : 'var(--text-dim)',
+              minWidth: 36, padding: '0 10px', fontSize: 13,
+            }}>
+            {isUnlocked ? `🔓 ${myRsn || 'Unlocked'}` : '🔒'}
           </button>
         )}
+
         {group && (
           <button className="sync-btn" onClick={syncAll} disabled={syncing}>
             {syncing ? <><span className="spinner" style={{width:14,height:14}} /> Syncing…</> : '↻ Sync All'}

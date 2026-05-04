@@ -23,21 +23,23 @@ function fmtXp(n) {
   return String(n);
 }
 
-// Password modal — shown when group password is needed or incorrect
-function PasswordModal({ groupName, onConfirm, onCancel, error }) {
+// Unlock modal — enter secret + pick who you are
+function UnlockModal({ group, onConfirm, onCancel }) {
   const [pw, setPw] = useState('');
+  const [rsn, setRsn] = useState('');
   const [checking, setChecking] = useState(false);
-  const [localError, setLocalError] = useState('');
+  const [error, setError] = useState('');
+  const players = group?.players || [];
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!pw.trim()) return;
     setChecking(true);
-    setLocalError('');
+    setError('');
     try {
-      await onConfirm(pw.trim());
+      await onConfirm(pw.trim(), rsn || null);
     } catch (err) {
-      setLocalError(err.message || 'Incorrect password');
+      setError(err.message || 'Incorrect password');
     } finally {
       setChecking(false);
     }
@@ -45,29 +47,36 @@ function PasswordModal({ groupName, onConfirm, onCancel, error }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal" style={{maxWidth:380}}>
+      <div className="modal" style={{maxWidth:400}}>
         <div className="modal-header">
-          <span className="modal-title">🔒 Group Password</span>
+          <span className="modal-title">🔓 Unlock Group</span>
           {onCancel && <button className="btn btn-ghost btn-sm" onClick={onCancel}>✕</button>}
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <p style={{color:'var(--text-dim)',fontSize:13,marginBottom:16}}>
-              Enter the password for <strong style={{color:'var(--text-bright)'}}>{groupName}</strong> to make changes.
+              Enter the secret for <strong style={{color:'var(--text-bright)'}}>{group?.name}</strong> to make changes.
             </p>
-            <div className="form-group" style={{marginBottom:0}}>
-              <label className="form-label">Password</label>
+            <div className="form-group">
+              <label className="form-label">Group secret</label>
               <input className="form-input" type="password" value={pw}
                 onChange={e => setPw(e.target.value)} autoFocus placeholder="Group password" />
             </div>
-            {(localError || error) && (
-              <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{localError || error}</div>
+            {players.length > 0 && (
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Who are you?</label>
+                <select className="form-input" value={rsn} onChange={e => setRsn(e.target.value)}>
+                  <option value="">— Select your character —</option>
+                  {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
+                </select>
+              </div>
             )}
+            {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
           </div>
           <div className="modal-footer">
             {onCancel && <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>}
             <button type="submit" className="btn btn-primary" disabled={checking || !pw.trim()}>
-              {checking ? <span className="spinner" style={{width:12,height:12}} /> : 'Unlock'}
+              {checking ? <span className="spinner" style={{width:12,height:12}} /> : '🔓 Unlock'}
             </button>
           </div>
         </form>
@@ -76,31 +85,99 @@ function PasswordModal({ groupName, onConfirm, onCancel, error }) {
   );
 }
 
-function ClaimToggle({ claimGroup, setClaimGroup, password, setPassword }) {
+// Claim modal — auto-generates a secret, shows it for copying
+function ClaimModal({ group, onConfirm, onCancel }) {
+  const [rsn, setRsn] = useState('');
+  const [claiming, setClaiming] = useState(false);
+  const [secret, setSecret] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  const players = group?.players || [];
+
+  async function handleClaim() {
+    setClaiming(true);
+    setError('');
+    try {
+      const result = await onConfirm(rsn || null);
+      setSecret(result.secret);
+    } catch (err) {
+      setError(err.message || 'Failed to claim group');
+    } finally {
+      setClaiming(false);
+    }
+  }
+
+  function copySecret() {
+    navigator.clipboard.writeText(secret).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
-    <div style={{margin:'12px 0',padding:'10px 12px',background:'var(--bg-panel-alt)',border:'1px solid var(--border)',borderRadius:'var(--radius)'}}>
-      <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',marginBottom: claimGroup ? 10 : 0}}>
-        <input type="checkbox" checked={claimGroup} onChange={e => setClaimGroup(e.target.checked)}
-          style={{accentColor:'var(--gold)',width:14,height:14}} />
-        <span style={{fontWeight:600,fontSize:13,color:'var(--text-bright)'}}>🔒 Claim this group</span>
-      </label>
-      {claimGroup ? (
-        <>
-          <input className="form-input" type="password" value={password}
-            onChange={e => setPassword(e.target.value)} placeholder="Choose a group password"
-            style={{marginBottom:6}} />
-          <div style={{fontSize:11,color:'var(--text-dim)'}}>
-            Share this password with your group members. First to claim wins — once set it can't be changed without the password.
-          </div>
-        </>
-      ) : (
-        <div style={{fontSize:11,color:'var(--text-dim)'}}>
-          Anyone can view and edit this group. You can claim it later from the group settings.
+    <div className="modal-backdrop">
+      <div className="modal" style={{maxWidth:420}}>
+        <div className="modal-header">
+          <span className="modal-title">🔒 Claim Group</span>
+          {!secret && <button className="btn btn-ghost btn-sm" onClick={onCancel}>✕</button>}
         </div>
-      )}
+        <div className="modal-body">
+          {!secret ? (
+            <>
+              <p style={{color:'var(--text-dim)',fontSize:13,marginBottom:16}}>
+                Claiming <strong style={{color:'var(--text-bright)'}}>{group?.name}</strong> generates a group secret. Share it with your members on Discord so they can unlock and contribute.
+              </p>
+              {players.length > 0 && (
+                <div className="form-group" style={{marginBottom:0}}>
+                  <label className="form-label">Who are you? (optional)</label>
+                  <select className="form-input" value={rsn} onChange={e => setRsn(e.target.value)}>
+                    <option value="">— Select your character —</option>
+                    {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
+                  </select>
+                </div>
+              )}
+              {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
+            </>
+          ) : (
+            <>
+              <p style={{color:'var(--text-dim)',fontSize:13,marginBottom:16}}>
+                Group claimed! Here's your secret — copy it and share with your group members. <strong style={{color:'var(--gold)'}}>This is the only time it will be shown.</strong>
+              </p>
+              <div style={{
+                display:'flex', alignItems:'center', gap:8,
+                padding:'14px 16px', marginBottom:8,
+                background:'rgba(200,168,75,0.08)',
+                border:'1px solid var(--gold-dark)',
+                borderRadius:'var(--radius-lg)',
+              }}>
+                <code style={{flex:1, fontSize:18, fontWeight:700, color:'var(--gold)', letterSpacing:'2px'}}>{secret}</code>
+                <button onClick={copySecret} className="btn btn-primary btn-sm" style={{flexShrink:0}}>
+                  {copied ? '✓ Copied!' : 'Copy'}
+                </button>
+              </div>
+              <p style={{color:'var(--text-dim)',fontSize:11}}>
+                Members go to the site, find the group, and click the lock icon to enter this secret and identify themselves.
+              </p>
+            </>
+          )}
+        </div>
+        <div className="modal-footer">
+          {!secret ? (
+            <>
+              <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleClaim} disabled={claiming}>
+                {claiming ? <span className="spinner" style={{width:12,height:12}} /> : '🔒 Claim & Generate Secret'}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-primary" onClick={onCancel}>Done</button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
 
 // Setup screen — shown when no group exists
 function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup }) {
@@ -108,8 +185,6 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   const [gimType, setGimType] = useState(prefill?.type || 'regular');
   const [gimSize, setGimSize] = useState(prefill?.size || 5);
   const [groupName, setGroupName] = useState(prefill?.name || '');
-  const [password, setPassword] = useState('');
-  const [claimGroup, setClaimGroup] = useState(true);
   const [lookupResult, setLookupResult] = useState(prefill ? { found: true, groupName: prefill.name, type: prefill.type, size: prefill.size, members: prefill.members } : null);
   const [manualRsns, setManualRsns] = useState(prefill?.members?.map(m => m.rsn) || []);
   const [searching, setSearching] = useState(false);
@@ -147,16 +222,14 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   async function handleConfirm(memberRsns) {
     const rsns = memberRsns.map(r => r.trim()).filter(Boolean);
     if (!rsns.length) return onToast('Add at least one member RSN', 'error');
-    if (claimGroup && !password.trim()) return onToast('Enter a password to claim this group, or uncheck "Claim this group"', 'error');
     setStep('setting-up');
     setSyncProgress(`Adding ${rsns.length} members and syncing hiscores…`);
     try {
-      const pw = claimGroup ? password.trim() : undefined;
-      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size: gimSize, member_rsns: rsns, password: pw });
+      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size: gimSize, member_rsns: rsns });
       if (result.failed?.length) {
         onToast(`Setup done. ${result.failed.length} member(s) couldn't sync from RS3.`, 'error');
       }
-      onCreated(result.id, pw);
+      onCreated(result.id);
     } catch (err) {
       onToast(err.message, 'error');
       setStep(lookupResult ? 'preview' : 'manual');
@@ -214,7 +287,6 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
             <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:12}}>
               Hiscores will be synced automatically for all members.
             </div>
-            <ClaimToggle claimGroup={claimGroup} setClaimGroup={setClaimGroup} password={password} setPassword={setPassword} />
             <div style={{display:'flex',gap:8,flexDirection:'column'}}>
               <button className="btn btn-primary" onClick={() => handleConfirm(lookupResult.members.map(m => m.rsn))}>
                 ✓ Confirm & Start Tracking
@@ -260,7 +332,6 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
             <div style={{display:'flex',gap:8,marginTop:4}}>
               <button className="btn btn-ghost btn-sm" onClick={() => setManualRsns(r => [...r, ''])}>+ Add member</button>
             </div>
-            <ClaimToggle claimGroup={claimGroup} setClaimGroup={setClaimGroup} password={password} setPassword={setPassword} />
             <div style={{display:'flex',gap:8,flexDirection:'column',marginTop:16}}>
               <button className="btn btn-primary" onClick={() => handleConfirm(manualRsns)}>
                 ✓ Confirm & Start Tracking
@@ -324,7 +395,6 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
               </div>
             </div>
 
-            <ClaimToggle claimGroup={claimGroup} setClaimGroup={setClaimGroup} password={password} setPassword={setPassword} />
           </div>
 
           <div className="modal-footer" style={{flexDirection:'column',gap:8,alignItems:'stretch'}}>
@@ -552,6 +622,7 @@ export default function App() {
   const [myRsn, setMyRsnState] = useState(() => localStorage.getItem('myRsn') || '');
   const [groupPasswords, setGroupPasswordsState] = useState(loadStoredPasswords);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
   const groupsRef = useRef(groups);
@@ -631,8 +702,7 @@ export default function App() {
     }
   }, [activeGroupId]);
 
-  function handleGroupCreated(id, password) {
-    if (password) saveGroupPassword(id, password);
+  function handleGroupCreated(id) {
     setCreatingGroup(false);
     loadGroups().then(() => setActiveGroupId(id));
   }
@@ -647,13 +717,21 @@ export default function App() {
     setCreatingGroup(true);
   }
 
-  async function handlePasswordSubmit(pw) {
-    // Verify password before saving
+  async function handlePasswordSubmit(pw, rsn) {
     setGroupContext(activeGroupId, pw);
     await api.verifyGroup(activeGroupId); // throws if wrong
     saveGroupPassword(activeGroupId, pw);
+    if (rsn) setMyRsn(rsn);
     setShowPasswordModal(false);
-    pushToast('Password saved — you can now make changes', 'success');
+    pushToast('Unlocked! 🔓', 'success');
+  }
+
+  async function handleClaimSubmit(rsn) {
+    const result = await api.claimGroup(activeGroupId);
+    saveGroupPassword(activeGroupId, result.secret);
+    if (rsn) setMyRsn(rsn);
+    await loadGroups(); // refresh to get updated is_claimed
+    return result; // returns { secret } so modal can display it
   }
 
   if (loading) {
@@ -689,8 +767,16 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header group={group} onSynced={refresh} onToast={pushToast}
-        isUnlocked={isUnlocked} onLockClick={() => setShowPasswordModal(true)} />
+      <Header
+        group={group}
+        onSynced={refresh}
+        onToast={pushToast}
+        isUnlocked={isUnlocked}
+        isClaimed={!!group?.is_claimed}
+        myRsn={myRsn}
+        onLockClick={() => setShowPasswordModal(true)}
+        onClaimClick={() => setShowClaimModal(true)}
+      />
       <div className="main-layout">
         <Sidebar
           groups={groups}
@@ -743,10 +829,17 @@ export default function App() {
         </main>
       </div>
       {showPasswordModal && (
-        <PasswordModal
-          groupName={group?.name || 'this group'}
+        <UnlockModal
+          group={group}
           onConfirm={handlePasswordSubmit}
           onCancel={() => setShowPasswordModal(false)}
+        />
+      )}
+      {showClaimModal && (
+        <ClaimModal
+          group={group}
+          onConfirm={handleClaimSubmit}
+          onCancel={() => setShowClaimModal(false)}
         />
       )}
       {showSearchModal && (

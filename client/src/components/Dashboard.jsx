@@ -4,7 +4,7 @@ import VaultTab from './VaultTab';
 import OverviewTab from './OverviewTab';
 import TipsTab from './TipsTab';
 
-export default function Dashboard({ group, goals, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, onSetMyRsn, canWrite }) {
+export default function Dashboard({ group, goals, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
   const players = group?.players || [];
 
   const TABS = [
@@ -44,6 +44,7 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
           onRefresh={onRefresh}
           onToast={onToast}
           canWrite={canWrite}
+          myRsn={myRsn}
         />
       )}
 

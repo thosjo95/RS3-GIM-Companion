@@ -89,15 +89,17 @@ function getPlayerSkill(players, ownerId, skillName) {
 
 // ── Member card ───────────────────────────────────────────────────────────────
 
-function MemberCard({ player, active, color, onClick }) {
+function MemberCard({ player, active, color, onClick, isMe }) {
   const overall = player.skills?.find(s => s.skill_name === 'Overall');
+  const borderColor = active ? color : isMe ? 'var(--gold)' : 'var(--border)';
   return (
     <div onClick={onClick} style={{
       cursor: 'pointer', width: 140,
       padding: '14px 16px',
       background: active ? 'var(--bg-panel)' : 'var(--bg-panel-alt)',
-      border: `2px solid ${active ? color : 'var(--border)'}`,
+      border: `2px solid ${borderColor}`,
       borderRadius: 'var(--radius-lg)',
+      boxShadow: isMe && !active ? `0 0 10px ${color}33` : undefined,
       transition: 'border-color 0.15s, background 0.15s',
       userSelect: 'none',
       flexShrink: 0,
@@ -115,6 +117,14 @@ function MemberCard({ player, active, color, onClick }) {
       {overall
         ? <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Cmb {player.combat_level ?? '?'} · Lvl {overall.level}</div>
         : <div style={{ fontSize: 11, color: 'var(--red-bright)' }}>Not synced</div>}
+      {isMe && (
+        <div style={{
+          display: 'inline-block', marginTop: 5,
+          fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
+          background: 'var(--gold)', color: '#111',
+          borderRadius: 4, padding: '1px 5px',
+        }}>YOU</div>
+      )}
     </div>
   );
 }
@@ -750,7 +760,7 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite }) {
+export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn }) {
   const [selectedId, setSelectedId] = useState(null);
   const [weeklyMode, setWeeklyMode] = useState(false);
   const selectedPlayer = players.find(p => p.id === selectedId) ?? null;
@@ -816,6 +826,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
               active={selectedId === p.id}
               color={MEMBER_COLORS[i % MEMBER_COLORS.length]}
               onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
+              isMe={!!myRsn && p.rsn.toLowerCase() === myRsn.toLowerCase()}
             />
           ))}
         </div>

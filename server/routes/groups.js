@@ -368,6 +368,22 @@ router.post('/', (req, res) => {
   res.status(201).json({ id: result.lastInsertRowid, name, group_rsn, notes });
 });
 
+// POST /api/groups/:id/claim - generate a secret and claim an unclaimed group
+router.post('/:id/claim', (req, res) => {
+  const group = db.prepare('SELECT id, password_hash FROM groups WHERE id = ?').get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.password_hash) return res.status(409).json({ error: 'Group is already claimed' });
+
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const seg = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const secret = `${seg()}-${seg()}-${seg()}`;
+
+  db.prepare('UPDATE groups SET password_hash = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(hashPassword(secret), group.id);
+
+  res.json({ ok: true, secret });
+});
+
 // PUT /api/groups/:id
 router.put('/:id', (req, res) => {
   if (!checkGroupAuth(req, res, req.params.id)) return;

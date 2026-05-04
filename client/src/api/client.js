@@ -43,6 +43,7 @@ export const api = {
   lookupGroup: (name, type, size) => request(`/groups/lookup?name=${encodeURIComponent(name)}&type=${type}&size=${size}`),
   setupGroup: (body) => request('/groups/setup', { method: 'POST', body }),
   verifyGroup: (id) => request(`/groups/${id}/verify`, { method: 'POST' }),
+  claimGroup: (id) => request(`/groups/${id}/claim`, { method: 'POST', body: {} }),
 
   // Players
   getPlayers: () => request('/players'),
