@@ -3,15 +3,17 @@ import DropsTab from './DropsTab';
 import VaultTab from './VaultTab';
 import OverviewTab from './OverviewTab';
 import TipsTab from './TipsTab';
+import LeaderboardsTab from './LeaderboardsTab';
 
 export default function Dashboard({ group, goals, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
   const players = group?.players || [];
 
   const TABS = [
-    { id: 'overview', label: '📊 Overview' },
-    { id: 'drops',    label: '💎 Drops' },
-    { id: 'vault',    label: '🏆 Vault' },
-    { id: 'tips',     label: '💡 Tips' },
+    { id: 'overview',      label: '📊 Overview' },
+    { id: 'drops',         label: '💎 Items and Drops' },
+    { id: 'leaderboards',  label: '🏅 Leaderboards' },
+    { id: 'vault',         label: '🏆 Group Vault' },
+    { id: 'tips',          label: '💡 Tips and Milestones' },
   ];
 
   return (
@@ -66,6 +68,11 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
               <div className="icon">🏆</div>
               <p>Add players first to use the vault.</p>
             </div>
+      )}
+
+      {/* LEADERBOARDS TAB */}
+      {activeTab === 'leaderboards' && (
+        <LeaderboardsTab players={players} />
       )}
 
       {/* TIPS TAB */}
