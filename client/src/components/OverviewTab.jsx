@@ -90,8 +90,11 @@ function getPlayerSkill(players, ownerId, skillName) {
 // ── Member card ───────────────────────────────────────────────────────────────
 
 function MemberCard({ player, active, color, onClick, isMe }) {
+  const [avatarError, setAvatarError] = useState(false);
   const overall = player.skills?.find(s => s.skill_name === 'Overall');
   const borderColor = active ? color : isMe ? 'var(--gold)' : 'var(--border)';
+  const avatarUrl = `https://secure.runescape.com/m=avatar-rs/${encodeURIComponent(player.rsn)}/chat.png`;
+
   return (
     <div onClick={onClick} style={{
       cursor: 'pointer', width: 140,
@@ -106,10 +109,21 @@ function MemberCard({ player, active, color, onClick, isMe }) {
     }}>
       <div style={{
         width: 40, height: 40, borderRadius: '50%', background: color,
+        overflow: 'hidden', marginBottom: 10, flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: 10, fontWeight: 800, fontSize: 16, color: '#111',
       }}>
-        {player.rsn[0].toUpperCase()}
+        {!avatarError ? (
+          <img
+            src={avatarUrl}
+            alt={player.rsn}
+            onError={() => setAvatarError(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <span style={{ fontWeight: 800, fontSize: 16, color: '#111' }}>
+            {player.rsn[0].toUpperCase()}
+          </span>
+        )}
       </div>
       <div style={{ fontWeight: 700, fontSize: 13, color: active ? color : 'var(--text-bright)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {player.rsn}
@@ -277,58 +291,62 @@ function GroupStats({ players, weeklyMode }) {
         );
       })()}
 
-      {/* Skills tab */}
+      {/* Skills tab — skills × players matrix */}
       {tab === 'skills' && (
-        <div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 14 }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: 11, width: '100%' }}>
             <thead>
-              <tr style={{ color: 'var(--text-dim)', fontSize: 10, textTransform: 'uppercase' }}>
-                <th align="left" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>Player</th>
-                <th align="center" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>99s</th>
-                <th align="center" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>120s</th>
-                <th align="center" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>Leads</th>
+              <tr>
+                <th align="left" style={{
+                  padding: '4px 8px 8px 4px', fontWeight: 600, color: 'var(--text-dim)',
+                  fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4px',
+                  position: 'sticky', left: 0, background: 'var(--bg-panel)', zIndex: 2,
+                  whiteSpace: 'nowrap', minWidth: 110,
+                }}>Skill</th>
+                {players.map(p => (
+                  <th key={p.id} align="center" style={{
+                    padding: '4px 8px 8px', fontWeight: 700, color: colorMap[p.id],
+                    fontSize: 11, whiteSpace: 'nowrap',
+                  }}>{p.rsn}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {[...playerData].sort((a, b) => (b.count120 + b.count99) - (a.count120 + a.count99)).map(p => (
-                <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td style={{ padding: '6px 6px', fontWeight: 700, color: colorMap[p.id] }}>{p.rsn}</td>
-                  <td align="center" style={{ padding: '6px 6px', color: p.count99 > 0 ? 'var(--gold)' : 'var(--text-dim)' }}>
-                    {p.count99 > 0 ? `★ ${p.count99}` : '—'}
-                  </td>
-                  <td align="center" style={{ padding: '6px 6px', color: p.count120 > 0 ? '#f0d060' : 'var(--text-dim)' }}>
-                    {p.count120 > 0 ? `★ ${p.count120}` : '—'}
-                  </td>
-                  <td align="center" style={{ padding: '6px 6px', color: 'var(--text-dim)', fontSize: 11 }}>
-                    {leadCounts[p.id] || 0}
-                  </td>
-                </tr>
-              ))}
+              {SKILL_ORDER.map((skill, rowIdx) => {
+                const levels = players.map(p => p.skills?.find(s => s.skill_name === skill)?.level ?? null);
+                const maxLevel = Math.max(...levels.filter(l => l !== null), 0);
+                const altBg = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
+                const stickyBg = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
+                return (
+                  <tr key={skill} style={{ borderTop: '1px solid var(--border)', background: altBg }}>
+                    <td style={{
+                      padding: '5px 8px 5px 4px', whiteSpace: 'nowrap',
+                      position: 'sticky', left: 0, background: stickyBg, zIndex: 1,
+                    }}>
+                      <span style={{ marginRight: 5 }}>{SKILL_ICONS[skill] ?? '📊'}</span>
+                      <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{skill}</span>
+                    </td>
+                    {levels.map((level, i) => {
+                      const isMax = level !== null && level === maxLevel && maxLevel > 0 && levels.filter(l => l === maxLevel).length === 1;
+                      const isSharedMax = level !== null && level === maxLevel && maxLevel > 0;
+                      const is120 = level >= 120;
+                      const is99 = level >= 99;
+                      return (
+                        <td key={players[i].id} align="center" style={{
+                          padding: '5px 6px',
+                          background: isSharedMax ? 'rgba(200,168,75,0.18)' : undefined,
+                          color: is120 ? 'var(--gold)' : is99 ? 'var(--text-bright)' : level ? 'var(--text)' : 'var(--text-dim)',
+                          fontWeight: isSharedMax ? 700 : 400,
+                        }}>
+                          {level ?? '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
-            Skills at 99+
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 3 }}>
-            {SKILL_ORDER.filter(s => skillLeaders[s]?.level >= 99).map(skill => {
-              const leader = skillLeaders[skill];
-              const color = colorMap[leader.id] || 'var(--gold)';
-              return (
-                <div key={skill} style={{
-                  padding: '4px 8px', background: 'var(--bg-root)', borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11,
-                }}>
-                  <span style={{ flexShrink: 0 }}>{SKILL_ICONS[skill]}</span>
-                  <span style={{ flex: 1, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skill}</span>
-                  <span style={{ color, fontWeight: 700, flexShrink: 0 }}>{leader.level >= 120 ? '★' : ''}{leader.level}</span>
-                </div>
-              );
-            })}
-          </div>
-          {SKILL_ORDER.filter(s => skillLeaders[s]?.level >= 99).length === 0 && (
-            <div style={{ fontSize: 12, color: 'var(--text-dim)', textAlign: 'center', padding: '20px 0' }}>No skills at 99+ yet. Keep training!</div>
-          )}
         </div>
       )}
 
@@ -648,7 +666,7 @@ function ActivityFeed({ players, filteredPlayerId }) {
 // ── Right panel: Goals + Activity ─────────────────────────────────────────────
 
 function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onToast, canWrite }) {
-  const [view, setView] = useState('goals');
+  const [view, setView] = useState('both');
   const [showModal, setShowModal] = useState(false);
   const [prefill, setPrefill] = useState({});
 
