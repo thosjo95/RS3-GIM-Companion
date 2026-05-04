@@ -609,8 +609,17 @@ function loadStoredPasswords() {
   try { return JSON.parse(localStorage.getItem('groupPasswords') || '{}'); } catch { return {}; }
 }
 
+function loadMyGroupIds() {
+  try { return JSON.parse(localStorage.getItem('myGroupIds') || '[]'); } catch { return []; }
+}
+
+function saveMyGroupIds(ids) {
+  localStorage.setItem('myGroupIds', JSON.stringify([...new Set(ids)]));
+}
+
 export default function App() {
-  const [groups, setGroups] = useState([]);
+  const [allGroups, setAllGroups] = useState([]);
+  const [myGroupIds, setMyGroupIdsState] = useState(loadMyGroupIds);
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [group, setGroup] = useState(null);
   const [goals, setGoals] = useState([]);
@@ -631,6 +640,12 @@ export default function App() {
   function setMyRsn(rsn) {
     setMyRsnState(rsn);
     localStorage.setItem('myRsn', rsn);
+  }
+
+  function pinGroup(id) {
+    const updated = [...new Set([...loadMyGroupIds(), id])];
+    saveMyGroupIds(updated);
+    setMyGroupIdsState(updated);
   }
 
   function saveGroupPassword(groupId, pw) {
@@ -656,12 +671,15 @@ export default function App() {
   async function loadGroups() {
     try {
       const data = await api.getGroups();
-      setGroups(data);
+      setAllGroups(data);
       return data;
     } catch {
       return [];
     }
   }
+
+  // Only show groups this browser has explicitly added
+  const groups = allGroups.filter(g => myGroupIds.includes(g.id));
 
   async function loadGroup(id) {
     if (!id) return;
@@ -685,9 +703,11 @@ export default function App() {
   useEffect(() => {
     setLoading(true);
     loadGroups().then(data => {
-      if (data.length > 0) {
+      const pinnedIds = loadMyGroupIds();
+      const myGroups = data.filter(g => pinnedIds.includes(g.id));
+      if (myGroups.length > 0) {
         const saved = localStorage.getItem('activeGroupId');
-        const id = saved && data.find(g => g.id === Number(saved)) ? Number(saved) : data[0].id;
+        const id = saved && myGroups.find(g => g.id === Number(saved)) ? Number(saved) : myGroups[0].id;
         setActiveGroupId(id);
       }
       setLoading(false);
@@ -703,11 +723,13 @@ export default function App() {
   }, [activeGroupId]);
 
   function handleGroupCreated(id) {
+    pinGroup(id);
     setCreatingGroup(false);
     loadGroups().then(() => setActiveGroupId(id));
   }
 
   function selectGroup(id) {
+    pinGroup(id);
     setActiveGroupId(id);
     setActiveTab('overview');
   }
@@ -844,7 +866,7 @@ export default function App() {
       )}
       {showSearchModal && (
         <SearchGroupModal
-          groups={groups}
+          groups={allGroups}
           onSelect={selectGroup}
           onAddNew={handleSearchAddNew}
           onClose={() => setShowSearchModal(false)}
