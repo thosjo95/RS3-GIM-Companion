@@ -258,10 +258,19 @@ router.get('/:id', (req, res) => {
     ORDER BY p.rsn
   `).all(req.params.id);
 
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+
   for (const player of players) {
     player.skills = db.prepare(
       'SELECT skill_name, level, xp, rank FROM skills WHERE player_id = ? ORDER BY skill_name'
     ).all(player.id);
+
+    // Weekly XP gain: compare current Overall XP vs most recent snapshot >= 7 days old
+    const weekSnap = db.prepare(
+      'SELECT total_xp FROM snapshots WHERE player_id = ? AND snapshot_date <= ? ORDER BY snapshot_date DESC LIMIT 1'
+    ).get(player.id, weekAgo);
+    const currentXp = player.skills.find(s => s.skill_name === 'Overall')?.xp ?? 0;
+    player.weekly_xp_gain = weekSnap != null ? Math.max(0, currentXp - weekSnap.total_xp) : null;
   }
 
   const totals = db.prepare(`

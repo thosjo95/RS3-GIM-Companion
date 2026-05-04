@@ -524,7 +524,7 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
       {/* ── DROP LOG ── */}
       {activeSection === 'drops' && (
         <div>
-          <div className="flex align-center justify-between mb-16" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <div className="flex align-center justify-between mb-8" style={{ flexWrap: 'wrap', gap: 8 }}>
             <div className="section-title" style={{ marginBottom: 0 }}>💎 Drop Log ({drops.length})</div>
             <div className="flex gap-8 align-center">
               <select className="form-select" style={{ width: 'auto' }} value={dropFilter} onChange={e => setDropFilter(e.target.value)}>
@@ -533,6 +533,20 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
               </select>
               {canWrite && <button className="btn btn-primary btn-sm" onClick={() => setShowAddDrop(true)}>+ Log Drop</button>}
             </div>
+          </div>
+
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+            padding: '8px 12px', marginBottom: 16,
+            background: 'rgba(200,168,75,0.06)', border: '1px solid rgba(200,168,75,0.2)',
+            borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--text-dim)',
+          }}>
+            <span style={{ flexShrink: 0, marginTop: 1 }}>💡</span>
+            <span>
+              Log notable drops that aren't automatically captured by the activity feed — boss gear, rare items, and anything worth tracking.
+              Every entry here shows up in the <strong style={{ color: 'var(--gold)' }}>Vault</strong> tab as part of the group's collection.
+              Activity feed drops (e.g. <em>"I found a Dragon chainbody."</em>) are auto-logged on sync.
+            </span>
           </div>
 
           {filteredDrops.length > 0 ? (

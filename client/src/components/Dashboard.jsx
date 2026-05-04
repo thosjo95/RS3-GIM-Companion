@@ -1,6 +1,4 @@
 import React from 'react';
-import PlayerCard from './PlayerCard';
-import WeaknessMap from './WeaknessMap';
 import DropsTab from './DropsTab';
 import VaultTab from './VaultTab';
 import OverviewTab from './OverviewTab';
@@ -8,17 +6,12 @@ import TipsTab from './TipsTab';
 
 export default function Dashboard({ group, goals, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, onSetMyRsn, canWrite }) {
   const players = group?.players || [];
-  const sortedPlayers = myRsn
-    ? [...players].sort((a, b) => (b.rsn === myRsn) - (a.rsn === myRsn))
-    : players;
 
   const TABS = [
-    { id: 'overview',  label: '📊 Overview' },
-    { id: 'drops',     label: '💎 Drops' },
-    { id: 'vault',     label: '🏆 Vault' },
-    { id: 'tips',      label: '💡 Tips' },
-    { id: 'players',   label: '👥 Players' },
-    { id: 'weakness',  label: '⚠️ Weakness Map' },
+    { id: 'overview', label: '📊 Overview' },
+    { id: 'drops',    label: '💎 Drops' },
+    { id: 'vault',    label: '🏆 Vault' },
+    { id: 'tips',     label: '💡 Tips' },
   ];
 
   return (
@@ -85,47 +78,6 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
         />
       )}
 
-      {/* PLAYERS TAB */}
-      {activeTab === 'players' && (
-        <div>
-          <div className="flex align-center justify-between mb-16">
-            <div className="section-title" style={{ marginBottom: 0 }}>
-              👥 Players <span className="text-dim text-sm" style={{ fontWeight: 400, textTransform: 'none' }}>({players.length})</span>
-            </div>
-            {canWrite && <button className="btn btn-primary btn-sm" onClick={onAddPlayer}>➕ Add Player</button>}
-          </div>
-          {players.length > 0 ? (
-            <div className="grid-2">
-              {sortedPlayers.map(p => (
-                <PlayerCard
-                  key={p.id}
-                  player={p}
-                  isMe={myRsn === p.rsn}
-                  onSetMe={() => onSetMyRsn(myRsn === p.rsn ? '' : p.rsn)}
-                  onRefresh={onRefresh}
-                  onToast={onToast}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="icon">👤</div>
-              <p>No players yet.</p>
-              {canWrite && <button className="btn btn-primary mt-12" onClick={onAddPlayer}>➕ Add First Player</button>}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* WEAKNESS MAP TAB */}
-      {activeTab === 'weakness' && (
-        players.length > 0
-          ? <WeaknessMap players={players} />
-          : <div className="empty-state">
-              <div className="icon">⚠️</div>
-              <p>Add players and sync hiscores to see the weakness map.</p>
-            </div>
-      )}
     </div>
   );
 }

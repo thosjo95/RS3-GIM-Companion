@@ -4,6 +4,44 @@ const db = require('../database');
 const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
 const { checkGroupAuth } = require('../utils/auth');
 
+// RS3 RuneMetrics drop patterns — "I found a Dragon platebody." etc.
+const DROP_PATTERNS = [
+  /^I found (?:a |an )(.+?)\.?$/i,
+  /^I received (?:a |an )(.+?)\.?$/i,
+];
+
+function parseActivityDate(str) {
+  if (!str) return new Date().toISOString();
+  try {
+    const d = new Date(str.replace(/(\d+)-(\w+)-(\d+)/, '$2 $1 $3'));
+    return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+  } catch { return new Date().toISOString(); }
+}
+
+function autoLogActivityDrops(playerId, activities) {
+  if (!activities?.length) return;
+  for (const act of activities) {
+    for (const pattern of DROP_PATTERNS) {
+      const match = act.text?.match(pattern);
+      if (match) {
+        const itemName = match[1].trim();
+        const droppedAt = parseActivityDate(act.date);
+        // Skip if a drop entry with same player + item + same day already exists
+        const dayStr = droppedAt.slice(0, 10);
+        const existing = db.prepare(
+          "SELECT id FROM drops WHERE player_id = ? AND item_name = ? AND date(dropped_at) = ?"
+        ).get(playerId, itemName, dayStr);
+        if (!existing) {
+          db.prepare(
+            'INSERT INTO drops (player_id, item_name, notes, dropped_at) VALUES (?, ?, ?, ?)'
+          ).run(playerId, itemName, 'Auto-detected from activity feed', droppedAt);
+        }
+        break;
+      }
+    }
+  }
+}
+
 function getPlayerGroupId(playerId) {
   return db.prepare('SELECT group_id FROM players WHERE id = ?').get(playerId)?.group_id;
 }
@@ -149,6 +187,9 @@ router.post('/:id/sync', async (req, res) => {
       ON CONFLICT(player_id, snapshot_date) DO NOTHING
     `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
+    // Auto-log any activity-based drops (e.g. "I found a Dragon platebody.")
+    if (runeMetrics?.activities) autoLogActivityDrops(player.id, runeMetrics.activities);
+
     res.json({ success: true, totalXp: data.totalXp, totalLevel: data.totalLevel, combat });
   } catch (err) {
     res.status(502).json({ error: err.message });
@@ -205,6 +246,8 @@ router.post('/sync-all/:groupId', async (req, res) => {
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(player_id, snapshot_date) DO NOTHING
       `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
+
+      if (runeMetrics?.activities) autoLogActivityDrops(player.id, runeMetrics.activities);
 
       results.push({ rsn: player.rsn, success: true });
     } catch (err) {
