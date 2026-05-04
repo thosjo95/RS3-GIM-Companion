@@ -77,14 +77,14 @@ function PasswordModal({ groupName, onConfirm, onCancel, error }) {
 }
 
 // Setup screen — shown when no group exists
-function SetupScreen({ onCreated, onToast }) {
-  const [step, setStep] = useState('search'); // 'search' | 'preview' | 'manual' | 'setting-up'
-  const [gimType, setGimType] = useState('regular');
-  const [gimSize, setGimSize] = useState(5);
-  const [groupName, setGroupName] = useState('');
+function SetupScreen({ onCreated, onToast, prefill, onCancel }) {
+  const [step, setStep] = useState(() => prefill ? 'preview' : 'search');
+  const [gimType, setGimType] = useState(prefill?.type || 'regular');
+  const [gimSize, setGimSize] = useState(prefill?.size || 5);
+  const [groupName, setGroupName] = useState(prefill?.name || '');
   const [password, setPassword] = useState('');
-  const [lookupResult, setLookupResult] = useState(null);
-  const [manualRsns, setManualRsns] = useState([]);
+  const [lookupResult, setLookupResult] = useState(prefill ? { found: true, groupName: prefill.name, type: prefill.type, size: prefill.size, members: prefill.members } : null);
+  const [manualRsns, setManualRsns] = useState(prefill?.members?.map(m => m.rsn) || []);
   const [searching, setSearching] = useState(false);
   const [syncProgress, setSyncProgress] = useState('');
 
@@ -177,8 +177,14 @@ function SetupScreen({ onCreated, onToast }) {
                 </div>
               ))}
             </div>
-            <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:16}}>
+            <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:12}}>
               Hiscores will be synced automatically for all members.
+            </div>
+            <div className="form-group" style={{marginBottom:12}}>
+              <label className="form-label">Group Password</label>
+              <input className="form-input" type="password" value={password}
+                onChange={e => setPassword(e.target.value)} placeholder="Choose a password for your group" />
+              <div className="text-xs text-dim mt-8">Required to make changes — share with your group members.</div>
             </div>
             <div style={{display:'flex',gap:8,flexDirection:'column'}}>
               <button className="btn btn-primary" onClick={() => handleConfirm(lookupResult.members.map(m => m.rsn))}>
@@ -188,6 +194,7 @@ function SetupScreen({ onCreated, onToast }) {
                 Edit members manually instead
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setStep('search')}>← Back</button>
+              {onCancel && <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>}
             </div>
           </div>
         </div>
@@ -229,6 +236,7 @@ function SetupScreen({ onCreated, onToast }) {
                 ✓ Confirm & Start Tracking
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setStep('search')}>← Back</button>
+              {onCancel && <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>}
             </div>
           </div>
         </div>
@@ -306,6 +314,7 @@ function SetupScreen({ onCreated, onToast }) {
               onClick={() => { setManualRsns(Array(gimSize).fill('')); setStep('manual'); }}>
               Enter members manually instead
             </button>
+            {onCancel && <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>}
           </div>
         </form>
       </div>
@@ -313,12 +322,162 @@ function SetupScreen({ onCreated, onToast }) {
   );
 }
 
+// Group search modal
+function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
+  const [query, setQuery] = useState('');
+  const [gimType, setGimType] = useState('regular');
+  const [gimSize, setGimSize] = useState(5);
+  const [searching, setSearching] = useState(false);
+  const [rs3Result, setRs3Result] = useState(null);
+
+  const localMatches = query.trim().length >= 1
+    ? groups.filter(g => g.name.toLowerCase().includes(query.toLowerCase()))
+    : groups;
+
+  async function handleRs3Search(e) {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setSearching(true);
+    setRs3Result(null);
+    try {
+      const result = await api.lookupGroup(query.trim(), gimType, gimSize);
+      setRs3Result(result);
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  const alreadyInDb = rs3Result?.found
+    ? groups.find(g => g.name.toLowerCase() === rs3Result.groupName?.toLowerCase())
+    : null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal" style={{maxWidth:500}}>
+        <div className="modal-header">
+          <span className="modal-title">🔍 Find Group</span>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body" style={{paddingTop:0}}>
+
+          {/* Search input */}
+          <div className="form-group" style={{marginBottom:12}}>
+            <input className="form-input" value={query} onChange={e => { setQuery(e.target.value); setRs3Result(null); }}
+              placeholder="Type group name…" autoFocus />
+          </div>
+
+          {/* Local results */}
+          {localMatches.length > 0 && (
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.5px'}}>
+                {query.trim() ? 'Matching groups' : 'Your groups'}
+              </div>
+              {localMatches.map(g => (
+                <div key={g.id} onClick={() => { onSelect(g.id); onClose(); }}
+                  style={{
+                    display:'flex',alignItems:'center',gap:10,
+                    padding:'9px 12px',marginBottom:4,
+                    background:'var(--bg-panel-alt)',border:'1px solid var(--border)',
+                    borderRadius:'var(--radius)',cursor:'pointer',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor='var(--gold-dark)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}>
+                  <span>🏰</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,color:'var(--text-bright)'}}>{g.name}</div>
+                    <div style={{fontSize:11,color:'var(--text-dim)'}}>
+                      {g.member_count} member{g.member_count !== 1 ? 's' : ''}
+                      {g.gim_type ? ` · ${g.gim_type}` : ''}
+                    </div>
+                  </div>
+                  <span style={{fontSize:11,color:'var(--gold)'}}>Switch →</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Separator */}
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+            <div style={{flex:1,height:1,background:'var(--border)'}} />
+            <span style={{fontSize:11,color:'var(--text-dim)'}}>Search RS3 hiscores</span>
+            <div style={{flex:1,height:1,background:'var(--border)'}} />
+          </div>
+
+          <form onSubmit={handleRs3Search}>
+            <div style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
+              {[['regular','⚔️ Regular'],['competitive','🏆 Competitive']].map(([val,label]) => (
+                <button key={val} type="button"
+                  className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setGimType(val)}>{label}</button>
+              ))}
+              {[2,3,4,5].map(n => (
+                <button key={n} type="button"
+                  className={`btn btn-sm ${gimSize === n ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setGimSize(n)}>{n} members</button>
+              ))}
+            </div>
+            <button type="submit" className="btn btn-secondary" style={{width:'100%'}}
+              disabled={searching || !query.trim()}>
+              {searching
+                ? <><span className="spinner" style={{width:12,height:12}} /> Searching RS3…</>
+                : '🔍 Search RS3 Hiscores'}
+            </button>
+          </form>
+
+          {/* RS3 result */}
+          {rs3Result && (
+            <div style={{marginTop:12,padding:'12px 14px',background:'var(--bg-panel-alt)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+              {rs3Result.found ? (
+                <>
+                  <div style={{fontWeight:700,color:'var(--gold)',marginBottom:6}}>{rs3Result.groupName}</div>
+                  <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:10}}>
+                    {rs3Result.members?.length} members found on RS3 hiscores
+                  </div>
+                  {alreadyInDb ? (
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <span style={{fontSize:12,color:'var(--green-bright)',flex:1}}>✓ Already in your database</span>
+                      <button className="btn btn-primary btn-sm" onClick={() => { onSelect(alreadyInDb.id); onClose(); }}>
+                        Switch to it →
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <span style={{fontSize:12,color:'var(--text-dim)',flex:1}}>Not in your database yet</span>
+                      <button className="btn btn-primary btn-sm" onClick={() => {
+                        onClose();
+                        onAddNew({ name: rs3Result.groupName, type: gimType, size: gimSize, members: rs3Result.members });
+                      }}>
+                        ➕ Add this group
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{color:'var(--text-dim)',fontSize:13}}>{rs3Result.error || 'Group not found on RS3 hiscores'}</div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          <button className="btn btn-ghost" onClick={() => { onClose(); onAddNew(null); }}>➕ Create new group</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Group switcher — shown in sidebar when multiple groups exist
-function Sidebar({ groups, activeGroupId, onSelect, onNewGroup }) {
+function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch }) {
   return (
     <nav className="sidebar">
       <div className="nav-group">
-        <div className="nav-label">Groups</div>
+        <div className="nav-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span>Groups</span>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onSearch} title="Find or import a group" style={{fontSize:13}}>🔍</button>
+        </div>
         {groups.map(g => (
           <div
             key={g.id}
@@ -331,9 +490,9 @@ function Sidebar({ groups, activeGroupId, onSelect, onNewGroup }) {
             )}
           </div>
         ))}
-        <div className="nav-item" onClick={onNewGroup} style={{marginTop:4}}>
-          <span className="icon">➕</span>
-          <span>New Group</span>
+        <div className="nav-item" onClick={onSearch} style={{marginTop:4}}>
+          <span className="icon">🔍</span>
+          <span>Find / Add Group</span>
         </div>
       </div>
     </nav>
@@ -357,6 +516,8 @@ export default function App() {
   const [myRsn, setMyRsnState] = useState(() => localStorage.getItem('myRsn') || '');
   const [groupPasswords, setGroupPasswordsState] = useState(loadStoredPasswords);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
 
@@ -445,6 +606,11 @@ export default function App() {
     setActiveTab('overview');
   }
 
+  function handleSearchAddNew(prefill) {
+    setPendingImport(prefill); // null = blank setup, or { name, type, size, members }
+    setCreatingGroup(true);
+  }
+
   async function handlePasswordSubmit(pw) {
     // Verify password before saving
     setGroupContext(activeGroupId, pw);
@@ -470,7 +636,12 @@ export default function App() {
     return (
       <div className="app">
         <Header group={null} onSynced={() => {}} onToast={pushToast} />
-        <SetupScreen onCreated={handleGroupCreated} onToast={pushToast} />
+        <SetupScreen
+          onCreated={handleGroupCreated}
+          onToast={pushToast}
+          prefill={pendingImport}
+          onCancel={groups.length > 0 ? () => { setCreatingGroup(false); setPendingImport(null); } : null}
+        />
         <ToastArea toasts={toasts} />
       </div>
     );
@@ -486,6 +657,7 @@ export default function App() {
           activeGroupId={activeGroupId}
           onSelect={selectGroup}
           onNewGroup={() => setCreatingGroup(true)}
+          onSearch={() => setShowSearchModal(true)}
         />
         <main className="content">
           {group ? (
@@ -534,6 +706,15 @@ export default function App() {
           groupName={group?.name || 'this group'}
           onConfirm={handlePasswordSubmit}
           onCancel={() => setShowPasswordModal(false)}
+        />
+      )}
+      {showSearchModal && (
+        <SearchGroupModal
+          groups={groups}
+          onSelect={selectGroup}
+          onAddNew={handleSearchAddNew}
+          onClose={() => setShowSearchModal(false)}
+          onToast={pushToast}
         />
       )}
       <ToastArea toasts={toasts} />

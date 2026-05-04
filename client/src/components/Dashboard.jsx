@@ -3,6 +3,7 @@ import PlayerCard from './PlayerCard';
 import GoalsPanel from './GoalsPanel';
 import WeaknessMap from './WeaknessMap';
 import DropsTab from './DropsTab';
+import VaultTab from './VaultTab';
 
 function fmtXp(n) {
   if (!n) return '0';
@@ -58,6 +59,7 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
     { id: 'players', label: '👥 Players' },
     { id: 'goals', label: '🎯 Goals' },
     { id: 'drops', label: '💎 Drops' },
+    { id: 'vault', label: '🏆 Vault' },
     { id: 'weakness', label: '⚠️ Weakness Map' },
   ];
 
@@ -222,6 +224,16 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
           : <div className="empty-state">
               <div className="icon">💎</div>
               <p>Add players first to track drops and requests.</p>
+            </div>
+      )}
+
+      {/* VAULT TAB */}
+      {activeTab === 'vault' && (
+        players.length > 0
+          ? <VaultTab players={players} groupId={groupId} onToast={onToast} />
+          : <div className="empty-state">
+              <div className="icon">🏆</div>
+              <p>Add players first to use the vault.</p>
             </div>
       )}
 

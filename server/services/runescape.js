@@ -1,5 +1,4 @@
-// RS3 Hiscores CSV parser
-// Endpoint: https://secure.runescape.com/m=hiscore/index_lite.ws?player=NAME
+// RS3 Hiscores CSV + RuneMetrics API integration
 
 const SKILLS = [
   'Overall', 'Attack', 'Defence', 'Strength', 'Constitution', 'Ranged',
@@ -10,7 +9,23 @@ const SKILLS = [
   'Necromancy',
 ];
 
+// Post-skill rows in the RS3 hiscores CSV (indices 30+)
+const ACTIVITIES = [
+  'Bounty Hunter Hunter',
+  'Bounty Hunter Rogue',
+  'Clue Scrolls All',
+  'Clue Scrolls Easy',
+  'Clue Scrolls Medium',
+  'Clue Scrolls Hard',
+  'Clue Scrolls Elite',
+  'Clue Scrolls Master',
+  'LMS',
+  'Soul Wars Zeal',
+  'Rifts Closed',
+];
+
 const HISCORES_URL = 'https://secure.runescape.com/m=hiscore/index_lite.ws';
+const RUNEMETRICS_URL = 'https://apps.runescape.com/runemetrics/profile/profile';
 
 async function fetchHiscores(rsn) {
   const url = `${HISCORES_URL}?player=${encodeURIComponent(rsn)}`;
@@ -28,7 +43,7 @@ async function fetchHiscores(rsn) {
 
 function parseHiscores(csv) {
   const lines = csv.trim().split('\n');
-  const result = { skills: {}, totalXp: 0, totalLevel: 0 };
+  const result = { skills: {}, activities: {}, totalXp: 0, totalLevel: 0 };
 
   for (let i = 0; i < SKILLS.length && i < lines.length; i++) {
     const parts = lines[i].trim().split(',');
@@ -41,14 +56,45 @@ function parseHiscores(csv) {
 
     result.skills[name] = { rank: rank < 0 ? null : rank, level, xp };
 
-    if (i > 0) {
-      // Exclude Overall from per-skill totals (it's pre-computed)
-      result.totalXp = result.skills['Overall']?.xp ?? 0;
-      result.totalLevel = result.skills['Overall']?.level ?? 0;
+    if (i === 0) {
+      result.totalXp = xp > 0 ? xp : 0;
+      result.totalLevel = level > 0 ? level : 0;
     }
   }
 
+  // Parse activities/minigames (best-effort — indices may not be exact for all accounts)
+  for (let i = 0; i < ACTIVITIES.length; i++) {
+    const csvIdx = SKILLS.length + i;
+    if (csvIdx >= lines.length) break;
+    const parts = lines[csvIdx].trim().split(',');
+    if (parts.length < 2) continue;
+    const score = parseInt(parts[1], 10);
+    if (score >= 0) result.activities[ACTIVITIES[i]] = score;
+  }
+
   return result;
+}
+
+async function fetchRuneMetrics(rsn) {
+  const url = `${RUNEMETRICS_URL}?user=${encodeURIComponent(rsn)}&activities=20`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!response.ok) throw new Error(`RuneMetrics returned ${response.status}`);
+  const data = await response.json();
+  if (data.error) throw new Error(data.error);
+
+  return {
+    questsComplete: data.questscomplete ?? 0,
+    questsStarted: data.questsstarted ?? 0,
+    activities: (data.activities || []).map(a => ({
+      date: a.date,
+      text: a.text,
+      details: a.details,
+    })),
+  };
 }
 
 function calcCombatLevel(skills) {
@@ -75,8 +121,6 @@ function calcCombatLevel(skills) {
 
 function generateSuggestedGoals(players) {
   const suggestions = [];
-
-  // Aggregate skill averages
   const skillTotals = {};
   const skillCounts = {};
 
@@ -94,88 +138,55 @@ function generateSuggestedGoals(players) {
     avgLevels[skill] = Math.round(skillTotals[skill] / skillCounts[skill]);
   }
 
-  // Low Herblore → overloads
   if (avgLevels['Herblore'] < 96) {
     suggestions.push({
       title: 'Push Herblore toward overloads',
       description: `Group avg Herblore: ${avgLevels['Herblore'] ?? '?'}. Overloads require level 96.`,
-      skill: 'Herblore',
-      target_value: 96,
-      category: 'skill',
-      priority: 'high',
+      skill: 'Herblore', target_value: 96, category: 'skill', priority: 'high',
     });
   }
-
-  // No Invention
   if ((avgLevels['Invention'] ?? 1) < 80) {
     suggestions.push({
       title: 'Unlock Invention',
       description: 'Invention requires level 80 Attack, Defence, and Smithing. Essential for perks.',
-      skill: 'Invention',
-      target_value: 80,
-      category: 'skill',
-      priority: 'high',
+      skill: 'Invention', target_value: 80, category: 'skill', priority: 'high',
     });
   }
-
-  // Low Agility (Prifddinas)
   if ((avgLevels['Agility'] ?? 1) < 75) {
     suggestions.push({
       title: 'Train Agility for Plague\'s End',
       description: `Group avg Agility: ${avgLevels['Agility'] ?? '?'}. Prifddinas requires 75 Agility.`,
-      skill: 'Agility',
-      target_value: 75,
-      category: 'skill',
-      priority: 'medium',
+      skill: 'Agility', target_value: 75, category: 'skill', priority: 'medium',
     });
   }
-
-  // Low Slayer
   if ((avgLevels['Slayer'] ?? 1) < 85) {
     suggestions.push({
       title: 'Develop a Slayer specialist',
       description: `Group avg Slayer: ${avgLevels['Slayer'] ?? '?'}. High Slayer enables boss unlocks and rare drops.`,
-      skill: 'Slayer',
-      target_value: 85,
-      category: 'skill',
-      priority: 'medium',
+      skill: 'Slayer', target_value: 85, category: 'skill', priority: 'medium',
     });
   }
-
-  // Low Dungeoneering
   if ((avgLevels['Dungeoneering'] ?? 1) < 80) {
     suggestions.push({
       title: 'Level Dungeoneering for Daemonheim rewards',
       description: `Group avg Dungeoneering: ${avgLevels['Dungeoneering'] ?? '?'}. Level 80+ unlocks key ring and scroll upgrades.`,
-      skill: 'Dungeoneering',
-      target_value: 80,
-      category: 'skill',
-      priority: 'medium',
+      skill: 'Dungeoneering', target_value: 80, category: 'skill', priority: 'medium',
     });
   }
-
-  // Low Summoning
   if ((avgLevels['Summoning'] ?? 1) < 67) {
     suggestions.push({
       title: 'Train Summoning for yak and unicorn',
-      description: `Group avg Summoning: ${avgLevels['Summoning'] ?? '?'}. Unicorn stallion (88) and pack yak (96) are PvM staples.`,
-      skill: 'Summoning',
-      target_value: 67,
-      category: 'skill',
-      priority: 'medium',
+      description: `Group avg Summoning: ${avgLevels['Summoning'] ?? '?'}. Pack yak (96) and unicorn stallion (88) are PvM staples.`,
+      skill: 'Summoning', target_value: 67, category: 'skill', priority: 'medium',
     });
   }
-
-  // Prifddinas group goal
   suggestions.push({
     title: 'Unlock Prifddinas (group)',
-    description: 'Complete Plague\'s End. Requires: 75 each of Agility, Construction, Crafting, Dungeoneering, Herblore, Mining, Prayer, Ranged, Smithing, Summoning, Woodcutting.',
-    category: 'quest',
-    priority: 'high',
-    type: 'group',
+    description: 'Complete Plague\'s End. Requires 75 each of Agility, Construction, Crafting, Dungeoneering, Herblore, Mining, Prayer, Ranged, Smithing, Summoning, Woodcutting.',
+    category: 'quest', priority: 'high', type: 'group',
   });
 
   return suggestions;
 }
 
-module.exports = { fetchHiscores, calcCombatLevel, generateSuggestedGoals, SKILLS };
+module.exports = { fetchHiscores, fetchRuneMetrics, calcCombatLevel, generateSuggestedGoals, SKILLS };

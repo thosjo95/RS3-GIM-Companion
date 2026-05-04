@@ -11,6 +11,22 @@ function fmtXp(n) {
   return String(n ?? 0);
 }
 
+// GET /api/groups/search?name=X — search existing DB groups by name
+router.get('/search', (req, res) => {
+  const { name } = req.query;
+  if (!name?.trim()) return res.json([]);
+  const groups = db.prepare(`
+    SELECT g.*, COUNT(p.id) as member_count
+    FROM groups g
+    LEFT JOIN players p ON p.group_id = g.id
+    WHERE g.name LIKE ? OR g.group_rsn LIKE ?
+    GROUP BY g.id
+    ORDER BY g.last_activity DESC, g.created_at DESC
+    LIMIT 10
+  `).all(`%${name.trim()}%`, `%${name.trim()}%`);
+  res.json(groups);
+});
+
 // GET /api/groups/lookup?name=X&type=regular&size=5
 // Scrapes RS3 GIM hiscores page to find group members
 router.get('/lookup', async (req, res) => {
@@ -95,7 +111,8 @@ router.get('/:id', (req, res) => {
   if (!group) return res.status(404).json({ error: 'Group not found' });
 
   const players = db.prepare(`
-    SELECT p.*,
+    SELECT p.id, p.rsn, p.quest_points, p.combat_level, p.group_id,
+           p.joined_at, p.last_synced, p.stats_json, p.activities_json,
       (SELECT SUM(xp) FROM skills WHERE player_id = p.id AND skill_name = 'Overall') as total_xp,
       (SELECT level FROM skills WHERE player_id = p.id AND skill_name = 'Overall') as total_level
     FROM players p

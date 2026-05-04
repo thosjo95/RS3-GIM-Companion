@@ -36,6 +36,7 @@ export const api = {
   // Groups
   getGroups: () => request('/groups'),
   getGroup: (id) => request(`/groups/${id}`),
+  searchGroups: (name) => request(`/groups/search?name=${encodeURIComponent(name)}`),
   createGroup: (body) => request('/groups', { method: 'POST', body }),
   updateGroup: (id, body) => request(`/groups/${id}`, { method: 'PUT', body }),
   deleteGroup: (id) => request(`/groups/${id}`, { method: 'DELETE' }),

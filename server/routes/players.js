@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
-const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
+const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
 const { checkGroupAuth } = require('../utils/auth');
 
 function getPlayerGroupId(playerId) {
@@ -103,12 +103,29 @@ router.post('/:id/sync', async (req, res) => {
   if (!checkGroupAuth(req, res, player.group_id || req.headers['x-group-id'])) return;
 
   try {
-    const data = await fetchHiscores(player.rsn);
+    const [data, runeMetrics] = await Promise.all([
+      fetchHiscores(player.rsn),
+      fetchRuneMetrics(player.rsn).catch(() => null),
+    ]);
     const combat = calcCombatLevel(data.skills);
 
+    const statsJson = JSON.stringify({
+      clueScrolls: {
+        all: data.activities['Clue Scrolls All'] ?? null,
+        easy: data.activities['Clue Scrolls Easy'] ?? null,
+        medium: data.activities['Clue Scrolls Medium'] ?? null,
+        hard: data.activities['Clue Scrolls Hard'] ?? null,
+        elite: data.activities['Clue Scrolls Elite'] ?? null,
+        master: data.activities['Clue Scrolls Master'] ?? null,
+      },
+      questsComplete: runeMetrics?.questsComplete ?? null,
+      questsStarted: runeMetrics?.questsStarted ?? null,
+    });
+    const activitiesJson = runeMetrics ? JSON.stringify(runeMetrics.activities) : null;
+
     db.prepare(
-      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ? WHERE id = ?'
-    ).run(combat, player.id);
+      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = ? WHERE id = ?'
+    ).run(combat, statsJson, activitiesJson, player.id);
 
     const upsertSkill = db.prepare(`
       INSERT INTO skills (player_id, skill_name, level, xp, rank)
@@ -147,12 +164,28 @@ router.post('/sync-all/:groupId', async (req, res) => {
 
   for (const player of players) {
     try {
-      const data = await fetchHiscores(player.rsn);
+      const [data, runeMetrics] = await Promise.all([
+        fetchHiscores(player.rsn),
+        fetchRuneMetrics(player.rsn).catch(() => null),
+      ]);
       const combat = calcCombatLevel(data.skills);
 
+      const statsJson = JSON.stringify({
+        clueScrolls: {
+          all: data.activities['Clue Scrolls All'] ?? null,
+          easy: data.activities['Clue Scrolls Easy'] ?? null,
+          medium: data.activities['Clue Scrolls Medium'] ?? null,
+          hard: data.activities['Clue Scrolls Hard'] ?? null,
+          elite: data.activities['Clue Scrolls Elite'] ?? null,
+          master: data.activities['Clue Scrolls Master'] ?? null,
+        },
+        questsComplete: runeMetrics?.questsComplete ?? null,
+        questsStarted: runeMetrics?.questsStarted ?? null,
+      });
+
       db.prepare(
-        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ? WHERE id = ?'
-      ).run(combat, player.id);
+        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = ? WHERE id = ?'
+      ).run(combat, statsJson, runeMetrics ? JSON.stringify(runeMetrics.activities) : null, player.id);
 
       const upsertSkill = db.prepare(`
         INSERT INTO skills (player_id, skill_name, level, xp, rank)
