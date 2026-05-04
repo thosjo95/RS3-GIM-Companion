@@ -628,7 +628,7 @@ export default function App() {
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [toasts, pushToast] = useToasts();
-  const [myRsn, setMyRsnState] = useState(() => localStorage.getItem('myRsn') || '');
+  const [myRsn, setMyRsnState] = useState('');
   const [groupPasswords, setGroupPasswordsState] = useState(loadStoredPasswords);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
@@ -643,7 +643,7 @@ export default function App() {
 
   function setMyRsn(rsn) {
     setMyRsnState(rsn);
-    localStorage.setItem('myRsn', rsn);
+    if (activeGroupId) localStorage.setItem(`myRsn_${activeGroupId}`, rsn || '');
   }
 
   function pinGroup(id) {
@@ -715,11 +715,12 @@ export default function App() {
     });
   }, []);
 
-  // Load group whenever activeGroupId changes
+  // Load group and per-group RSN whenever activeGroupId changes
   useEffect(() => {
     if (activeGroupId) {
       localStorage.setItem('activeGroupId', activeGroupId);
       loadGroup(activeGroupId);
+      setMyRsnState(localStorage.getItem(`myRsn_${activeGroupId}`) || '');
     }
   }, [activeGroupId]);
 
