@@ -5,15 +5,47 @@ import GoalModal from './GoalModal';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const SKILL_ICONS = {
-  Attack: '⚔️', Defence: '🛡️', Strength: '💪', Constitution: '❤️',
-  Ranged: '🏹', Prayer: '🙏', Magic: '🔮', Cooking: '🍳',
-  Woodcutting: '🪵', Fletching: '🎯', Fishing: '🐟', Firemaking: '🔥',
-  Crafting: '💎', Smithing: '⚒️', Mining: '⛏️', Herblore: '🌿',
-  Agility: '🏃', Thieving: '🕵️', Slayer: '💀', Farming: '🌾',
-  Runecrafting: '🔵', Hunter: '🦌', Construction: '🏠', Summoning: '🐉',
-  Dungeoneering: '🏰', Divination: '✨', Invention: '🔬', Archaeology: '🦴',
-  Necromancy: '☠️',
+  Attack:       'https://runescape.wiki/images/Attack.png',
+  Defence:      'https://runescape.wiki/images/Defence.png',
+  Strength:     'https://runescape.wiki/images/Strength.png',
+  Constitution: 'https://runescape.wiki/images/Constitution.png',
+  Ranged:       'https://runescape.wiki/images/Ranged.png',
+  Prayer:       'https://runescape.wiki/images/Prayer.png',
+  Magic:        'https://runescape.wiki/images/Magic.png',
+  Cooking:      'https://runescape.wiki/images/Cooking.png',
+  Woodcutting:  'https://runescape.wiki/images/Woodcutting.png',
+  Fletching:    'https://runescape.wiki/images/Fletching.png',
+  Fishing:      'https://runescape.wiki/images/Fishing.png',
+  Firemaking:   'https://runescape.wiki/images/Firemaking.png',
+  Crafting:     'https://runescape.wiki/images/Crafting.png',
+  Smithing:     'https://runescape.wiki/images/Smithing.png',
+  Mining:       'https://runescape.wiki/images/Mining.png',
+  Herblore:     'https://runescape.wiki/images/Herblore.png',
+  Agility:      'https://runescape.wiki/images/Agility.png',
+  Thieving:     'https://runescape.wiki/images/Thieving.png',
+  Slayer:       'https://runescape.wiki/images/Slayer.png',
+  Farming:      'https://runescape.wiki/images/Farming.png',
+  Runecrafting: 'https://runescape.wiki/images/Runecrafting.png',
+  Hunter:       'https://runescape.wiki/images/Hunter.png',
+  Construction: 'https://runescape.wiki/images/Construction.png',
+  Summoning:    'https://runescape.wiki/images/Summoning.png',
+  Dungeoneering:'https://runescape.wiki/images/Dungeoneering.png',
+  Divination:   'https://runescape.wiki/images/Divination.png',
+  Invention:    'https://runescape.wiki/images/Invention.png',
+  Archaeology:  'https://runescape.wiki/images/Archaeology.png',
+  Necromancy:   'https://runescape.wiki/images/Necromancy.png',
 };
+
+function SkillIcon({ name, size = 18 }) {
+  const url = SKILL_ICONS[name];
+  if (!url) return null;
+  return (
+    <img
+      src={url} alt={name} title={name}
+      style={{ width: size, height: size, verticalAlign: 'middle', imageRendering: 'auto' }}
+    />
+  );
+}
 
 const SKILL_ORDER = [
   'Attack', 'Strength', 'Defence', 'Constitution', 'Ranged', 'Prayer',
@@ -173,7 +205,7 @@ function SkillTable({ player }) {
             return (
               <tr key={name} style={{ borderTop: '1px solid var(--border)', background: i % 2 ? 'rgba(255,255,255,0.015)' : 'transparent' }}>
                 <td style={{ padding: '5px 6px' }}>
-                  <span style={{ marginRight: 5 }}>{SKILL_ICONS[name] ?? '📊'}</span>
+                  <span style={{ marginRight: 5 }}><SkillIcon name={name} /></span>
                   <span style={{ color: maxed ? 'var(--gold)' : 'var(--text)' }}>{name}</span>
                 </td>
                 <td align="right" style={{ padding: '5px 6px', fontWeight: 600, color: elite ? 'var(--gold)' : maxed ? 'var(--text-bright)' : 'var(--text)' }}>
@@ -193,7 +225,7 @@ function SkillTable({ player }) {
 // ── Group stats (tabbed) ──────────────────────────────────────────────────────
 
 function GroupStats({ players, weeklyMode }) {
-  const [tab, setTab] = useState('xp');
+  const [tab, setTab] = useState('skills');
   const colorMap = useMemo(() => Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]])), [players]);
 
   const playerData = useMemo(() => players.map(p => {
@@ -323,7 +355,7 @@ function GroupStats({ players, weeklyMode }) {
                       padding: '5px 8px 5px 4px', whiteSpace: 'nowrap',
                       position: 'sticky', left: 0, background: stickyBg, zIndex: 1,
                     }}>
-                      <span style={{ marginRight: 5 }}>{SKILL_ICONS[skill] ?? '📊'}</span>
+                      <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={16} /></span>
                       <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{skill}</span>
                     </td>
                     {levels.map((level, i) => {
@@ -478,7 +510,7 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, onVault, ca
       {goalType === 'level' && currentLvl !== null && targetLvl && (
         <div style={{ marginTop: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-dim)', marginBottom: 3 }}>
-            <span>{SKILL_ICONS[goal.skill]} {goal.skill}: <strong style={{ color: 'var(--text-bright)' }}>{currentLvl}</strong> → <strong style={{ color: 'var(--gold)' }}>{targetLvl}</strong></span>
+            <span><SkillIcon name={goal.skill} size={14} /> {goal.skill}: <strong style={{ color: 'var(--text-bright)' }}>{currentLvl}</strong> → <strong style={{ color: 'var(--gold)' }}>{targetLvl}</strong></span>
             {levelDone
               ? <span style={{ color: 'var(--green-bright)' }}>✓ Done!</span>
               : xpLeft ? <span>{xpLeft} XP left</span> : null}
@@ -545,7 +577,7 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, onVault, ca
                     border: `1px solid ${reqMet ? 'var(--green)' : 'var(--red)'}`,
                     color: reqMet ? 'var(--green-bright)' : 'var(--red-bright)',
                   }}>
-                    {SKILL_ICONS[details.skill]} {details.skill} {details.skillLevel}
+                    <SkillIcon name={details.skill} size={14} /> {details.skill} {details.skillLevel}
                     {reqSkillEntry ? ` (you: ${reqSkillEntry.level})` : ''}
                   </span>
                 </div>
