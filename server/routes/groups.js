@@ -73,8 +73,48 @@ router.get('/search', (req, res) => {
   res.json(groups);
 });
 
+function extractMembers(obj) {
+  if (!obj || typeof obj !== 'object') return null;
+  if (Array.isArray(obj)) {
+    // Check if this array looks like a list of players
+    if (obj.length > 0 && obj.length <= 6) {
+      const candidates = obj.map(m => {
+        if (typeof m !== 'object' || !m) return null;
+        const rsn = m.name || m.rsn || m.displayName || m.playerName || m.username;
+        if (!rsn || typeof rsn !== 'string') return null;
+        return {
+          rsn,
+          totalXp: m.totalXp || m.xp || m.experience || m.total_xp || 0,
+          totalLevel: m.totalLevel || m.level || m.totalSkillLevel || m.total_level || 0,
+        };
+      }).filter(Boolean);
+      if (candidates.length === obj.length && candidates.length > 0) return candidates;
+    }
+    for (const item of obj) {
+      const result = extractMembers(item);
+      if (result) return result;
+    }
+    return null;
+  }
+  // Check known member-bearing keys
+  for (const key of ['members', 'players', 'groupMembers', 'groupPlayers']) {
+    if (Array.isArray(obj[key]) && obj[key].length > 0) {
+      const result = extractMembers(obj[key]);
+      if (result) return result;
+    }
+  }
+  // Recurse into all values
+  for (const val of Object.values(obj)) {
+    if (val && typeof val === 'object') {
+      const result = extractMembers(val);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
 // GET /api/groups/lookup?name=X&type=regular&size=5
-// Scrapes RS3 GIM hiscores page to find group members
+// Fetches RS3 GIM hiscores page and extracts group members
 router.get('/lookup', async (req, res) => {
   const { name, type = 'regular', size = '5' } = req.query;
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
@@ -86,15 +126,9 @@ router.get('/lookup', async (req, res) => {
     const resp = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-GB,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
         'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Upgrade-Insecure-Requests': '1',
       },
       signal: AbortSignal.timeout(15000),
     });
@@ -105,65 +139,63 @@ router.get('/lookup', async (req, res) => {
 
     const html = await resp.text();
 
-    // Strategy 1: Next.js __NEXT_DATA__ script tag
+    // Strategy 1: Legacy __NEXT_DATA__ (Pages Router)
     const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
     if (nextDataMatch) {
       try {
-        const nextData = JSON.parse(nextDataMatch[1]);
-        const pageProps = nextData?.props?.pageProps;
-        const raw =
-          pageProps?.group?.members ||
-          pageProps?.group?.players ||
-          pageProps?.data?.group?.members ||
-          pageProps?.data?.members ||
-          pageProps?.members ||
-          pageProps?.players ||
-          nextData?.props?.initialState?.group?.members;
-
-        if (raw?.length) {
-          const members = raw.map(m => ({
-            rsn: m.name || m.rsn || m.displayName || m.playerName || m.username,
-            totalXp: m.totalXp || m.xp || m.experience || m.total_xp || 0,
-            totalLevel: m.totalLevel || m.level || m.totalSkillLevel || m.total_level || 0,
-          })).filter(m => m.rsn);
-
-          if (members.length) {
-            return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-          }
-        }
+        const members = extractMembers(JSON.parse(nextDataMatch[1]));
+        if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
       } catch {}
     }
 
-    // Strategy 2: Search for any JSON fragment containing member/player arrays in the raw HTML
-    const jsonFragments = html.matchAll(/"(?:members|players)"\s*:\s*(\[[\s\S]*?\])/g);
-    for (const match of jsonFragments) {
+    // Strategy 2: Next.js App Router RSC flight data (self.__next_f.push([1,"..."]))
+    // Each push([1, STRING]) contains a JSON-encoded RSC payload with embedded page data
+    for (const match of html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)) {
       try {
-        const arr = JSON.parse(match[1]);
-        if (!Array.isArray(arr) || !arr.length) continue;
-        const members = arr.map(m => ({
-          rsn: m.name || m.rsn || m.displayName || m.playerName || m.username,
-          totalXp: m.totalXp || m.xp || m.experience || m.total_xp || 0,
-          totalLevel: m.totalLevel || m.level || m.totalSkillLevel || m.total_level || 0,
-        })).filter(m => m.rsn);
-        if (members.length) {
-          return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+        const payload = JSON.parse('"' + match[1] + '"'); // decode the JSON string
+        // The RSC payload has lines like: T1234,{...json...}
+        for (const chunk of payload.split('\n')) {
+          const jsonStart = chunk.indexOf('{');
+          if (jsonStart === -1) continue;
+          try {
+            const members = extractMembers(JSON.parse(chunk.slice(jsonStart)));
+            if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+          } catch {}
         }
       } catch {}
     }
 
-    // Strategy 3: Extract player names from HTML href patterns (hiscores links)
-    // RS3 player links look like /hiscores/compare?user1=Name
-    const hrefMatches = [...html.matchAll(/[?&]user\d*=([^"&\s]+)/g)];
-    if (hrefMatches.length >= 1) {
-      const members = [...new Set(hrefMatches.map(m => decodeURIComponent(m[1])))].map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
-      if (members.length) {
-        return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-      }
+    // Strategy 3: Any JSON fragment with "members" or "players" key in raw HTML
+    for (const match of html.matchAll(/"(?:members|players|groupMembers)"\s*:\s*(\[[\s\S]*?\](?:\s*[,}]))/g)) {
+      try {
+        const arr = JSON.parse(match[1].replace(/[,}]\s*$/, ']').replace(/,$/, ''));
+        const members = extractMembers(arr);
+        if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+      } catch {}
+    }
+
+    // Strategy 4: Same but searching escaped JSON inside RSC strings (\"members\":...)
+    for (const match of html.matchAll(/\\"(?:members|players)\\"\s*:\s*(\[(?:[^[\]]|\[(?:[^[\]]|\[[^\]]*\])*\])*\])/g)) {
+      try {
+        const unescaped = match[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        const members = extractMembers(JSON.parse(unescaped));
+        if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+      } catch {}
+    }
+
+    // Strategy 5: Player profile links (/players/NAME or personal-hiscores?user=NAME)
+    const profileMatches = [
+      ...html.matchAll(/href="[^"]*\/players\/([^"/?#]+)/g),
+      ...html.matchAll(/[?&]user\d*=([^"&\s<>]+)/g),
+    ];
+    if (profileMatches.length) {
+      const members = [...new Set(profileMatches.map(m => decodeURIComponent(m[1])))].map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
+      if (members.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
     }
 
     return res.json({
       found: false,
-      error: 'Group not found — check the name and group size match exactly. The group must be ranked on the RS3 GIM hiscores.',
+      error: `Group not found on RS3 hiscores. Verify: name is exact, type is ${type}, size is ${size}. Run /api/groups/lookup-debug to inspect the raw response.`,
     });
   } catch (err) {
     res.json({ found: false, error: `Lookup failed: ${err.message}` });
