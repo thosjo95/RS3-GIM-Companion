@@ -166,34 +166,179 @@ function SkillTable({ player }) {
   );
 }
 
-// ── XP contribution bars ──────────────────────────────────────────────────────
+// ── Group stats (tabbed) ──────────────────────────────────────────────────────
 
-function ContribBars({ players }) {
-  const sorted = [...players]
-    .map(p => ({ ...p, xp: p.skills?.find(s => s.skill_name === 'Overall')?.xp || 0 }))
-    .sort((a, b) => b.xp - a.xp);
-  const max = Math.max(...sorted.map(p => p.xp), 1);
+function GroupStats({ players }) {
+  const [tab, setTab] = useState('xp');
+  const colorMap = useMemo(() => Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]])), [players]);
+
+  const playerData = useMemo(() => players.map(p => {
+    const skills = p.skills || [];
+    const overall = skills.find(s => s.skill_name === 'Overall');
+    const count99  = skills.filter(s => s.skill_name !== 'Overall' && s.level >= 99 && s.level < 120).length;
+    const count120 = skills.filter(s => s.skill_name !== 'Overall' && s.level >= 120).length;
+    return { ...p, xp: overall?.xp || 0, totalLevel: overall?.level || 0, count99, count120 };
+  }).sort((a, b) => b.xp - a.xp), [players]);
+
+  const totalXp = playerData.reduce((s, p) => s + p.xp, 0);
+
+  const skillLeaders = useMemo(() => {
+    const map = {};
+    for (const skill of SKILL_ORDER) {
+      let best = null;
+      for (const p of players) {
+        const s = p.skills?.find(sk => sk.skill_name === skill);
+        if (s && (!best || s.level > best.level)) best = { rsn: p.rsn, id: p.id, level: s.level };
+      }
+      if (best) map[skill] = best;
+    }
+    return map;
+  }, [players]);
+
+  const leadCounts = useMemo(() => {
+    const counts = Object.fromEntries(players.map(p => [p.id, 0]));
+    for (const leader of Object.values(skillLeaders)) {
+      if (counts[leader.id] !== undefined) counts[leader.id]++;
+    }
+    return counts;
+  }, [skillLeaders, players]);
+
+  const TABS = [{ id: 'xp', label: '📊 XP' }, { id: 'skills', label: '⭐ Skills' }, { id: 'combat', label: '⚔️ Combat' }];
+
+  function pillStyle(active) {
+    return {
+      flex: 1, fontSize: 11, padding: '4px 6px', borderRadius: 'var(--radius)',
+      background: active ? 'var(--gold)' : 'transparent',
+      color: active ? '#111' : 'var(--text-dim)',
+      border: 'none', cursor: 'pointer', fontWeight: active ? 700 : 400,
+    };
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {sorted.map(p => (
-        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 90, fontSize: 12, color: 'var(--text-bright)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.rsn}</div>
-          <div style={{ flex: 1, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ width: `${(p.xp / max) * 100}%`, height: '100%', background: 'var(--gold)', borderRadius: 3 }} />
+    <div>
+      <div style={{ display: 'flex', gap: 3, marginBottom: 14, background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
+        {TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} style={pillStyle(tab === t.id)}>{t.label}</button>)}
+      </div>
+
+      {/* XP tab */}
+      {tab === 'xp' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-dim)', marginBottom: 12 }}>
+            <span>Group Total XP</span>
+            <strong style={{ color: 'var(--gold)' }}>{fmtXp(totalXp)}</strong>
           </div>
-          <div style={{ width: 60, fontSize: 12, color: 'var(--text-dim)', textAlign: 'right', flexShrink: 0 }}>{fmtXp(p.xp)}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {playerData.map(p => {
+              const pct = totalXp > 0 ? Math.round((p.xp / totalXp) * 100) : 0;
+              const barPct = playerData[0]?.xp > 0 ? (p.xp / playerData[0].xp) * 100 : 0;
+              return (
+                <div key={p.id}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 3 }}>
+                    <div style={{ width: 88, fontSize: 12, color: colorMap[p.id], fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.rsn}</div>
+                    <div style={{ flex: 1, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ width: `${barPct}%`, height: '100%', background: colorMap[p.id], borderRadius: 3 }} />
+                    </div>
+                    <div style={{ width: 56, fontSize: 12, color: 'var(--text-dim)', textAlign: 'right', flexShrink: 0 }}>{fmtXp(p.xp)}</div>
+                  </div>
+                  <div style={{ paddingLeft: 98, fontSize: 10, color: 'var(--text-dim)' }}>
+                    {pct}% · Lvl {p.totalLevel} · {p.count99}×99{p.count120 > 0 ? ` · ${p.count120}×120` : ''}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      ))}
+      )}
+
+      {/* Skills tab */}
+      {tab === 'skills' && (
+        <div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 14 }}>
+            <thead>
+              <tr style={{ color: 'var(--text-dim)', fontSize: 10, textTransform: 'uppercase' }}>
+                <th align="left" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>Player</th>
+                <th align="center" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>99s</th>
+                <th align="center" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>120s</th>
+                <th align="center" style={{ padding: '4px 6px 8px', fontWeight: 600 }}>Leads</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...playerData].sort((a, b) => (b.count120 + b.count99) - (a.count120 + a.count99)).map(p => (
+                <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
+                  <td style={{ padding: '6px 6px', fontWeight: 700, color: colorMap[p.id] }}>{p.rsn}</td>
+                  <td align="center" style={{ padding: '6px 6px', color: p.count99 > 0 ? 'var(--gold)' : 'var(--text-dim)' }}>
+                    {p.count99 > 0 ? `★ ${p.count99}` : '—'}
+                  </td>
+                  <td align="center" style={{ padding: '6px 6px', color: p.count120 > 0 ? '#f0d060' : 'var(--text-dim)' }}>
+                    {p.count120 > 0 ? `★ ${p.count120}` : '—'}
+                  </td>
+                  <td align="center" style={{ padding: '6px 6px', color: 'var(--text-dim)', fontSize: 11 }}>
+                    {leadCounts[p.id] || 0}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+            Skills at 99+
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 3 }}>
+            {SKILL_ORDER.filter(s => skillLeaders[s]?.level >= 99).map(skill => {
+              const leader = skillLeaders[skill];
+              const color = colorMap[leader.id] || 'var(--gold)';
+              return (
+                <div key={skill} style={{
+                  padding: '4px 8px', background: 'var(--bg-root)', borderRadius: 'var(--radius)',
+                  border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11,
+                }}>
+                  <span style={{ flexShrink: 0 }}>{SKILL_ICONS[skill]}</span>
+                  <span style={{ flex: 1, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skill}</span>
+                  <span style={{ color, fontWeight: 700, flexShrink: 0 }}>{leader.level >= 120 ? '★' : ''}{leader.level}</span>
+                </div>
+              );
+            })}
+          </div>
+          {SKILL_ORDER.filter(s => skillLeaders[s]?.level >= 99).length === 0 && (
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', textAlign: 'center', padding: '20px 0' }}>No skills at 99+ yet. Keep training!</div>
+          )}
+        </div>
+      )}
+
+      {/* Combat tab */}
+      {tab === 'combat' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[...playerData].sort((a, b) => (b.combat_level ?? 0) - (a.combat_level ?? 0)).map(p => {
+            const cb = p.combat_level ?? 0;
+            const skill = (n) => p.skills?.find(s => s.skill_name === n)?.level ?? '?';
+            return (
+              <div key={p.id}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 3 }}>
+                  <div style={{ width: 88, fontSize: 12, color: colorMap[p.id], fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.rsn}</div>
+                  <div style={{ flex: 1, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ width: `${(cb / 138) * 100}%`, height: '100%', background: colorMap[p.id], borderRadius: 3 }} />
+                  </div>
+                  <div style={{ width: 52, fontSize: 12, color: 'var(--text-dim)', textAlign: 'right', flexShrink: 0 }}>Cb {cb}</div>
+                </div>
+                <div style={{ paddingLeft: 98, fontSize: 10, color: 'var(--text-dim)' }}>
+                  ⚔️{skill('Attack')} 💪{skill('Strength')} 🛡️{skill('Defence')} · 🏹{skill('Ranged')} 🔮{skill('Magic')} · 🙏{skill('Prayer')}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Rich goal item ────────────────────────────────────────────────────────────
 
-function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite }) {
+function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, onVault, canWrite }) {
   const [expanded, setExpanded] = useState(false);
   const [editingCount, setEditingCount] = useState(false);
   const [countDraft, setCountDraft] = useState(goal.current_value ?? 0);
+  const [vaultPrompt, setVaultPrompt] = useState(false);
 
   const details = parseDetails(goal.details_json);
   const goalType = details?.goalType;
@@ -232,7 +377,8 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
     setEditingCount(false);
   }
 
-  const barColor = goal.status === 'complete' ? 'var(--green)' : 'var(--gold)';
+  const isComplete = goal.status === 'complete';
+  const barColor = isComplete ? 'var(--green)' : 'var(--gold)';
 
   return (
     <div style={{
@@ -251,7 +397,6 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          {/* Expand toggle */}
           {(goalType === 'level' || goalType === 'item' || goalType === 'quest') && (
             <button onClick={() => setExpanded(x => !x)} style={{
               fontSize: 10, padding: '2px 6px', borderRadius: 6, cursor: 'pointer',
@@ -261,14 +406,20 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
               {expanded ? '▲' : '▼'}
             </button>
           )}
-          {/* Status cycle */}
           <button onClick={() => onCycle(goal)} style={{
             fontSize: 10, padding: '2px 7px', borderRadius: 10, cursor: 'pointer',
-            background: 'transparent', border: `1px solid ${STATUS_COLORS[goal.status]}`,
-            color: STATUS_COLORS[goal.status], whiteSpace: 'nowrap',
+            background: 'transparent', border: `1px solid ${STATUS_COLORS[goal.status] || 'var(--border)'}`,
+            color: STATUS_COLORS[goal.status] || 'var(--text-dim)', whiteSpace: 'nowrap',
           }}>
-            {STATUS_LABELS[goal.status]}
+            {STATUS_LABELS[goal.status] || goal.status}
           </button>
+          {/* Vault button — only when complete */}
+          {isComplete && canWrite && (
+            <button onClick={() => setVaultPrompt(v => !v)} title="Move to Vault" style={{
+              fontSize: 12, padding: '2px 4px', background: 'transparent',
+              border: 'none', color: vaultPrompt ? 'var(--gold)' : 'var(--text-dim)', cursor: 'pointer',
+            }}>🏆</button>
+          )}
           {canWrite && (
             <button onClick={() => onDelete(goal.id)} style={{
               fontSize: 11, padding: '2px 5px', background: 'transparent',
@@ -327,8 +478,6 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
       {/* Expanded details */}
       {expanded && (
         <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bg-root)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', fontSize: 12 }}>
-
-          {/* Level goal expand: XP info + wiki */}
           {goalType === 'level' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {xpLeft && <div style={{ color: 'var(--text-dim)' }}>XP needed: <strong style={{ color: 'var(--text-bright)' }}>{xpLeft}</strong></div>}
@@ -340,10 +489,8 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
             </div>
           )}
 
-          {/* Item goal expand: requirements + recipe + wiki */}
           {goalType === 'item' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {/* Skill requirement */}
               {details.skill && details.skillLevel && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ color: 'var(--text-dim)' }}>Requires:</span>
@@ -358,11 +505,9 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
                   </span>
                 </div>
               )}
-              {/* Method */}
               {details.method && (
                 <div style={{ color: 'var(--text-dim)' }}>Method: <strong style={{ color: 'var(--text-bright)' }}>{details.method}</strong></div>
               )}
-              {/* Recipe/materials */}
               {details.recipe?.length > 0 && (
                 <div>
                   <div style={{ color: 'var(--text-dim)', marginBottom: 4 }}>Materials per batch:</div>
@@ -392,7 +537,6 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
             </div>
           )}
 
-          {/* Quest goal expand */}
           {goalType === 'quest' && (
             <div>
               {goal.description && <div style={{ color: 'var(--text-dim)', marginBottom: 6 }}>{goal.description}</div>}
@@ -403,10 +547,31 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
             </div>
           )}
 
-          {/* Custom goal */}
           {goalType === 'custom' && goal.description && (
             <div style={{ color: 'var(--text-dim)' }}>{goal.description}</div>
           )}
+        </div>
+      )}
+
+      {/* Vault prompt */}
+      {vaultPrompt && (
+        <div style={{
+          marginTop: 8, padding: '8px 12px',
+          background: 'rgba(200,168,75,0.08)',
+          border: '1px solid var(--gold-dark)',
+          borderRadius: 'var(--radius)',
+          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: 11, color: 'var(--text-dim)', flex: 1 }}>🏆 Showcase this in the Vault?</span>
+          <button
+            onClick={() => { onVault(goal.id); setVaultPrompt(false); }}
+            className="btn btn-primary btn-sm"
+            style={{ fontSize: 11 }}
+          >Move to Vault</button>
+          <button
+            onClick={() => setVaultPrompt(false)}
+            style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+          >Keep private</button>
         </div>
       )}
     </div>
@@ -416,8 +581,7 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, canWrite })
 // ── Activity feed ─────────────────────────────────────────────────────────────
 
 function ActivityFeed({ players, filteredPlayerId }) {
-  const PLAYER_COLORS = ['#c8a84b', '#7eb8f7', '#7ef7a8', '#f77e7e', '#d07ef7', '#f7c97e'];
-  const colorMap = Object.fromEntries(players.map((p, i) => [p.id, PLAYER_COLORS[i % PLAYER_COLORS.length]]));
+  const colorMap = Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]]));
 
   const feed = useMemo(() => {
     const source = filteredPlayerId ? players.filter(p => p.id === filteredPlayerId) : players;
@@ -457,15 +621,17 @@ function ActivityFeed({ players, filteredPlayerId }) {
 // ── Right panel: Goals + Activity ─────────────────────────────────────────────
 
 function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onToast, canWrite }) {
-  const [view, setView] = useState('goals'); // 'goals' | 'activity' | 'both'
+  const [view, setView] = useState('goals');
   const [showModal, setShowModal] = useState(false);
   const [prefill, setPrefill] = useState({});
 
   const filtered = filteredPlayerId
     ? goals.filter(g => g.owner_id === filteredPlayerId || g.type === 'group')
     : goals;
-  const active = filtered.filter(g => g.status !== 'complete');
-  const done = filtered.filter(g => g.status === 'complete');
+
+  // Exclude vaulted goals from both lists — they belong in the Vault tab
+  const active = filtered.filter(g => g.status !== 'complete' && g.status !== 'vaulted');
+  const done   = filtered.filter(g => g.status === 'complete');
 
   async function cycleStatus(goal) {
     const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(goal.status) + 1) % STATUS_CYCLE.length];
@@ -484,24 +650,34 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
     catch (err) { onToast(err.message, 'error'); }
   }
 
+  async function vaultGoal(id) {
+    try { await api.updateGoal(id, { status: 'vaulted' }); onRefresh(); onToast('Moved to Vault! 🏆', 'success'); }
+    catch (err) { onToast(err.message, 'error'); }
+  }
+
   const hasActivity = players.some(p => p.activities_json);
+
+  const viewBtns = [
+    { id: 'goals',    label: '🎯 Goals' },
+    ...(hasActivity ? [{ id: 'activity', label: '📋 Activity' }, { id: 'both', label: 'Both' }] : []),
+  ];
+
+  function pillStyle(active) {
+    return {
+      fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius)',
+      background: active ? 'var(--gold)' : 'transparent',
+      color: active ? '#111' : 'var(--text-dim)',
+      border: 'none', cursor: 'pointer', fontWeight: active ? 700 : 400,
+      transition: 'background 0.15s',
+    };
+  }
 
   return (
     <div>
-      {/* Header: view toggle + Add Goal */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
-          {[
-            { id: 'goals', label: '🎯 Goals' },
-            ...(hasActivity ? [{ id: 'activity', label: '📋 Activity' }, { id: 'both', label: 'Both' }] : []),
-          ].map(v => (
-            <button key={v.id} onClick={() => setView(v.id)} style={{
-              fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius)',
-              background: view === v.id ? 'var(--gold)' : 'transparent',
-              color: view === v.id ? '#111' : 'var(--text-dim)',
-              border: 'none', cursor: 'pointer', fontWeight: view === v.id ? 700 : 400,
-              transition: 'background 0.15s',
-            }}>{v.label}</button>
+        <div style={{ display: 'flex', gap: 2, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
+          {viewBtns.map(v => (
+            <button key={v.id} onClick={() => setView(v.id)} style={pillStyle(view === v.id)}>{v.label}</button>
           ))}
         </div>
         <div style={{ flex: 1 }} />
@@ -511,12 +687,11 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
         )}
       </div>
 
-      {/* Goals section */}
       {(view === 'goals' || view === 'both') && (
         <div style={{ marginBottom: view === 'both' ? 20 : 0 }}>
           {view === 'both' && <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Goals</div>}
           {active.map(g => (
-            <GoalItem key={g.id} goal={g} players={players} onCycle={cycleStatus} onDelete={deleteGoal} onUpdateCount={updateCount} canWrite={canWrite} />
+            <GoalItem key={g.id} goal={g} players={players} onCycle={cycleStatus} onDelete={deleteGoal} onUpdateCount={updateCount} onVault={vaultGoal} canWrite={canWrite} />
           ))}
           {done.length > 0 && (
             <details style={{ marginTop: 8 }}>
@@ -524,7 +699,7 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
                 ✓ {done.length} completed
               </summary>
               {done.map(g => (
-                <GoalItem key={g.id} goal={g} players={players} onCycle={cycleStatus} onDelete={deleteGoal} onUpdateCount={updateCount} canWrite={canWrite} />
+                <GoalItem key={g.id} goal={g} players={players} onCycle={cycleStatus} onDelete={deleteGoal} onUpdateCount={updateCount} onVault={vaultGoal} canWrite={canWrite} />
               ))}
             </details>
           )}
@@ -536,7 +711,6 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
         </div>
       )}
 
-      {/* Activity section */}
       {(view === 'activity' || view === 'both') && (
         <div>
           {view === 'both' && <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Recent Activity</div>}
@@ -576,7 +750,6 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
 
   const selOverall = selectedPlayer?.skills?.find(s => s.skill_name === 'Overall');
 
-  // Stat boxes: same 4 positions always, names adjust slightly
   const statBoxes = selectedPlayer
     ? [
         { label: 'Combat Level', value: selectedPlayer.combat_level ?? '—' },
@@ -624,7 +797,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
         <div className="panel">
           <div className="panel-header">
             <span className="panel-title">
-              {selectedPlayer ? `${selectedPlayer.rsn} — Skills` : 'XP Contribution'}
+              {selectedPlayer ? `${selectedPlayer.rsn} — Skills` : 'Group Stats'}
             </span>
           </div>
           <div className="panel-body">
@@ -633,7 +806,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
                 ? <SkillTable player={selectedPlayer} />
                 : <div className="empty-state"><p>No data — sync this player first.</p></div>
               : players.length > 0
-                ? <ContribBars players={players} />
+                ? <GroupStats players={players} />
                 : <div className="empty-state"><p>No players yet.</p></div>}
           </div>
         </div>

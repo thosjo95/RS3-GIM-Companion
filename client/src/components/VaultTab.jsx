@@ -87,7 +87,47 @@ function ItemCard({ item }) {
   );
 }
 
-export default function VaultTab({ players, groupId, onToast }) {
+function AchievementCard({ goal }) {
+  const details = goal.details_json
+    ? (typeof goal.details_json === 'string' ? (() => { try { return JSON.parse(goal.details_json); } catch { return null; } })() : goal.details_json)
+    : null;
+  const typeIcon = details?.goalType === 'quest' ? '📜' : details?.goalType === 'level' ? '⭐' : details?.goalType === 'item' ? '📦' : '🎯';
+  const completedAt = goal.completed_at ? new Date(goal.completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+
+  return (
+    <div style={{
+      background: 'var(--bg-panel)',
+      border: '1px solid var(--gold-dark)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '14px 16px',
+      display: 'flex', gap: 12, alignItems: 'flex-start',
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: '50%',
+        background: 'rgba(200,168,75,0.15)', border: '1px solid var(--gold-dark)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 20, flexShrink: 0,
+      }}>{typeIcon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)', marginBottom: 3 }}>{goal.title}</div>
+        {goal.owner_rsn && <div style={{ fontSize: 12, color: 'var(--gold)', marginBottom: 2 }}>👤 {goal.owner_rsn}</div>}
+        {goal.description && <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>{goal.description}</div>}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, color: 'var(--green-bright)', fontWeight: 600 }}>✓ Completed</span>
+          {completedAt && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{completedAt}</span>}
+          {goal.type === 'group' && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>👥 Group goal</span>}
+        </div>
+      </div>
+      <div style={{
+        background: 'var(--gold-dark)', color: 'var(--bg-root)',
+        fontSize: 10, fontWeight: 800, letterSpacing: '0.5px',
+        padding: '3px 8px', borderRadius: 6, flexShrink: 0,
+      }}>VAULT</div>
+    </div>
+  );
+}
+
+export default function VaultTab({ players, groupId, goals = [], onToast }) {
   const [drops, setDrops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('recent'); // recent | value | dupes | name
@@ -149,6 +189,7 @@ export default function VaultTab({ players, groupId, onToast }) {
   }, [drops, sortBy, filterBoss, filterPlayer]);
 
   const dupeCount = vaultItems.filter(i => i.players.length > 1).length;
+  const achievements = goals.filter(g => g.status === 'vaulted');
 
   if (loading) {
     return (
@@ -220,6 +261,25 @@ export default function VaultTab({ players, groupId, onToast }) {
           {vaultItems.map(item => (
             <ItemCard key={item.name.toLowerCase()} item={item} />
           ))}
+        </div>
+      )}
+
+      {/* Achievements section */}
+      {achievements.length > 0 && (
+        <div style={{ marginTop: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div className="section-title" style={{ marginBottom: 0 }}>
+              🏆 Achievements
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
+              {achievements.length} completed goal{achievements.length !== 1 ? 's' : ''} in the vault
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {achievements.map(g => (
+              <AchievementCard key={g.id} goal={g} />
+            ))}
+          </div>
         </div>
       )}
     </div>
