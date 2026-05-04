@@ -104,8 +104,10 @@ db.exec(`
   );
 `);
 
-// Migrate: add details_json if it doesn't exist yet (safe on existing DBs)
+// Migrations — safe to run on existing DBs
 try { db.exec('ALTER TABLE goals ADD COLUMN details_json TEXT'); } catch {}
+try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}
+try { db.exec('ALTER TABLE groups ADD COLUMN gim_size INTEGER DEFAULT 5'); } catch {}
 
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {

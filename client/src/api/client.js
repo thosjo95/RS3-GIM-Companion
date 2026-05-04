@@ -18,6 +18,8 @@ export const api = {
   createGroup: (body) => request('/groups', { method: 'POST', body }),
   updateGroup: (id, body) => request(`/groups/${id}`, { method: 'PUT', body }),
   deleteGroup: (id) => request(`/groups/${id}`, { method: 'DELETE' }),
+  lookupGroup: (name, type, size) => request(`/groups/lookup?name=${encodeURIComponent(name)}&type=${type}&size=${size}`),
+  setupGroup: (body) => request('/groups/setup', { method: 'POST', body }),
 
   // Players
   getPlayers: () => request('/players'),

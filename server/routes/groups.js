@@ -1,6 +1,80 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
+
+function fmtXp(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return String(n ?? 0);
+}
+
+// GET /api/groups/lookup?name=X&type=regular&size=5
+// Scrapes RS3 GIM hiscores page to find group members
+router.get('/lookup', async (req, res) => {
+  const { name, type = 'regular', size = '5' } = req.query;
+  if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
+
+  const encoded = encodeURIComponent(name.trim());
+  const url = `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encoded}`;
+
+  try {
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+
+    if (!resp.ok) {
+      return res.json({ found: false, error: `RS3 hiscores returned HTTP ${resp.status}` });
+    }
+
+    const html = await resp.text();
+
+    // Extract Next.js server-side data
+    const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+    if (!nextDataMatch) {
+      return res.json({ found: false, error: 'Could not parse RS3 hiscores page structure' });
+    }
+
+    let nextData;
+    try { nextData = JSON.parse(nextDataMatch[1]); }
+    catch { return res.json({ found: false, error: 'Invalid page data from RS3' }); }
+
+    const pageProps = nextData?.props?.pageProps;
+
+    // Try all known paths where member data might live
+    const raw =
+      pageProps?.group?.members ||
+      pageProps?.group?.players ||
+      pageProps?.data?.group?.members ||
+      pageProps?.data?.members ||
+      pageProps?.members ||
+      pageProps?.players ||
+      nextData?.props?.initialState?.group?.members;
+
+    if (!raw?.length) {
+      return res.json({ found: false, error: 'Group not found — check the name and group size match exactly' });
+    }
+
+    const members = raw.map(m => ({
+      rsn: m.name || m.rsn || m.displayName || m.playerName || m.username,
+      totalXp: m.totalXp || m.xp || m.experience || m.total_xp || 0,
+      totalLevel: m.totalLevel || m.level || m.totalSkillLevel || m.total_level || 0,
+    })).filter(m => m.rsn);
+
+    if (!members.length) {
+      return res.json({ found: false, error: 'Found the page but could not read member names' });
+    }
+
+    res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+  } catch (err) {
+    res.json({ found: false, error: `Lookup failed: ${err.message}` });
+  }
+});
 
 // GET /api/groups - list all groups
 router.get('/', (req, res) => {
@@ -28,7 +102,6 @@ router.get('/:id', (req, res) => {
     ORDER BY p.rsn
   `).all(req.params.id);
 
-  // Attach skills to each player
   for (const player of players) {
     player.skills = db.prepare(
       'SELECT skill_name, level, xp, rank FROM skills WHERE player_id = ? ORDER BY skill_name'
@@ -48,7 +121,65 @@ router.get('/:id', (req, res) => {
   res.json({ ...group, players, ...totals });
 });
 
-// POST /api/groups - create group
+// POST /api/groups/setup - create group + add all members + sync hiscores
+router.post('/setup', async (req, res) => {
+  const { name, type = 'regular', size, member_rsns = [] } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
+  if (!member_rsns.length) return res.status(400).json({ error: 'At least one member RSN required' });
+
+  const groupResult = db.prepare(
+    'INSERT INTO groups (name, group_rsn, gim_type, gim_size) VALUES (?, ?, ?, ?)'
+  ).run(name.trim(), name.trim(), type, size || member_rsns.length);
+
+  const groupId = groupResult.lastInsertRowid;
+
+  const addStmt = db.prepare('INSERT OR IGNORE INTO players (rsn, group_id) VALUES (?, ?)');
+  for (const rsn of member_rsns) {
+    if (rsn?.trim()) addStmt.run(rsn.trim(), groupId);
+  }
+
+  const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(groupId);
+  const today = new Date().toISOString().split('T')[0];
+  const synced = [];
+  const failed = [];
+
+  for (const player of players) {
+    try {
+      const data = await fetchHiscores(player.rsn);
+      const combat = calcCombatLevel(data.skills);
+
+      db.prepare('UPDATE players SET combat_level = ?, last_synced = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(combat, player.id);
+
+      db.runTransaction(() => {
+        const upsert = db.prepare(`
+          INSERT INTO skills (player_id, skill_name, level, xp, rank)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(player_id, skill_name) DO UPDATE SET
+            level = excluded.level, xp = excluded.xp, rank = excluded.rank
+        `);
+        for (const [skillName, s] of Object.entries(data.skills)) {
+          upsert.run(player.id, skillName, s.level, s.xp, s.rank);
+        }
+      });
+
+      db.prepare(`
+        INSERT INTO snapshots (player_id, snapshot_date, total_xp, total_level, skills_json)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(player_id, snapshot_date) DO UPDATE SET
+          total_xp = excluded.total_xp, total_level = excluded.total_level, skills_json = excluded.skills_json
+      `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
+
+      synced.push(player.rsn);
+    } catch (err) {
+      failed.push({ rsn: player.rsn, error: err.message });
+    }
+  }
+
+  res.status(201).json({ id: groupId, synced, failed });
+});
+
+// POST /api/groups - create group (simple, no members)
 router.post('/', (req, res) => {
   const { name, group_rsn, notes } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Group name is required' });
@@ -60,7 +191,7 @@ router.post('/', (req, res) => {
   res.status(201).json({ id: result.lastInsertRowid, name, group_rsn, notes });
 });
 
-// PUT /api/groups/:id - update group
+// PUT /api/groups/:id
 router.put('/:id', (req, res) => {
   const { name, group_rsn, notes } = req.body;
   db.prepare(
