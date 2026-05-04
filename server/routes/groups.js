@@ -11,6 +11,30 @@ function fmtXp(n) {
   return String(n ?? 0);
 }
 
+// GET /api/groups/lookup-debug?name=X&type=regular&size=5 — returns raw page snippet for debugging
+router.get('/lookup-debug', async (req, res) => {
+  const { name, type = 'regular', size = '5' } = req.query;
+  if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
+  const url = `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encodeURIComponent(name.trim())}`;
+  try {
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-GB,en;q=0.9',
+        'Cache-Control': 'no-cache',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+    const html = await resp.text();
+    const hasNextData = html.includes('__NEXT_DATA__');
+    const snippet = html.slice(0, 2000);
+    res.json({ status: resp.status, hasNextData, htmlLength: html.length, snippet, url });
+  } catch (err) {
+    res.json({ error: err.message, url });
+  }
+});
+
 // GET /api/groups/search?name=X — search existing DB groups by name
 router.get('/search', (req, res) => {
   const { name } = req.query;
@@ -39,10 +63,18 @@ router.get('/lookup', async (req, res) => {
   try {
     const resp = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-GB,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1',
       },
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!resp.ok) {
@@ -51,43 +83,66 @@ router.get('/lookup', async (req, res) => {
 
     const html = await resp.text();
 
-    // Extract Next.js server-side data
-    const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-    if (!nextDataMatch) {
-      return res.json({ found: false, error: 'Could not parse RS3 hiscores page structure' });
+    // Strategy 1: Next.js __NEXT_DATA__ script tag
+    const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (nextDataMatch) {
+      try {
+        const nextData = JSON.parse(nextDataMatch[1]);
+        const pageProps = nextData?.props?.pageProps;
+        const raw =
+          pageProps?.group?.members ||
+          pageProps?.group?.players ||
+          pageProps?.data?.group?.members ||
+          pageProps?.data?.members ||
+          pageProps?.members ||
+          pageProps?.players ||
+          nextData?.props?.initialState?.group?.members;
+
+        if (raw?.length) {
+          const members = raw.map(m => ({
+            rsn: m.name || m.rsn || m.displayName || m.playerName || m.username,
+            totalXp: m.totalXp || m.xp || m.experience || m.total_xp || 0,
+            totalLevel: m.totalLevel || m.level || m.totalSkillLevel || m.total_level || 0,
+          })).filter(m => m.rsn);
+
+          if (members.length) {
+            return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+          }
+        }
+      } catch {}
     }
 
-    let nextData;
-    try { nextData = JSON.parse(nextDataMatch[1]); }
-    catch { return res.json({ found: false, error: 'Invalid page data from RS3' }); }
-
-    const pageProps = nextData?.props?.pageProps;
-
-    // Try all known paths where member data might live
-    const raw =
-      pageProps?.group?.members ||
-      pageProps?.group?.players ||
-      pageProps?.data?.group?.members ||
-      pageProps?.data?.members ||
-      pageProps?.members ||
-      pageProps?.players ||
-      nextData?.props?.initialState?.group?.members;
-
-    if (!raw?.length) {
-      return res.json({ found: false, error: 'Group not found — check the name and group size match exactly' });
+    // Strategy 2: Search for any JSON fragment containing member/player arrays in the raw HTML
+    const jsonFragments = html.matchAll(/"(?:members|players)"\s*:\s*(\[[\s\S]*?\])/g);
+    for (const match of jsonFragments) {
+      try {
+        const arr = JSON.parse(match[1]);
+        if (!Array.isArray(arr) || !arr.length) continue;
+        const members = arr.map(m => ({
+          rsn: m.name || m.rsn || m.displayName || m.playerName || m.username,
+          totalXp: m.totalXp || m.xp || m.experience || m.total_xp || 0,
+          totalLevel: m.totalLevel || m.level || m.totalSkillLevel || m.total_level || 0,
+        })).filter(m => m.rsn);
+        if (members.length) {
+          return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+        }
+      } catch {}
     }
 
-    const members = raw.map(m => ({
-      rsn: m.name || m.rsn || m.displayName || m.playerName || m.username,
-      totalXp: m.totalXp || m.xp || m.experience || m.total_xp || 0,
-      totalLevel: m.totalLevel || m.level || m.totalSkillLevel || m.total_level || 0,
-    })).filter(m => m.rsn);
-
-    if (!members.length) {
-      return res.json({ found: false, error: 'Found the page but could not read member names' });
+    // Strategy 3: Extract player names from HTML href patterns (hiscores links)
+    // RS3 player links look like /hiscores/compare?user1=Name
+    const hrefMatches = [...html.matchAll(/[?&]user\d*=([^"&\s]+)/g)];
+    if (hrefMatches.length >= 1) {
+      const members = [...new Set(hrefMatches.map(m => decodeURIComponent(m[1])))].map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
+      if (members.length) {
+        return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+      }
     }
 
-    res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+    return res.json({
+      found: false,
+      error: 'Group not found — check the name and group size match exactly. The group must be ranked on the RS3 GIM hiscores.',
+    });
   } catch (err) {
     res.json({ found: false, error: `Lookup failed: ${err.message}` });
   }

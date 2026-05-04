@@ -44,7 +44,7 @@ function PasswordModal({ groupName, onConfirm, onCancel, error }) {
   }
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-backdrop">
       <div className="modal" style={{maxWidth:380}}>
         <div className="modal-header">
           <span className="modal-title">🔒 Group Password</span>
@@ -354,7 +354,7 @@ function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
     : null;
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-backdrop">
       <div className="modal" style={{maxWidth:500}}>
         <div className="modal-header">
           <span className="modal-title">🔍 Find Group</span>
