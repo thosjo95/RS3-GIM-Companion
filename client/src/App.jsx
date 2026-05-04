@@ -634,6 +634,10 @@ export default function App() {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
+
+  // Only show groups this browser has explicitly added
+  const groups = allGroups.filter(g => myGroupIds.includes(g.id));
+
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
 
@@ -677,9 +681,6 @@ export default function App() {
       return [];
     }
   }
-
-  // Only show groups this browser has explicitly added
-  const groups = allGroups.filter(g => myGroupIds.includes(g.id));
 
   async function loadGroup(id) {
     if (!id) return;
