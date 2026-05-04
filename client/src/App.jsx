@@ -109,6 +109,12 @@ export default function App() {
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [toasts, pushToast] = useToasts();
+  const [myRsn, setMyRsnState] = useState(() => localStorage.getItem('myRsn') || '');
+
+  function setMyRsn(rsn) {
+    setMyRsnState(rsn);
+    localStorage.setItem('myRsn', rsn);
+  }
 
   async function loadGroups() {
     try {
@@ -221,6 +227,8 @@ export default function App() {
                 onTabChange={setActiveTab}
                 onAddPlayer={() => setShowAddPlayer(true)}
                 groupId={activeGroupId}
+                myRsn={myRsn}
+                onSetMyRsn={setMyRsn}
               />
               {showAddPlayer && (
                 <AddPlayerModal

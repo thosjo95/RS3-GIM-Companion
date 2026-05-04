@@ -191,7 +191,11 @@ a:hover { color: var(--gold-light); }
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.player-card.is-me {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold-dark), 0 4px 24px rgba(200,155,60,0.18);
 }
 .player-card:hover { border-color: var(--border-light); }
 

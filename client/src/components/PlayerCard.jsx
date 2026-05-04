@@ -22,7 +22,7 @@ function fmtXp(n) {
   return String(n ?? 0);
 }
 
-export default function PlayerCard({ player, onRefresh, onToast }) {
+export default function PlayerCard({ player, isMe, onSetMe, onRefresh, onToast }) {
   const [syncing, setSyncing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [qp, setQp] = useState(player.quest_points ?? 0);
@@ -69,10 +69,19 @@ export default function PlayerCard({ player, onRefresh, onToast }) {
   const gains = player.xp_gains || {};
 
   return (
-    <div className="player-card">
+    <div className={`player-card${isMe ? ' is-me' : ''}`}>
       <div className="player-card-header">
         <div>
-          <div className="player-name">{player.rsn}</div>
+          <div className="player-name" style={{display:'flex',alignItems:'center',gap:8}}>
+            {player.rsn}
+            {isMe && (
+              <span style={{
+                fontSize:10, fontWeight:700, padding:'1px 6px',
+                background:'var(--gold-dark)', color:'var(--bg-root)',
+                borderRadius:'var(--radius)', letterSpacing:'0.5px',
+              }}>YOU</span>
+            )}
+          </div>
           <div className="player-combat text-dim text-xs">
             {player.last_synced
               ? `Last sync: ${new Date(player.last_synced).toLocaleDateString()}`
@@ -80,6 +89,13 @@ export default function PlayerCard({ player, onRefresh, onToast }) {
           </div>
         </div>
         <div className="flex gap-8 align-center">
+          <button
+            className="btn btn-ghost btn-sm btn-icon"
+            onClick={onSetMe}
+            title={isMe ? 'Unmark as me' : 'This is me'}
+            style={{fontSize:14, color: isMe ? 'var(--gold)' : 'var(--text-dim)'}}>
+            {isMe ? '★' : '☆'}
+          </button>
           <span className="combat-badge">Cmb {player.combat_level ?? '?'}</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={syncPlayer} disabled={syncing} title="Sync hiscores">
             {syncing ? <span className="spinner" style={{width:12,height:12}}/> : '↻'}

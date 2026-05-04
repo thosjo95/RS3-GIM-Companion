@@ -32,8 +32,11 @@ function ContribBar({ players, field, label, fmt }) {
   );
 }
 
-export default function Dashboard({ group, goals, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId }) {
+export default function Dashboard({ group, goals, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, onSetMyRsn }) {
   const players = group?.players || [];
+  const sortedPlayers = myRsn
+    ? [...players].sort((a, b) => (b.rsn === myRsn) - (a.rsn === myRsn))
+    : players;
 
   const groupTotals = useMemo(() => {
     let totalXp = 0, totalLevel = 0, totalQp = 0;
@@ -180,10 +183,12 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
           </div>
           {players.length > 0 ? (
             <div className="grid-2">
-              {players.map(p => (
+              {sortedPlayers.map(p => (
                 <PlayerCard
                   key={p.id}
                   player={p}
+                  isMe={myRsn === p.rsn}
+                  onSetMe={() => onSetMyRsn(myRsn === p.rsn ? '' : p.rsn)}
                   onRefresh={onRefresh}
                   onToast={onToast}
                 />
