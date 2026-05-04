@@ -780,7 +780,7 @@ export default function App() {
           onToast={pushToast}
           prefill={pendingImport}
           onCancel={groups.length > 0 ? () => { setCreatingGroup(false); setPendingImport(null); } : null}
-          groups={groups}
+          groups={allGroups}
           onSwitchToGroup={id => { setCreatingGroup(false); setPendingImport(null); selectGroup(id); }}
         />
         <ToastArea toasts={toasts} />
