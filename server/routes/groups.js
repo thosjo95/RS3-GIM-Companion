@@ -11,49 +11,64 @@ function fmtXp(n) {
   return String(n ?? 0);
 }
 
-// GET /api/groups/lookup-debug?name=X&type=regular&size=5 — returns raw page snippet for debugging
+// GET /api/groups/lookup-debug — fetches the GIM hiscores JS bundle to find the real data API
 router.get('/lookup-debug', async (req, res) => {
-  const { name, type = 'regular', size = '5' } = req.query;
-  if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
-  const url = `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encodeURIComponent(name.trim())}`;
-  try {
-    const resp = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-GB,en;q=0.9',
-        'Cache-Control': 'no-cache',
-      },
-      signal: AbortSignal.timeout(15000),
-    });
-    const html = await resp.text();
+  const { name = 'plink', type = 'competitive', size = '2' } = req.query;
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+    'Cache-Control': 'no-cache',
+  };
 
-    // Find context around key terms to understand the data structure
-    const findings = {};
-    for (const term of ['members', 'players', 'totalXp', 'totalLevel', 'rsn', 'displayName', 'username', 'playerName', '__next_f', 'group']) {
-      const idx = html.indexOf(`"${term}"`);
-      if (idx >= 0) {
-        findings[term] = html.slice(Math.max(0, idx - 30), idx + 300);
+  try {
+    // 1. Get the hiscores page to find the route-specific JS chunk URL
+    const pageResp = await fetch(
+      `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encodeURIComponent(name)}`,
+      { headers, signal: AbortSignal.timeout(15000) }
+    );
+    const html = await pageResp.text();
+
+    // Extract chunk URLs from the RSC payload (the route-specific chunk is most likely to have the fetch call)
+    const chunkUrls = [...new Set([...html.matchAll(/["']\/community-app\/_next\/static\/chunks\/([^"']+\.js)["']/g)].map(m => `/community-app/_next/static/chunks/${m[1]}`))];
+
+    // 2. Try candidate direct API endpoints first
+    const candidates = [
+      `https://rs.runescape.com/community-app/api/hiscores/gim/${type}/${size}/${encodeURIComponent(name)}`,
+      `https://rs.runescape.com/api/hiscores/gim/${type}/${size}/${encodeURIComponent(name)}`,
+      `https://secure.runescape.com/m=hiscore/gimhiscores.json?group=${encodeURIComponent(name)}&type=${type}&size=${size}`,
+      `https://apps.runescape.com/runemetrics/gim/group?name=${encodeURIComponent(name)}&type=${type}&size=${size}`,
+    ];
+
+    const apiResults = {};
+    for (const url of candidates) {
+      try {
+        const r = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
+        apiResults[url] = { status: r.status, body: (await r.text()).slice(0, 300) };
+      } catch (e) {
+        apiResults[url] = { error: e.message };
       }
     }
 
-    // Extract all self.__next_f.push calls (RSC flight chunks) - first 3
-    const flightChunks = [];
-    for (const m of html.matchAll(/self\.__next_f\.push\((\[[\s\S]*?\])\)/g)) {
-      if (flightChunks.length >= 3) break;
-      flightChunks.push(m[1].slice(0, 500));
+    // 3. Fetch the first two chunk JS files and search them for fetch calls and API URL patterns
+    const chunkFindings = [];
+    for (const chunkPath of chunkUrls.slice(0, 5)) {
+      try {
+        const cr = await fetch(`https://rs.runescape.com${chunkPath}`, { headers, signal: AbortSignal.timeout(8000) });
+        if (!cr.ok) continue;
+        const js = await cr.text();
+        // Look for fetch calls and interesting URL strings
+        const fetchUrls = [...js.matchAll(/fetch\(["'`]([^"'`]+)["'`]/g)].map(m => m[1]);
+        const apiStrings = [...js.matchAll(/["'`](https?:\/\/[^"'`]*(?:gim|hiscore|group)[^"'`]*)["'`]/gi)].map(m => m[1]);
+        const pathStrings = [...js.matchAll(/["'`](\/(?:api|community-app|hiscores)[^"'`]{5,80})["'`]/g)].map(m => m[1]);
+        if (fetchUrls.length || apiStrings.length || pathStrings.length) {
+          chunkFindings.push({ chunk: chunkPath, fetchUrls: fetchUrls.slice(0, 10), apiStrings: apiStrings.slice(0, 10), pathStrings: pathStrings.slice(0, 20) });
+        }
+      } catch {}
     }
 
-    res.json({
-      status: resp.status,
-      hasNextData: html.includes('__NEXT_DATA__'),
-      htmlLength: html.length,
-      url,
-      findings,
-      flightChunks,
-    });
+    res.json({ htmlStatus: pageResp.status, chunkUrlCount: chunkUrls.length, chunkUrls: chunkUrls.slice(0, 8), apiResults, chunkFindings });
   } catch (err) {
-    res.json({ error: err.message, url });
+    res.json({ error: err.message });
   }
 });
 
@@ -183,7 +198,16 @@ router.get('/lookup', async (req, res) => {
       } catch {}
     }
 
-    // Strategy 5: Player profile links (/players/NAME or personal-hiscores?user=NAME)
+    // Strategy 5: RS avatar URLs — most reliable, always present in rendered group pages
+    // Pattern: https://secure.runescape.com/m=avatar-rs/PLAYER NAME/chat.png
+    const avatarMatches = [...html.matchAll(/m=avatar-rs\/([^\/]+)\/chat\.png/g)];
+    if (avatarMatches.length) {
+      const rsns = [...new Set(avatarMatches.map(m => decodeURIComponent(m[1].replace(/\+/g, ' '))))];
+      const members = rsns.map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
+      if (members.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+    }
+
+    // Strategy 6: Player profile links (/players/NAME or personal-hiscores?user=NAME)
     const profileMatches = [
       ...html.matchAll(/href="[^"]*\/players\/([^"/?#]+)/g),
       ...html.matchAll(/[?&]user\d*=([^"&\s<>]+)/g),
