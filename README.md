@@ -1,71 +1,123 @@
-# RS3 GIM Companion
+# ⚔️ RS3 GIM Companion
 
-A companion web app for RuneScape 3 Group Ironman groups. Tracks hiscores, XP gains, goals, and group weakness maps.
+Private companion web app for a RuneScape 3 Group Ironman group. Live at **[groupiron.com](https://groupiron.com)**.
 
-## Quick Start
+---
 
-### Requirements
-- Node.js 18 or newer (https://nodejs.org)
+## Features
 
-### Install & Run
+### Overview
+- Member cards with RS3 avatars, **YOU** badge (highlights your character), click-to-focus on a player
+- Stat boxes: Members · Total XP · Total Levels · Active This Week (click to toggle weekly XP mode)
+- **Group Stats** — XP bars, Skills matrix (all 29 skills × all players, highest per row gold-highlighted), Combat tab with RS3 icons (includes Necromancy & Summoning)
+- **Goals + Activity** — defaults to both panels side-by-side; goals support level/item/quest/custom types with live XP-to-go; RuneMetrics activity feed
 
-Open a terminal in this folder and run:
+### Items & Drops
+- Drop log with auto-detection from RuneMetrics activity feed on sync
+- Item request list — track who needs what and from which boss
+
+### Leaderboards
+- **Firsts** — ~40 predefined milestone cards (PvM · Quest · Skill · Item) showing who in the group achieved each one first; auto-detected from activity feeds; unachieved cards show dimmed as "Not yet"
+- **Milestones** — full chronological feed of 99s, 120s, quest completions, boss kills
+- **Skill Mastery** — 99 and 120 breakdown per player with RS3 wiki skill icons
+- **Clue Scrolls** — hiscores leaderboard across all tiers (Easy/Medium/Hard/Elite/Master/All)
+
+### Group Vault
+- Completed goals moved here as a permanent showcase of group achievements
+
+### Tips & Milestones
+- Auto-generated goal suggestions based on the group's weakest skills
+- Recommended quests and skill targets with RS Wiki links
+
+---
+
+## Claim & Access Control
+
+Groups are unclaimed when first imported. Click the **🔒** lock icon → the app auto-generates a secret (`XXXX-XXXX-XXXX`), shown once. Share it with your group on Discord. Any browser that enters the secret can make changes; everyone else is read-only.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 + Vite |
+| Backend | Node.js 22 + Express |
+| Database | SQLite (`node:sqlite` built-in) |
+| Data sources | RS3 Hiscores CSV API + RuneMetrics JSON API |
+| Hosting | Hetzner VPS — Ubuntu 22.04 |
+| Web server | Nginx (reverse proxy + SSL termination) |
+| SSL | Cloudflare Origin Certificate |
+| DNS / CDN | Cloudflare |
+| Process manager | PM2 |
+
+---
+
+## Local Development
+
+Requires **Node.js 22+**.
 
 ```bash
-# Install all dependencies (root + server + client)
-npm run install:all
-
-# Start both server and client in dev mode
-npm run dev
+npm run install:all   # installs root + server + client deps
+npm run dev           # starts API on :3001 and Vite dev server on :5173
 ```
 
-Then open **http://localhost:5173** in your browser.
-
-The API server runs on port **3001**. The Vite dev server proxies `/api` to it automatically.
+Open **http://localhost:5173** — `/api` is proxied to the backend automatically.
 
 ---
 
-## What it does
+## Deploy to Production
 
-### Dashboard — Overview tab
-- Group total XP, total levels, quest points
-- XP and QP contribution bars per player
-- Active goals quick view
+```bash
+ssh root@178.104.126.158
+bash /root/deploy.sh
+```
 
-### Players tab
-- Add players by RSN (RuneScape Name)
-- Syncs hiscores from Jagex automatically on add
-- Shows: combat level, total level, total XP, top skills, XP gains today/week/month
-- Click quest points to manually edit them
-- ↻ button syncs an individual player
-- "Sync All" button in the header syncs all players at once
-
-### Goals tab
-- Add personal or group goals
-- Categories: Skill, Quest, Boss, Item/Drop, Diary, Other
-- Priority levels: High / Medium / Low
-- Click goal status to cycle through: Not Started → In Progress → Blocked → Complete
-- "💡 Suggestions" auto-generates goals based on your group's weakest skills
-
-### Weakness Map tab
-- Grid of all RS3 skills showing the group average level, min/max range, and who is lowest
-- Alert threshold is adjustable — red below threshold, orange near it, green above
+The script does: `git pull` → `npm run build` (Vite) → `pm2 restart app`.
 
 ---
 
-## Data notes
+## Project Structure
 
-- **Hiscores data**: pulled from the public RS3 hiscores API (`secure.runescape.com`). Requires players to be on the public hiscores.
-- **Quest points**: not available from the public API — enter manually per player by clicking the QP value on a player card.
-- **Daily snapshots**: taken automatically at midnight (server must be running). XP gains are calculated vs. the earliest snapshot in the selected period.
-- **Database**: stored in `server/data/gim.db` (SQLite). Back this file up if you want to preserve your data.
+```
+RS3-GIM-Companion/
+├── client/src/
+│   ├── App.jsx                  # Root: sidebar, group selection, claim/unlock modals
+│   ├── api/client.js            # All fetch calls, auth header injection
+│   └── components/
+│       ├── Dashboard.jsx        # Tab router (Overview / Drops / Leaderboards / Vault / Tips)
+│       ├── Header.jsx           # Lock icon, Sync All, last-sync time
+│       ├── OverviewTab.jsx      # Member cards · GroupStats · RightPanel (goals+activity)
+│       ├── DropsTab.jsx         # Drop log + item requests
+│       ├── LeaderboardsTab.jsx  # Firsts · Milestones · Skill Mastery · Clue Scrolls
+│       ├── VaultTab.jsx         # Completed-goal showcase
+│       ├── TipsTab.jsx          # Skill suggestions + recommended quests
+│       └── GoalModal.jsx        # Goal creation wizard
+└── server/
+    ├── database.js              # SQLite schema + safe ALTER TABLE migrations
+    ├── index.js                 # Express app + midnight snapshot cron
+    ├── routes/
+    │   ├── groups.js            # Group CRUD · /claim · /verify · weekly XP aggregation
+    │   ├── players.js           # Player CRUD · /sync · /sync-all · drop auto-detection
+    │   ├── goals.js             # Goal CRUD + vault status
+    │   └── drops.js             # Drops + item requests CRUD
+    ├── services/
+    │   └── runescape.js         # fetchHiscores() · fetchRuneMetrics() · calcCombatLevel()
+    └── utils/
+        └── auth.js              # SHA-256 hashing · checkGroupAuth middleware
+```
 
 ---
 
-## Troubleshooting
+## Database Tables
 
-**"Player not found on hiscores"** — The RSN must match exactly (including capitalisation) as it appears on the RS3 hiscores. Some GIM accounts may not appear on the regular hiscores; try the exact in-game name.
-
-**Backend won't start** — Make sure you ran `npm install --prefix server` and that Node 18+ is installed.
-
-**Port conflicts** — Change the server port in `server/index.js` (default 3001) and update `client/vite.config.js` to match.
+| Table | Purpose |
+|---|---|
+| `groups` | Group name, type, size, password hash, last activity |
+| `players` | RSN, combat level, stats_json (hiscores), activities_json (RuneMetrics) |
+| `skills` | Per-player skill levels, XP, hiscores rank |
+| `snapshots` | Daily XP snapshots used for weekly XP gain calculation |
+| `goals` | Goal definitions, status, current/target values, details JSON |
+| `goal_contributors` | Many-to-many: goals ↔ players |
+| `drops` | Drop log entries (auto-detected + manually added) |
+| `item_requests` | Item wish-list per player |
