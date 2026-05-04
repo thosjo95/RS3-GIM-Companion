@@ -326,7 +326,7 @@ function GroupStats({ players, weeklyMode }) {
       {/* Skills tab — skills × players matrix */}
       {tab === 'skills' && (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'collapse', fontSize: 11, width: '100%' }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
             <thead>
               <tr>
                 <th align="left" style={{
@@ -355,8 +355,8 @@ function GroupStats({ players, weeklyMode }) {
                       padding: '5px 8px 5px 4px', whiteSpace: 'nowrap',
                       position: 'sticky', left: 0, background: stickyBg, zIndex: 1,
                     }}>
-                      <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={16} /></span>
-                      <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{skill}</span>
+                      <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={18} /></span>
+                      <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{skill}</span>
                     </td>
                     {levels.map((level, i) => {
                       const isMax = level !== null && level === maxLevel && maxLevel > 0 && levels.filter(l => l === maxLevel).length === 1;
@@ -384,21 +384,37 @@ function GroupStats({ players, weeklyMode }) {
 
       {/* Combat tab */}
       {tab === 'combat' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[...playerData].sort((a, b) => (b.combat_level ?? 0) - (a.combat_level ?? 0)).map(p => {
             const cb = p.combat_level ?? 0;
-            const skill = (n) => p.skills?.find(s => s.skill_name === n)?.level ?? '?';
+            const lvl = (n) => p.skills?.find(s => s.skill_name === n)?.level ?? '?';
+            const COMBAT_SKILLS = [
+              ['Attack'], ['Strength'], ['Defence'], ['Constitution'],
+              ['Ranged'], ['Magic'], ['Necromancy'],
+              ['Prayer'], ['Summoning'],
+            ];
             return (
               <div key={p.id}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 3 }}>
-                  <div style={{ width: 88, fontSize: 12, color: colorMap[p.id], fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.rsn}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ width: 96, fontSize: 13, color: colorMap[p.id], fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.rsn}</div>
                   <div style={{ flex: 1, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ width: `${(cb / 138) * 100}%`, height: '100%', background: colorMap[p.id], borderRadius: 3 }} />
                   </div>
-                  <div style={{ width: 52, fontSize: 12, color: 'var(--text-dim)', textAlign: 'right', flexShrink: 0 }}>Cb {cb}</div>
+                  <div style={{ width: 56, fontSize: 13, fontWeight: 700, color: 'var(--text-bright)', textAlign: 'right', flexShrink: 0 }}>Cb {cb}</div>
                 </div>
-                <div style={{ paddingLeft: 98, fontSize: 10, color: 'var(--text-dim)' }}>
-                  ⚔️{skill('Attack')} 💪{skill('Strength')} 🛡️{skill('Defence')} · 🏹{skill('Ranged')} 🔮{skill('Magic')} · 🙏{skill('Prayer')}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingLeft: 4 }}>
+                  {COMBAT_SKILLS.map(([s]) => {
+                    const v = lvl(s);
+                    const is99 = typeof v === 'number' && v >= 99;
+                    return (
+                      <span key={s} title={s} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <SkillIcon name={s} size={20} />
+                        <span style={{ fontSize: 14, fontWeight: 600, color: is99 ? 'var(--gold)' : v === '?' ? 'var(--text-dim)' : 'var(--text)' }}>
+                          {v}
+                        </span>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             );

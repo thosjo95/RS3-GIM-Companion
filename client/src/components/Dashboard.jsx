@@ -10,7 +10,7 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
 
   const TABS = [
     { id: 'overview',      label: '📊 Overview' },
-    { id: 'drops',         label: '💎 Items and Drops' },
+    { id: 'drops',         label: '💎 Items & Drops' },
     { id: 'leaderboards',  label: '🏅 Leaderboards' },
     { id: 'vault',         label: '🏆 Group Vault' },
     { id: 'tips',          label: '💡 Tips and Milestones' },
