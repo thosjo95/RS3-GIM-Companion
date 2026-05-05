@@ -203,7 +203,7 @@ function SlotButton({ slotDef, entry, active, canWrite, onClick, styleColor }) {
 
 // ── Recommendations panel (no slot selected) ──────────────────────────────────
 
-function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skillLevels, loadout, canWrite, onSlotClick, onQuickFill, groupId, onToast }) {
+function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skillLevels, loadout, canWrite, onSlotClick, onQuickFill, groupId, playerId, onToast }) {
   return (
     <div style={{
       flex: 1, minWidth: 240, maxWidth: 360,
@@ -265,7 +265,7 @@ function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skil
             canWrite={canWrite}
             onClick={() => onSlotClick(slotDef.slot)}
             groupId={groupId}
-            playerId={selectedPlayerId}
+            playerId={playerId}
             onToast={onToast}
           />
         );
@@ -802,6 +802,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
               onSlotClick={slot => setActiveSlot(slot)}
               onQuickFill={handleQuickFill}
               groupId={groupId}
+              playerId={selectedPlayerId}
               onToast={onToast}
             />
           )}
