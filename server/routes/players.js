@@ -1,7 +1,8 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
-const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
+const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
+const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 
 function getPlayerGroupId(playerId) {
@@ -201,6 +202,34 @@ router.post('/sync-all/:groupId', async (req, res) => {
         results.push({ rsn: player.rsn, success: false, error: err.message });
       }
     }
+  }
+
+  res.json(results);
+});
+
+// POST /api/players/sync-activities/:groupId - fetch RuneMetrics for all group members
+// Runs the same logic as the 2h cron but on demand for a single group.
+// No auth — RS3 activity data is public. Rate-limited by 1s delay between players.
+router.post('/sync-activities/:groupId', async (req, res) => {
+  const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(req.params.groupId);
+  const results = [];
+
+  for (const player of players) {
+    try {
+      const rm = await fetchRuneMetrics(player.rsn, 20);
+      const newActivities = saveActivities(player.id, rm.activities);
+      if (newActivities.length > 0) {
+        autoLogDrops(player.id, newActivities);
+        autoDetectDiaries(player.id, newActivities);
+        autoCountBossKills(player.id, newActivities);
+        autoDetectLevelMilestones(player.id, newActivities);
+      }
+      results.push({ rsn: player.rsn, success: true, new: newActivities.length });
+    } catch (err) {
+      console.error(`[sync-activities] Failed ${player.rsn}: ${err.message}`);
+      results.push({ rsn: player.rsn, success: false, error: err.message });
+    }
+    await new Promise(r => setTimeout(r, 1000));
   }
 
   res.json(results);

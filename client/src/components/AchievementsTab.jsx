@@ -24,6 +24,7 @@ const TIERS = [
   { key: 'easy',   label: 'Easy',   color: 'var(--green-bright)',  bg: 'rgba(90,154,80,0.15)',    border: 'var(--green)' },
   { key: 'medium', label: 'Medium', color: '#7eb8f7',              bg: 'rgba(74,136,184,0.15)',   border: 'var(--blue)' },
   { key: 'hard',   label: 'Hard',   color: 'var(--orange)',        bg: 'rgba(200,120,48,0.15)',   border: 'var(--orange)' },
+  { key: 'elite',  label: 'Elite',  color: '#d07ef7',              bg: 'rgba(160,80,220,0.15)',   border: '#a855d4' },
 ];
 
 const MEMBER_COLORS = ['#c8a84b', '#7eb8f7', '#7ef7a8', '#f77e7e', '#d07ef7', '#f7c97e'];
