@@ -385,7 +385,7 @@ function LockedItemRow({ item, skillLevels, styleColor, addingGoal, onAddGoal })
 
 // ── Item picker panel ─────────────────────────────────────────────────────────
 
-function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, onToast }) {
+function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, playerId, onToast }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -457,7 +457,7 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
             skillLevels={skillLevels}
             styleColor={styleColor}
             groupId={groupId}
-            playerId={selectedPlayerId}
+            playerId={playerId}
             onToast={onToast}
             onSelect={() => onSelect(item.name)}
           />
@@ -787,6 +787,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
               onClose={() => setActiveSlot(null)}
               styleColor={activeStyle.color}
               groupId={groupId}
+              playerId={selectedPlayerId}
               onToast={onToast}
             />
           ) : (
