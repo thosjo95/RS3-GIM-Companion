@@ -31,7 +31,9 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
 
   const syncAgo = lastSync
     ? (() => {
-        const diff = Math.floor((Date.now() - new Date(lastSync)) / 60000);
+        // SQLite CURRENT_TIMESTAMP has no timezone indicator — treat as UTC
+        const utcStr = lastSync.includes('T') ? lastSync : lastSync.replace(' ', 'T') + 'Z';
+        const diff = Math.floor((Date.now() - new Date(utcStr)) / 60000);
         if (diff < 1) return 'just now';
         if (diff < 60) return `${diff}m ago`;
         const h = Math.floor(diff / 60);
@@ -60,7 +62,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         {group && <span style={{ fontWeight: 400, opacity: 0.7 }}>— {group.name}</span>}
       </div>
       <div className="header-right">
-        {lastSync && <span className="last-sync">Last sync: {syncAgo}</span>}
+        {lastSync && <span className="last-sync">Hiscores: {syncAgo}</span>}
 
         {/* ── Auth indicator ── */}
 
@@ -112,6 +114,27 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
             👤 {myRsn || 'Set your name'}
           </button>
         )}
+
+        {/* Docs link */}
+        <a
+          href="https://thosjo95.github.io/RS3-GIM-Companion/"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Documentation"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '0 10px', height: 32, borderRadius: 'var(--radius)',
+            background: 'rgba(200,168,75,0.10)',
+            border: '1px solid rgba(200,168,75,0.35)',
+            color: 'var(--gold)', fontSize: 12, fontWeight: 600,
+            textDecoration: 'none', flexShrink: 0,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,168,75,0.22)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(200,168,75,0.10)'}
+        >
+          📖 Docs
+        </a>
 
         {/* Discord link */}
         <a
