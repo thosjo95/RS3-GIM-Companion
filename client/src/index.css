@@ -547,3 +547,116 @@ a:hover { color: var(--gold-light); }
 }
 .setup-screen h1 { font-size: 28px; color: var(--gold-light); margin-bottom: 8px; }
 .setup-screen p { color: var(--text-dim); margin-bottom: 24px; max-width: 400px; }
+
+/* ── Tab bar helper (horizontal scroll on mobile) ─────────────────────────── */
+.tab-bar-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tab-bar-scroll::-webkit-scrollbar { display: none; }
+.tab-bar-scroll > * { flex-shrink: 0; }
+
+/* Hamburger — visible only on mobile */
+.mobile-menu-btn { display: none !important; }
+
+/* Mobile overlay behind slide-in sidebar */
+.mobile-overlay { display: none; }
+
+/* ── Mobile (≤ 600 px) ────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+
+  /* ── Sidebar: hidden by default, slides in as a drawer ── */
+  .sidebar {
+    position: fixed;
+    z-index: 50;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    min-height: auto;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .mobile-overlay.active {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 56px;
+    background: rgba(0,0,0,0.55);
+    z-index: 49;
+  }
+
+  /* Hamburger button */
+  .mobile-menu-btn { display: inline-flex !important; }
+
+  /* ── Header ── */
+  .header { padding: 0 10px; gap: 6px; }
+  .header-logo { font-size: 14px; }
+  .header-logo span { display: none; }       /* hide "— Group Name" */
+  .last-sync { display: none; }
+  .sync-btn { padding: 5px 9px; font-size: 11px; }
+  .header-right { gap: 6px; }
+
+  /* ── Content ── */
+  .content { padding: 10px; }
+
+  /* ── Page headings ── */
+  .page-title { font-size: 16px; }
+  .page-sub   { font-size: 11px; margin-bottom: 10px; }
+  .section-title { font-size: 12px; }
+
+  /* ── Skills grid: 3 columns ── */
+  .skills-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* ── Grid layouts ── */
+  .grid-2 { grid-template-columns: 1fr !important; }
+  .grid-3 { grid-template-columns: 1fr !important; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* ── Tab bars: horizontal scroll ── */
+  .tab-bar-scroll {
+    flex-wrap: nowrap !important;
+    padding-bottom: 3px;
+  }
+
+  /* ── Tables (global) ── */
+  .table th, .table td { padding: 6px 8px; font-size: 11px; }
+
+  /* ── Player card ── */
+  .player-stats { flex-wrap: wrap; gap: 8px; }
+  .xp-gains { gap: 3px; }
+  .xp-gain-val { font-size: 11px; }
+  .xp-gain-lbl { font-size: 8px; }
+
+  /* ── Goal items ── */
+  .goal-item { flex-wrap: wrap; gap: 6px; }
+  .goal-actions { margin-left: auto; }
+
+  /* ── Weakness grid: 2 cols ── */
+  .weakness-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* ── Modal: bottom sheet ── */
+  .modal-backdrop { padding: 0; align-items: flex-end; }
+  .modal {
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  /* ── Toast: full-width ── */
+  .toast-area { left: 10px; right: 10px; bottom: 10px; }
+  .toast { max-width: 100%; }
+
+  /* ── Contrib row ── */
+  .contrib-name { min-width: 70px; font-size: 11px; }
+  .contrib-val  { min-width: 50px; font-size: 11px; }
+
+  /* ── gap helpers ── */
+  .gap-16 { gap: 8px; }
+  .mb-20  { margin-bottom: 12px; }
+  .mb-24  { margin-bottom: 16px; }
+}

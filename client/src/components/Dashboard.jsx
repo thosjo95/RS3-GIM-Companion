@@ -21,7 +21,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-8 mb-20" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 1 }}>
+      <div className="flex gap-8 mb-20 tab-bar-scroll" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 1 }}>
         {TABS.map(t => (
           <button
             key={t.id}

@@ -892,7 +892,7 @@ export default function LeaderboardsTab({ players, groupId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      <div style={{ display: 'flex', gap: 2, marginBottom: 20, background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', padding: 4 }}>
+      <div className="tab-bar-scroll" style={{ display: 'flex', gap: 2, marginBottom: 20, background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', padding: 4 }}>
         {SECTIONS.map(s => (
           <button key={s.id} onClick={() => setSection(s.id)} style={{
             flex: 1, fontSize: 12, padding: '6px 8px', borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer',

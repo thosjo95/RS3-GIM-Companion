@@ -659,9 +659,9 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
 }
 
 // Group switcher — shown in sidebar when multiple groups exist
-function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, favoriteGroupIds }) {
+function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, favoriteGroupIds, isOpen }) {
   return (
-    <nav className="sidebar">
+    <nav className={`sidebar${isOpen ? ' open' : ''}`}>
       <div className="nav-group">
         <div className="nav-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <span>Groups</span>
@@ -731,6 +731,7 @@ export default function App() {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showRsnModal, setShowRsnModal] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
 
   // Only show groups this browser has explicitly added, favorites first
@@ -864,6 +865,7 @@ export default function App() {
     pinGroup(id);
     setActiveGroupId(id);
     setActiveTab('overview');
+    setShowMobileSidebar(false);
   }
 
   function handleSearchAddNew(prefill) {
@@ -933,15 +935,23 @@ export default function App() {
         onLockClick={() => setShowPasswordModal(true)}
         onClaimClick={() => setShowClaimModal(true)}
         onSetRsnClick={() => setShowRsnModal(true)}
+        onMenuToggle={() => setShowMobileSidebar(s => !s)}
+        mobileMenuOpen={showMobileSidebar}
       />
       <div className="main-layout">
+        {/* Mobile overlay — tapping closes the sidebar */}
+        <div
+          className={`mobile-overlay${showMobileSidebar ? ' active' : ''}`}
+          onClick={() => setShowMobileSidebar(false)}
+        />
         <Sidebar
           groups={groups}
           activeGroupId={activeGroupId}
           onSelect={selectGroup}
           onNewGroup={() => setCreatingGroup(true)}
-          onSearch={() => setShowSearchModal(true)}
+          onSearch={() => { setShowSearchModal(true); setShowMobileSidebar(false); }}
           favoriteGroupIds={favoriteGroupIds}
+          isOpen={showMobileSidebar}
         />
         <main className="content">
           {group ? (

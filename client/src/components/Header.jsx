@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
-export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick }) {
+export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick, onMenuToggle, mobileMenuOpen }) {
   const [syncing, setSyncing] = useState(false);
 
   async function syncAll() {
@@ -44,6 +44,16 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
 
   return (
     <header className="header">
+      {/* Hamburger — mobile only */}
+      {onMenuToggle && (
+        <button
+          className="mobile-menu-btn btn btn-ghost btn-icon"
+          onClick={onMenuToggle}
+          title="Toggle groups menu"
+          style={{ fontSize: 18, padding: '4px 6px', flexShrink: 0 }}>
+          {mobileMenuOpen ? '✕' : '☰'}
+        </button>
+      )}
       <div className="header-logo">
         ⚔️ RS3 GIM Companion
         {group && <span>— {group.name}</span>}

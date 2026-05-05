@@ -125,7 +125,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
             Auto-detected from RuneMetrics activity feed · Click a cell to mark manually
           </div>
         </div>
-        <div className="flex gap-4" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
+        <div className="flex gap-4 tab-bar-scroll" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
           {[{ v: 'grid', l: '🗂️ Grid' }, { v: 'player', l: '👤 By Player' }].map(({ v, l }) => (
             <button key={v} onClick={() => setView(v)} style={{
               fontSize: 11, padding: '3px 12px', borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer',
