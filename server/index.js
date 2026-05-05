@@ -20,10 +20,11 @@ app.use('/api/equipment',    require('./routes/equipment'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// ── 5-minute activity sync ─────────────────────────────────────────────────────
+// ── 15-minute activity sync ────────────────────────────────────────────────────
 // Fetches the last 20 RuneMetrics activities for every tracked player.
 // Detects diary completions (persisted) and auto-logs drops.
-cron.schedule('*/5 * * * *', async () => {
+// 15-min interval + 1.5s delay per player avoids Jagex 429 rate limits at scale.
+cron.schedule('*/15 * * * *', async () => {
   const { fetchRuneMetrics } = require('./services/runescape');
   const { autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
 
@@ -42,8 +43,8 @@ cron.schedule('*/5 * * * *', async () => {
     } catch (err) {
       console.error(`[5-min cron] ${player.rsn}: ${err.message}`);
     }
-    // Small delay to avoid hammering the RuneMetrics API
-    await new Promise(r => setTimeout(r, 300));
+    // Delay between players — 1.5s keeps us well under Jagex's rate limit
+    await new Promise(r => setTimeout(r, 1500));
   }
 });
 
