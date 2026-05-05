@@ -265,14 +265,16 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   async function handleSearch(e) {
     e.preventDefault();
     if (!groupName.trim()) return;
-    // If already tracked locally, just switch to it
+    // 1. Already in local sidebar — just switch
     const existing = groups?.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
-    if (existing) {
-      onSwitchToGroup?.(existing.id);
-      return;
-    }
+    if (existing) { onSwitchToGroup?.(existing.id); return; }
     setSearching(true);
     try {
+      // 2. Already in DB (e.g. user cleared localStorage) — add to sidebar without re-creating
+      const dbResults = await api.searchGroups(groupName.trim());
+      const dbMatch = dbResults.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
+      if (dbMatch) { onSwitchToGroup?.(dbMatch.id); return; }
+      // 3. Search RS3 hiscores
       const result = await api.lookupGroup(groupName.trim(), gimType, gimSize);
       if (result.found && result.members?.length) {
         setLookupResult(result);
