@@ -629,13 +629,18 @@ console.log('Updated rows:', result.changes);
     <p>If it prints <code>Updated rows: 1</code> you're done. Tell them to refresh — <strong>🔒 Claim group</strong> reappears in the header. They click it, get a new secret shown once, and save it somewhere safe (e.g. a private Discord channel).</p>
 
     <h3>Permanently delete a group</h3>
-    <p>Removes the group and all its players from the database (cascade delete).</p>
+    <p>Some tables store <code>group_id</code> directly without a cascade rule, so delete child records first then the group itself. Replace <code>GROUP_ID</code> with the target ID.</p>
     <pre><code>node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
-const result = db.prepare('DELETE FROM groups WHERE id = ?').run(GROUP_ID);
+const id = GROUP_ID;
+db.prepare('DELETE FROM players WHERE group_id = ?').run(id);
+db.prepare('DELETE FROM goals WHERE group_id = ?').run(id);
+db.prepare('DELETE FROM drops WHERE group_id = ?').run(id);
+db.prepare('DELETE FROM item_requests WHERE group_id = ?').run(id);
+db.prepare('DELETE FROM group_notes WHERE group_id = ?').run(id);
+const result = db.prepare('DELETE FROM groups WHERE id = ?').run(id);
 console.log('Deleted groups:', result.changes);
 "</code></pre>
-    <p>Replace <code>GROUP_ID</code> with the target ID found from the listing above.</p>
 
     <h3>When to use <code>deploy.sh</code> vs <code>pm2 restart</code></h3>
     <table>
