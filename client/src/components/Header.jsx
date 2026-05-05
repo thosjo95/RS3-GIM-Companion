@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
-export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick }) {
+export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick }) {
   const [syncing, setSyncing] = useState(false);
 
   async function syncAll() {
@@ -51,34 +51,54 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
       <div className="header-right">
         {lastSync && <span className="last-sync">Last sync: {syncAgo}</span>}
 
-        {/* "Claim now" nudge — visible only when unclaimed */}
-        {showClaimNudge && (
-          <span style={{
-            fontSize: 11, color: 'var(--gold)', fontWeight: 600,
-            display: 'flex', alignItems: 'center', gap: 4,
-            animation: 'pulse 2s ease-in-out infinite',
-          }}>
-            Claim now →
-          </span>
-        )}
+        {/* ── Auth indicator ── */}
 
-        {/* Lock button — always shown when a group is loaded */}
-        {group && (
+        {/* Group not claimed → prompt to claim */}
+        {group && !isClaimed && (
           <button
             className="sync-btn"
-            onClick={isClaimed ? onLockClick : onClaimClick}
-            title={
-              !isClaimed ? 'Claim this group to protect it with a secret'
-              : isUnlocked ? `Unlocked as ${myRsn || 'unknown'} — click to re-enter secret`
-              : 'Enter group secret to unlock'
-            }
+            onClick={onClaimClick}
+            title="Claim this group to protect it with a secret and enable editing"
             style={{
               background: 'transparent',
-              border: `1px solid ${isUnlocked ? 'var(--gold)' : showClaimNudge ? 'var(--gold)' : 'var(--border)'}`,
-              color: isUnlocked ? 'var(--gold)' : showClaimNudge ? 'var(--gold)' : 'var(--text-dim)',
-              minWidth: 36, padding: '0 10px', fontSize: 13,
+              border: '1px solid var(--gold)',
+              color: 'var(--gold)',
+              padding: '0 12px', fontSize: 12, fontWeight: 600,
+              animation: 'pulse 2s ease-in-out infinite',
             }}>
-            {isUnlocked ? `🔓 ${myRsn || 'Unlocked'}` : '🔒'}
+            🔒 Claim group
+          </button>
+        )}
+
+        {/* Claimed but not yet unlocked on this browser → unlock button */}
+        {group && isClaimed && !isUnlocked && (
+          <button
+            className="sync-btn"
+            onClick={onLockClick}
+            title="Enter your group secret to enable editing"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              padding: '0 12px', fontSize: 12,
+            }}>
+            🔒 Unlock
+          </button>
+        )}
+
+        {/* Already unlocked → show player badge (no action required) */}
+        {group && isClaimed && isUnlocked && (
+          <button
+            className="sync-btn"
+            onClick={onSetRsnClick}
+            title={myRsn ? `Logged in as ${myRsn} · Click to change character` : 'Set your character name'}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--green)',
+              color: myRsn ? 'var(--green-bright)' : 'var(--text-dim)',
+              padding: '0 12px', fontSize: 12, fontWeight: myRsn ? 600 : 400,
+            }}>
+            👤 {myRsn || 'Set your name'}
           </button>
         )}
 

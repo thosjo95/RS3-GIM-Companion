@@ -23,6 +23,42 @@ function fmtXp(n) {
   return String(n);
 }
 
+// Set RSN modal — just pick who you are (no password needed when already unlocked)
+function SetRsnModal({ group, myRsn, onConfirm, onCancel }) {
+  const [rsn, setRsn] = useState(myRsn || '');
+  const players = group?.players || [];
+
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onCancel()}>
+      <div className="modal" style={{ maxWidth: 360 }}>
+        <div className="modal-header">
+          <span className="modal-title">👤 Who are you?</span>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
+            Select your character in <strong style={{ color: 'var(--text-bright)' }}>{group?.name}</strong>.
+            This is saved to this browser only.
+          </p>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Your character</label>
+            <select className="form-select" value={rsn} onChange={e => setRsn(e.target.value)}>
+              <option value="">— Select —</option>
+              {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => onConfirm(rsn)} disabled={!rsn}>
+            ✓ Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Unlock modal — enter secret + pick who you are
 function UnlockModal({ group, onConfirm, onCancel }) {
   const [pw, setPw] = useState('');
@@ -634,6 +670,7 @@ export default function App() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showRsnModal, setShowRsnModal] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
 
   // Only show groups this browser has explicitly added
@@ -751,6 +788,8 @@ export default function App() {
     if (rsn) setMyRsn(rsn);
     setShowPasswordModal(false);
     pushToast('Unlocked! 🔓', 'success');
+    // If no RSN was chosen, prompt them to pick one now
+    if (!rsn) setTimeout(() => setShowRsnModal(true), 300);
   }
 
   async function handleClaimSubmit(rsn) {
@@ -803,6 +842,7 @@ export default function App() {
         myRsn={myRsn}
         onLockClick={() => setShowPasswordModal(true)}
         onClaimClick={() => setShowClaimModal(true)}
+        onSetRsnClick={() => setShowRsnModal(true)}
       />
       <div className="main-layout">
         <Sidebar
@@ -856,6 +896,14 @@ export default function App() {
           )}
         </main>
       </div>
+      {showRsnModal && (
+        <SetRsnModal
+          group={group}
+          myRsn={myRsn}
+          onConfirm={rsn => { setMyRsn(rsn); setShowRsnModal(false); }}
+          onCancel={() => setShowRsnModal(false)}
+        />
+      )}
       {showPasswordModal && (
         <UnlockModal
           group={group}
