@@ -157,7 +157,7 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
 
   const isCustom = form.boss_name === '__custom';
   // Auto-fill item suggestions when a known boss is selected
-  const bossDrops = (!isCustom && BOSSES[form.boss_name]?.drops) ?? [];
+  const bossDrops = isCustom ? [] : (BOSSES[form.boss_name]?.drops ?? []);
 
   async function submit(e) {
     e.preventDefault();
