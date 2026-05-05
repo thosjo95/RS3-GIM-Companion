@@ -28,16 +28,16 @@
   tr:nth-child(even) td { background: #fafafa; }
 
   .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
-  .badge-gold { background: #fff3cd; color: #856404; border: 1px solid #c8a84b; }
-  .badge-blue { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+  .badge-gold  { background: #fff3cd; color: #856404; border: 1px solid #c8a84b; }
+  .badge-blue  { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
   .badge-green { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-  .badge-red  { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  .badge-red   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
   .callout { padding: 12px 16px; border-radius: 6px; margin: 14px 0; }
   .callout-yellow { background: #fffde7; border-left: 4px solid #c8a84b; }
-  .callout-blue { background: #e8f4fd; border-left: 4px solid #2196f3; }
-  .callout-red { background: #fdecea; border-left: 4px solid #e53935; }
-  .callout-green { background: #e8f5e9; border-left: 4px solid #43a047; }
+  .callout-blue   { background: #e8f4fd; border-left: 4px solid #2196f3; }
+  .callout-red    { background: #fdecea; border-left: 4px solid #e53935; }
+  .callout-green  { background: #e8f5e9; border-left: 4px solid #43a047; }
 
   .toc { background: #f9f6ef; border: 1px solid #e8dfc0; border-radius: 8px; padding: 18px 24px; margin-bottom: 36px; }
   .toc h3 { margin: 0 0 10px; font-size: 13px; color: #5a4200; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -45,6 +45,11 @@
   .toc li { margin-bottom: 3px; font-size: 12.5px; }
   .toc a { color: #856404; text-decoration: none; }
   .toc a:hover { text-decoration: underline; }
+
+  .changelog { background: #f0f9f0; border: 1px solid #b2dfdb; border-radius: 8px; padding: 16px 20px; margin-bottom: 28px; }
+  .changelog h3 { margin: 0 0 8px; color: #1b5e20; font-size: 13px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .changelog ul { margin-left: 18px; }
+  .changelog li { font-size: 12.5px; margin-bottom: 3px; }
 
   .section-divider { border: none; border-top: 2px solid #f0e8c8; margin: 40px 0; }
 
@@ -63,7 +68,20 @@
 <div class="page">
 
 <h1>⚔️ RS3 GIM Companion — Full Documentation</h1>
-<p style="color:#888; font-size:12px; margin-bottom: 24px;">Generated May 2025 · groupiron.com · Private repository</p>
+<p style="color:#888; font-size:12px; margin-bottom: 16px;">Updated May 2025 · groupiron.com · Private repository</p>
+
+<div class="changelog">
+  <h3>✅ What's new since last doc update</h3>
+  <ul>
+    <li><strong>Achievement Diaries tab</strong> — 13 regions × 3 tiers (Easy/Medium/Hard), grid + player views, auto-detected from RuneMetrics, manual toggle</li>
+    <li><strong>Boss Kills leaderboard</strong> — accumulated from RuneMetrics activity feed (not hiscores), bosses × players matrix, boss filter dropdown, default section on Leaderboards tab</li>
+    <li><strong>Clue Scroll tracking fixed</strong> — correct hiscores CSV row indices (55–59) for all 5 tiers; removed non-existent "All" tier</li>
+    <li><strong>Sidebar UX redesign</strong> — hover-to-reveal removed; ★ favourite and ✕ remove moved into "Find or Manage Groups" modal; icon changed from 🏰 to 👥</li>
+    <li><strong>Mobile responsive layout</strong> — hamburger drawer sidebar, 3-col skills grid, horizontally scrollable tab bars, bottom-sheet modals, full-width toast</li>
+    <li><strong>Background sync cron</strong> — 5-minute node-cron job runs auto-detection pipeline (drops, diaries, boss kills) so data stays fresh without manual sync</li>
+    <li><strong>New DB tables</strong>: <code>achievements</code>, <code>boss_kills</code>, <code>boss_kill_log</code></li>
+  </ul>
+</div>
 
 <div class="toc">
   <h3>Contents</h3>
@@ -291,10 +309,10 @@ git push
 git pull</code></pre>
 
 <h3>Good commit message conventions</h3>
-<pre><code>feat: add leaderboard firsts section
-fix: weekly XP fallback for fresh databases
-refactor: extract SkillIcon component
-chore: update README</code></pre>
+<pre><code>feat: add achievement diary tab
+fix: correct clue scroll hiscores row indices
+refactor: move sidebar management into modal
+chore: update documentation</code></pre>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <hr class="section-divider">
@@ -310,20 +328,26 @@ chore: update README</code></pre>
   <li>You then SSH into the server and run <code>bash /root/deploy.sh</code></li>
 </ol>
 
+<div class="callout callout-yellow">
+  <strong>After every feature session:</strong> ask Claude "is this pushed to git?" before deploying. Claude will confirm and push if not already done.
+</div>
+
 <h3>Tips for good feature requests</h3>
 <ul>
   <li><strong>Reference existing things:</strong> "Like the Skills tab but for bosses" is clearer than "add a boss tab"</li>
-  <li><strong>Describe the data source:</strong> "This should come from hiscores" or "detect it from the activity feed"</li>
+  <li><strong>Describe the data source:</strong> "Detect from the RuneMetrics activity feed" or "from hiscores CSV"</li>
   <li><strong>Describe the layout:</strong> "A table with players as columns" or "a grid of cards"</li>
   <li><strong>One session = one topic:</strong> Mixing unrelated tasks in one message works fine, but very large changes across many files are easier to review in separate sessions</li>
   <li><strong>After deploy, test it:</strong> Report back if something looks wrong and Claude will fix it</li>
+  <li><strong>Include screenshots when reporting bugs</strong> — they help Claude understand exactly what's wrong</li>
 </ul>
 
 <h3>Example prompts that worked well</h3>
 <ul>
   <li><em>"Add a Leaderboards tab with a Firsts section showing ~40 predefined milestones as cards. Auto-detect from activity feed. Show who achieved each first, or 'not yet' if nobody has."</em></li>
-  <li><em>"Replace the emoji skill icons with the official RS3 wiki images from runescape.wiki/images/{Skill}.png"</em></li>
-  <li><em>"The Active This Week stat doesn't work on fresh databases. Fix it so it falls back to the earliest snapshot instead of returning null."</em></li>
+  <li><em>"Add an Achievement Diaries tab. Show 13 regions × 3 tiers. Auto-detect from RuneMetrics activity feed. Allow manual toggle. Two views: grid (regions × tiers table) and per-player."</em></li>
+  <li><em>"The boss kill leaderboard should have bosses as rows and players as columns, like the skills matrix. Add a boss filter dropdown. Make Boss Kills the default section."</em></li>
+  <li><em>"Do mobile responsive improvements — the skills matrix and leaderboard cards get cramped on mobile. Add media queries for screens under 600px."</em></li>
 </ul>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -347,6 +371,9 @@ sqlite3 /root/RS3-GIM-Companion/server/data/gim.db</code></pre>
   <tr><td>goals</td><td>id, type, owner_id, title, status, details_json, current_value, target_value</td><td>status: not_started / in_progress / blocked / complete / vaulted</td></tr>
   <tr><td>drops</td><td>player_id, item_name, notes, dropped_at</td><td>notes = "Auto-detected from activity feed" for auto entries</td></tr>
   <tr><td>item_requests</td><td>player_id, item_name, boss_name, priority, obtained</td><td>obtained = 0/1</td></tr>
+  <tr><td>achievements</td><td>player_id, key, achieved, achieved_at, manual</td><td>key format: <code>diary_{region}_{tier}</code> e.g. <code>diary_varrock_easy</code>. manual=1 means player clicked it themselves rather than auto-detected.</td></tr>
+  <tr><td>boss_kills</td><td>player_id, boss_key, kills, last_seen</td><td>Accumulated from RuneMetrics. Primary key = (player_id, boss_key). Updated with MAX(existing, new) when details contain absolute count.</td></tr>
+  <tr><td>boss_kill_log</td><td>player_id, activity_sig</td><td>Dedup table — one row per unique activity processed. Prevents double-counting when same activities are seen on re-sync.</td></tr>
 </table>
 
 <h3>Useful SQL queries</h3>
@@ -355,8 +382,8 @@ sqlite3 /root/RS3-GIM-Companion/server/data/gim.db</code></pre>
 <pre><code>SELECT id, name, gim_type, (password_hash IS NOT NULL) as claimed, last_activity
 FROM groups;</code></pre>
 
-<h4>Get a group's secret (if you forgot it — you can't recover it, but you can reset it)</h4>
-<pre><code>-- You can't recover the secret (it's hashed). To reset so a group becomes unclaimed:
+<h4>Reset a group to unclaimed (if secret is lost)</h4>
+<pre><code>-- You can't recover the secret (it's hashed). To reset so group becomes unclaimed:
 UPDATE groups SET password_hash = NULL WHERE name = 'True Deciples';</code></pre>
 
 <h4>See all players in a group</h4>
@@ -367,9 +394,26 @@ WHERE p.group_id = 1
 ORDER BY s.xp DESC;</code></pre>
 
 <h4>Check a player's clue scroll counts</h4>
-<pre><code>-- stats_json stores hiscores including activities (clue counts)
-SELECT rsn, stats_json FROM players WHERE rsn = 'YourRSN';
--- Then look in the JSON for "Clue Scrolls All" etc.</code></pre>
+<pre><code>-- Clue scrolls are stored in stats_json from hiscores (rows 55-59 in the CSV)
+SELECT rsn, json_extract(stats_json, '$.activities') FROM players WHERE rsn = 'YourRSN';</code></pre>
+
+<h4>Check boss kill counts for a group</h4>
+<pre><code>SELECT p.rsn, bk.boss_key, bk.kills, bk.last_seen
+FROM boss_kills bk
+JOIN players p ON p.id = bk.player_id
+WHERE p.group_id = 1 AND bk.kills > 0
+ORDER BY bk.boss_key, bk.kills DESC;</code></pre>
+
+<h4>Check achievement diary completions for a group</h4>
+<pre><code>SELECT p.rsn, a.key, a.achieved, a.achieved_at, a.manual
+FROM achievements a
+JOIN players p ON p.id = a.player_id
+WHERE p.group_id = 1 AND a.achieved = 1
+ORDER BY p.rsn, a.key;</code></pre>
+
+<h4>Reset boss kills for a player (to re-accumulate from scratch)</h4>
+<pre><code>DELETE FROM boss_kills WHERE player_id = (SELECT id FROM players WHERE rsn = 'YourRSN');
+DELETE FROM boss_kill_log WHERE player_id = (SELECT id FROM players WHERE rsn = 'YourRSN');</code></pre>
 
 <h4>List all drops for a group</h4>
 <pre><code>SELECT p.rsn, d.item_name, d.notes, d.dropped_at
@@ -389,14 +433,11 @@ ORDER BY snapshot_date DESC
 LIMIT 10;</code></pre>
 
 <h4>Wipe everything and start fresh</h4>
-<pre><code>DELETE FROM drops; DELETE FROM item_requests; DELETE FROM goals;
+<pre><code>DELETE FROM achievements; DELETE FROM boss_kills; DELETE FROM boss_kill_log;
+DELETE FROM drops; DELETE FROM item_requests; DELETE FROM goals;
 DELETE FROM goal_contributors; DELETE FROM snapshots;
 DELETE FROM skills; DELETE FROM players; DELETE FROM groups;
--- Then hard-reset autoincrement:
 DELETE FROM sqlite_sequence;</code></pre>
-
-<h4>Reset a group to unclaimed without wiping data</h4>
-<pre><code>UPDATE groups SET password_hash = NULL WHERE id = 1;</code></pre>
 
 <h4>Back up the database</h4>
 <pre><code>cp /root/RS3-GIM-Companion/server/data/gim.db ~/gim_backup_$(date +%Y%m%d_%H%M).db</code></pre>
@@ -413,32 +454,34 @@ pm2 start app</code></pre>
 <h3>Frontend (<code>client/src/</code>)</h3>
 <table>
   <tr><th>File</th><th>What it does</th></tr>
-  <tr><td><code>App.jsx</code></td><td>Root component. Manages: sidebar group list (localStorage-filtered), active group state, claim/unlock modals (ClaimModal, UnlockModal), per-group RSN storage, global toast notifications. Fetches group data and passes it down.</td></tr>
-  <tr><td><code>api/client.js</code></td><td>All API calls. Injects <code>X-Group-Id</code> and <code>X-Group-Password</code> headers for auth. Handles 401 → triggers onUnauthorized callback.</td></tr>
-  <tr><td><code>components/Dashboard.jsx</code></td><td>Tab router. Renders the tab bar (Overview / Items &amp; Drops / Leaderboards / Group Vault / Tips &amp; Milestones) and mounts the correct tab component.</td></tr>
-  <tr><td><code>components/Header.jsx</code></td><td>Top bar. Shows group name, last-sync time, "Claim now →" nudge, lock/unlock button (🔒/🔓 + RSN), and Sync All button.</td></tr>
+  <tr><td><code>App.jsx</code></td><td>Root component. Manages: sidebar group list (localStorage-filtered), active group state, claim/unlock modals, per-group RSN storage, global toast notifications, mobile sidebar drawer state (<code>showMobileSidebar</code>). Passes hamburger props to Header and <code>isOpen</code> to Sidebar. SearchGroupModal now includes ★ favourite and ✕ remove actions.</td></tr>
+  <tr><td><code>index.css</code></td><td>Global styles + <code>.tab-bar-scroll</code> utility class for horizontally scrollable pill rows + full <code>@media (max-width: 600px)</code> block covering sidebar drawer, header simplification, 3-col skills grid, bottom-sheet modals, full-width toast.</td></tr>
+  <tr><td><code>api/client.js</code></td><td>All API calls. Injects <code>X-Group-Id</code> and <code>X-Group-Password</code> headers for auth. Handles 401 → triggers onUnauthorized callback. Includes <code>getAchievements</code>, <code>setAchievement</code>, and <code>getBossKills</code> endpoints.</td></tr>
+  <tr><td><code>components/Dashboard.jsx</code></td><td>Tab router. Renders the scrollable tab bar (Overview / Items &amp; Drops / Achievement Diaries / Group Vault / Tips &amp; Milestones / Leaderboards) and mounts the correct tab component.</td></tr>
+  <tr><td><code>components/Header.jsx</code></td><td>Top bar. On mobile, shows a ☰/✕ hamburger button. Shows group name, last-sync time, claim/unlock/RSN button, and Sync All. Group name and last-sync are hidden at ≤600px to save space.</td></tr>
   <tr><td><code>components/OverviewTab.jsx</code></td><td>Main overview. Contains: MemberCard (RS3 avatar + YOU badge), stat boxes, GroupStats (XP bars / Skills matrix / Combat with RS3 icons), RightPanel (Goals + ActivityFeed). Also defines SkillIcon component and SKILL_ICONS URL map.</td></tr>
   <tr><td><code>components/DropsTab.jsx</code></td><td>Items &amp; Drops tab. Two sections: drop log (with auto-detected entries tagged) and item request list (priority, boss source, obtained toggle).</td></tr>
-  <tr><td><code>components/LeaderboardsTab.jsx</code></td><td>Leaderboards tab. Four sub-sections: FirstsBoard (PREDEFINED_FIRSTS milestone cards with detection logic), MilestonesFeed (activity-scanned timeline), SkillMastery (99s/120s chips), ClueScrolls (hiscores table).</td></tr>
+  <tr><td><code>components/AchievementsTab.jsx</code></td><td>Achievement Diaries tab. Defines 13 DIARY_REGIONS and 3 TIERS. Two views toggled by a pill bar: <strong>Grid</strong> (regions × tiers table with per-player coloured dots) and <strong>Player</strong> (per-player cards with tier buttons). Auto-detected completions and manual toggles (requires canWrite). Progress summary bar per player at top.</td></tr>
+  <tr><td><code>components/LeaderboardsTab.jsx</code></td><td>Leaderboards tab. Default section: <strong>Boss Kills</strong>. Sections: BossKills (fetches from API, renders boss-rows × player-columns table with filter dropdown), FirstsBoard (PREDEFINED_FIRSTS milestone cards), MilestonesFeed (activity timeline), SkillMastery (99/120 chips), ClueScrolls (hiscores table for 5 tiers).</td></tr>
   <tr><td><code>components/VaultTab.jsx</code></td><td>Group Vault. Shows goals with status=vaulted as an achievement showcase.</td></tr>
   <tr><td><code>components/TipsTab.jsx</code></td><td>Tips &amp; Milestones. Calls <code>/api/goals/suggestions/:groupId</code> to get auto-generated suggestions based on group skill averages. Also shows recommended quests.</td></tr>
   <tr><td><code>components/GoalModal.jsx</code></td><td>Multi-step goal creation wizard. Supports types: level goal (with skill picker + XP calc), item goal (with recipe data), quest goal, custom goal.</td></tr>
-  <tr><td><code>data/bosses.js</code></td><td>Static list of RS3 bosses used in dropdowns.</td></tr>
-  <tr><td><code>data/quests.js</code></td><td>Static list of notable RS3 quests.</td></tr>
-  <tr><td><code>data/itemRecipes.js</code></td><td>Crafting recipe data for item goals (materials, method, skill requirement).</td></tr>
 </table>
 
 <h3>Backend (<code>server/</code>)</h3>
 <table>
   <tr><th>File</th><th>What it does</th></tr>
-  <tr><td><code>database.js</code></td><td>Opens SQLite file, runs CREATE TABLE IF NOT EXISTS for all tables, runs safe ALTER TABLE migrations for new columns. Exports <code>db</code> singleton with added <code>db.runTransaction()</code> helper.</td></tr>
-  <tr><td><code>index.js</code></td><td>Express app entry. Mounts all routes. Runs a <code>node-cron</code> job at midnight to snapshot all players' XP.</td></tr>
-  <tr><td><code>routes/groups.js</code></td><td>CRUD for groups. Key endpoints: <code>GET /:id</code> (returns group + players + skills + weekly XP gains), <code>POST /setup</code> (multi-step group import from hiscores), <code>POST /:id/claim</code> (generates secret, stores hash, returns plain text once), <code>POST /:id/verify</code> (checks password), <code>GET /search</code> (find groups by name).</td></tr>
-  <tr><td><code>routes/players.js</code></td><td>CRUD for players. Key endpoint: <code>POST /:id/sync</code> — calls fetchHiscores + fetchRuneMetrics, upserts skills, stores stats_json + activities_json, calls autoLogActivityDrops() to auto-detect drops from activity text.</td></tr>
+  <tr><td><code>database.js</code></td><td>Opens SQLite file, runs CREATE TABLE IF NOT EXISTS for all tables (including <code>achievements</code>, <code>boss_kills</code>, <code>boss_kill_log</code>), runs safe ALTER TABLE migrations for new columns. Exports <code>db</code> singleton.</td></tr>
+  <tr><td><code>index.js</code></td><td>Express app entry. Mounts all routes. Runs two <code>node-cron</code> jobs: every 5 minutes (auto-detection pipeline for active groups: drops, diaries, boss kills); midnight daily (XP snapshot for all players).</td></tr>
+  <tr><td><code>routes/groups.js</code></td><td>CRUD for groups. Key endpoints: <code>GET /:id</code> (returns group + players + skills + weekly XP gains), <code>POST /setup</code>, <code>POST /:id/claim</code>, <code>POST /:id/verify</code>, <code>GET /search</code>.</td></tr>
+  <tr><td><code>routes/players.js</code></td><td>CRUD for players. Key endpoint: <code>POST /:id/sync</code> — calls fetchHiscores + fetchRuneMetrics, upserts skills, stores stats_json + activities_json, then runs full auto-detection pipeline: <code>autoLogDrops</code> + <code>autoDetectDiaries</code> + <code>autoCountBossKills</code>.</td></tr>
   <tr><td><code>routes/goals.js</code></td><td>CRUD for goals. <code>GET /suggestions/:groupId</code> calls generateSuggestedGoals() from runescape.js.</td></tr>
-  <tr><td><code>routes/drops.js</code></td><td>CRUD for drops and item_requests. Drops are filtered by group_id via player join.</td></tr>
-  <tr><td><code>services/runescape.js</code></td><td>All Jagex API integrations. <code>fetchHiscores(rsn)</code>: fetches CSV from hiscores, parses 30 skills + 11 activities (clue scrolls etc.) into structured JSON. <code>fetchRuneMetrics(rsn)</code>: fetches recent activities + quest points. <code>calcCombatLevel(skills)</code>: RS3 formula including Necromancy. <code>generateSuggestedGoals(players)</code>: analyses group averages and returns recommended goals.</td></tr>
-  <tr><td><code>utils/auth.js</code></td><td><code>hashPassword(secret)</code>: SHA-256 hash. <code>checkGroupAuth(req, res, groupId)</code>: middleware that reads X-Group-Password header and validates against DB hash. Returns 401 if wrong, 200 if unclaimed (open access).</td></tr>
+  <tr><td><code>routes/drops.js</code></td><td>CRUD for drops and item_requests.</td></tr>
+  <tr><td><code>routes/achievements.js</code></td><td><code>GET /api/achievements?group_id=X</code> — returns all achievement rows for the group. <code>POST /api/achievements</code> — upserts a single achievement (used for manual toggle).</td></tr>
+  <tr><td><code>routes/bossKills.js</code></td><td><code>GET /api/boss-kills?group_id=X</code> — returns all boss_kills rows with kills &gt; 0 for the group, joined with boss label lookup built from BOSS_KILL_PATTERNS.</td></tr>
+  <tr><td><code>services/runescape.js</code></td><td>All Jagex API integrations. <code>fetchHiscores(rsn)</code>: fetches CSV from hiscores, parses 30 skills + 30 activities (clue scrolls at rows 55–59) into structured JSON. <code>fetchRuneMetrics(rsn)</code>: fetches recent activities + quest points. <code>calcCombatLevel(skills)</code>: RS3 formula including Necromancy. <code>generateSuggestedGoals(players)</code>.</td></tr>
+  <tr><td><code>services/activitySync.js</code></td><td>Auto-detection pipeline run on every sync. <strong>autoLogDrops</strong>: scans activity text for "I found a X" / "I received X". <strong>autoDetectDiaries</strong>: matches activity text against 13 regions × 3 tiers, upserts achievements. <strong>autoCountBossKills</strong>: matches 26 boss patterns against activity text; if details contain an absolute kill count uses MAX(old, new); otherwise deduplicates via boss_kill_log and increments by 1. Exports BOSS_KILL_PATTERNS used by bossKills.js for labels.</td></tr>
+  <tr><td><code>utils/auth.js</code></td><td><code>hashPassword(secret)</code>: SHA-256 hash. <code>checkGroupAuth(req, res, groupId)</code>: middleware that reads X-Group-Password header and validates against DB hash.</td></tr>
 </table>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -449,23 +492,52 @@ pm2 start app</code></pre>
 <table>
   <tr><th>Feature</th><th>Data source</th><th>When updated</th></tr>
   <tr><td>Skill levels, XP, rank</td><td>RS3 Hiscores CSV API</td><td>Each "Sync" or "Sync All"</td></tr>
-  <tr><td>Clue scroll counts</td><td>RS3 Hiscores CSV API (activity rows)</td><td>Each sync (stored in stats_json)</td></tr>
-  <tr><td>Activity feed (level-ups, quests, boss kills)</td><td>RuneMetrics API (last 100 activities)</td><td>Each sync</td></tr>
-  <tr><td>Combat level</td><td>Calculated from skills (RS3 formula)</td><td>Each sync</td></tr>
+  <tr><td>Clue scroll counts (Easy/Medium/Hard/Elite/Master)</td><td>RS3 Hiscores CSV API — activity rows 55–59</td><td>Each sync (stored in stats_json)</td></tr>
+  <tr><td>Activity feed (level-ups, quests, boss kills, drops)</td><td>RuneMetrics API (last 100 activities)</td><td>Each sync</td></tr>
+  <tr><td>Combat level</td><td>Calculated from skills (RS3 formula, includes Necromancy)</td><td>Each sync</td></tr>
   <tr><td>Weekly XP gain</td><td>snapshots table (daily midnight cron)</td><td>Falls back to earliest snapshot if &lt;7 days old</td></tr>
-  <tr><td>Drop auto-detection</td><td>RuneMetrics activity text ("I found a X")</td><td>Each sync</td></tr>
-  <tr><td>Milestones / Firsts detection</td><td>Regex scan of activities_json</td><td>Real-time in browser on page load</td></tr>
+  <tr><td>Drop auto-detection</td><td>RuneMetrics activity text ("I found a X", "I received X")</td><td>Each sync (5-min background cron + manual sync)</td></tr>
+  <tr><td>Achievement Diary detection</td><td>RuneMetrics activity text matched against 13 regions × 3 tiers</td><td>Each sync; stored permanently in <code>achievements</code> table</td></tr>
+  <tr><td>Boss kills</td><td>RuneMetrics activity feed — accumulated per unique activity (deduped). If details contain absolute count, uses MAX(old, new).</td><td>Each sync; grows over time from 0</td></tr>
+  <tr><td>Milestones / Firsts detection</td><td>Regex scan of activities_json in browser</td><td>Real-time on page load</td></tr>
   <tr><td>RS3 player avatars</td><td>secure.runescape.com/m=avatar-rs/{RSN}/chat.png</td><td>Fetched by browser directly</td></tr>
   <tr><td>Skill icons</td><td>runescape.wiki/images/{Skill}.png</td><td>Fetched by browser directly</td></tr>
 </table>
+
+<h3>Boss kill detection — how it works</h3>
+<p>RS3 does not have a public boss kill hiscores API (unlike OSRS). Kills are accumulated from the RuneMetrics activity feed:</p>
+<ol>
+  <li>On each sync, <code>autoCountBossKills(playerId, activities)</code> processes the last 100 RuneMetrics activities</li>
+  <li>Each activity is checked against 26 boss patterns (most specific first, e.g. "Nex: Angel of Death" before "Nex")</li>
+  <li>Activities matching SKIP_PATTERNS (drops, level-ups, diary completions, quest completions) are ignored</li>
+  <li>If the activity <code>details</code> field contains an absolute kill count (e.g. "Kill count: 157"), the <code>boss_kills</code> row is upserted with <code>MAX(existing, new_count)</code></li>
+  <li>Otherwise, a unique signature for the activity is inserted into <code>boss_kill_log</code> (INSERT OR IGNORE). If the row is new (not seen before), kills increments by 1</li>
+  <li>Kill counts grow over time. They start at 0 for any boss not yet seen in the feed</li>
+</ol>
 
 <h3>Auth model</h3>
 <ul>
   <li><strong>Unclaimed group:</strong> anyone can read and write (no password)</li>
   <li><strong>Claimed group:</strong> anyone can read; write operations require the secret in the <code>X-Group-Password</code> header</li>
   <li><strong>Secret storage:</strong> SHA-256 hash in <code>groups.password_hash</code>; plain text is shown once and never stored</li>
-  <li><strong>Per-browser state:</strong> which groups you've added = <code>localStorage.myGroupIds</code>; your RSN per group = <code>localStorage.myRsn_{groupId}</code>; unlock state = <code>sessionStorage</code></li>
+  <li><strong>Per-browser state:</strong> sidebar groups = <code>localStorage.myGroupIds</code>; favourite groups = <code>localStorage.favoriteGroupIds</code>; RSN per group = <code>localStorage.myRsn_{groupId}</code>; unlock state = <code>sessionStorage</code></li>
 </ul>
+
+<h3>Hiscores CSV row layout (RS3)</h3>
+<p>The RS3 hiscores CSV has exactly 60 rows: 30 skills followed by 30 activities.</p>
+<table>
+  <tr><th>Rows</th><th>Content</th></tr>
+  <tr><td>0–29</td><td>Skills: Overall, Attack, Defence, Strength, Constitution, Ranged, Prayer, Magic, Cooking, Woodcutting, Fletching, Fishing, Firemaking, Crafting, Smithing, Mining, Herblore, Agility, Thieving, Slayer, Farming, Runecrafting, Hunter, Construction, Summoning, Dungeoneering, Divination, Invention, Archaeology, Necromancy</td></tr>
+  <tr><td>30–54</td><td>Non-clue activities (Bounty Hunter, Castle Wars, Barbarian Assault, etc.)</td></tr>
+  <tr><td>55</td><td>Clue Scrolls Easy</td></tr>
+  <tr><td>56</td><td>Clue Scrolls Medium</td></tr>
+  <tr><td>57</td><td>Clue Scrolls Hard</td></tr>
+  <tr><td>58</td><td>Clue Scrolls Elite</td></tr>
+  <tr><td>59</td><td>Clue Scrolls Master</td></tr>
+</table>
+<div class="callout callout-blue">
+  RS3 hiscores does <strong>not</strong> have boss kill rows (unlike OSRS). Boss kills must be accumulated from the RuneMetrics activity feed.
+</div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <hr class="section-divider">
@@ -473,38 +545,35 @@ pm2 start app</code></pre>
 
 <h3>🚀 Performance &amp; Reliability</h3>
 <ol>
-  <li><strong>Automated database backups</strong> — add a daily cron on the server: <code>cp gim.db ~/backups/gim_$(date +%Y%m%d).db</code>. Consider uploading to Hetzner object storage or a cloud bucket.</li>
-  <li><strong>Rate limiting</strong> — add <code>express-rate-limit</code> middleware to the <code>/api/players/:id/sync</code> endpoint. Jagex's hiscores API can return errors if hammered (e.g. 5 syncs / 30 seconds per group).</li>
-  <li><strong>Response caching</strong> — cache hiscores responses in memory for 5 minutes. Prevents re-fetching when multiple group members sync at the same time.</li>
-  <li><strong>Database indexes</strong> — add <code>CREATE INDEX IF NOT EXISTS idx_skills_player ON skills(player_id)</code> and similar for snapshots. Helps as the group grows. Run <code>EXPLAIN QUERY PLAN &lt;your query&gt;</code> to check.</li>
-  <li><strong>PM2 cluster mode</strong> — if you ever see performance issues under load, PM2 can run multiple Node.js instances. Not needed now but easy to enable.</li>
+  <li><strong>Automated database backups</strong> — add a daily cron on the server: <code>cp gim.db ~/backups/gim_$(date +%Y%m%d).db</code>. Consider uploading to Hetzner object storage.</li>
+  <li><strong>Rate limiting</strong> — add <code>express-rate-limit</code> middleware to the sync endpoints. Jagex's APIs can return errors if hammered.</li>
+  <li><strong>Response caching</strong> — cache hiscores responses in memory for 5 minutes. Prevents re-fetching when multiple members sync at the same time.</li>
+  <li><strong>Database indexes</strong> — add indexes on <code>boss_kills(player_id)</code>, <code>achievements(player_id)</code>, <code>skills(player_id)</code>. Run <code>EXPLAIN QUERY PLAN</code> to verify.</li>
   <li><strong>Server monitoring</strong> — set up UptimeRobot (free) to ping <code>https://groupiron.com/api/health</code> every 5 minutes and email you if it goes down.</li>
 </ol>
 
 <h3>✨ Features</h3>
 <ol>
-  <li><strong>Discord webhook notifications</strong> — when Sync All detects a new 99, big drop, or quest completion in the activity feed, fire a webhook to your group Discord channel. Needs a webhook URL stored as an env variable.</li>
-  <li><strong>Boss kill counters</strong> — hiscores CSV has boss kill count rows (Corporeal Beast, Nex, etc.) — pull and display these in the Leaderboards tab alongside clue scrolls.</li>
-  <li><strong>Mobile responsive improvements</strong> — the skills matrix and leaderboard cards get cramped on mobile. Add media queries for screens under 600px.</li>
+  <li><strong>Discord webhook notifications</strong> — when Sync All detects a new 99, big drop, quest completion, or diary tier in the activity feed, fire a webhook to your group Discord channel.</li>
   <li><strong>Persistent milestone storage</strong> — currently milestones are scanned from the last 100 RuneMetrics activities on every page load. If a milestone scrolls out of the feed it's lost. Add a <code>milestones</code> DB table and persist them during sync.</li>
   <li><strong>Group progress timeline</strong> — a chronological view showing the group's history: who joined, first syncs, milestone dates. Like a "group story" feed.</li>
-  <li><strong>Diary tracking</strong> — RS3 Achievement Diaries (Easy/Medium/Hard/Elite per region). Show which ones players have completed.</li>
   <li><strong>Light/dark theme toggle</strong> — the UI is dark-only. Add a toggle in the header.</li>
   <li><strong>Export data</strong> — a button to download the group's data as CSV or JSON for offline reference.</li>
   <li><strong>Group notes / shared pinboard</strong> — a simple text area per group for shared session notes, boss strategies, loot split rules etc.</li>
-  <li><strong>Scheduled sync</strong> — instead of manual Sync All, let the midnight cron also update RuneMetrics activities so milestones stay fresh automatically.</li>
+  <li><strong>Elite Diary tier</strong> — currently tracking Easy/Medium/Hard. Add Elite tier to the Achievement Diaries tab (if detectable in the RuneMetrics feed).</li>
+  <li><strong>Boss kill history chart</strong> — a line chart per boss showing kill count growth over time (would need a boss_kill_snapshots table similar to XP snapshots).</li>
 </ol>
 
 <h3>🔒 Security</h3>
 <ol>
   <li><strong>CORS restriction</strong> — currently CORS is wide open (<code>app.use(cors())</code>). Restrict to <code>https://groupiron.com</code> in production.</li>
-  <li><strong>Environment variables</strong> — move the JWT/secret salt and any future API keys into a <code>.env</code> file using <code>dotenv</code>, not hardcoded. Already gitignored.</li>
-  <li><strong>Input validation</strong> — add <code>express-validator</code> to the group/player creation routes to reject malformed RSNs or oversized inputs.</li>
+  <li><strong>Environment variables</strong> — move any future API keys into a <code>.env</code> file using <code>dotenv</code>. Already gitignored.</li>
+  <li><strong>Input validation</strong> — add <code>express-validator</code> to group/player creation routes to reject malformed RSNs or oversized inputs.</li>
 </ol>
 
 <hr class="section-divider">
 <p style="text-align:center; color:#aaa; font-size:11px; margin-top: 30px;">
-  RS3 GIM Companion · groupiron.com · Documentation generated May 2025
+  RS3 GIM Companion · groupiron.com · Documentation updated May 2025
   <br>To export as PDF: open this file in Chrome → File → Print → Save as PDF
 </p>
 
