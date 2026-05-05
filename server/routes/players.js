@@ -206,6 +206,7 @@ router.post('/sync-all/:groupId', async (req, res) => {
 
       results.push({ rsn: player.rsn, success: true });
     } catch (err) {
+      console.error(`[sync-all] Failed ${player.rsn}: ${err.message}`);
       results.push({ rsn: player.rsn, success: false, error: err.message });
     }
   }
