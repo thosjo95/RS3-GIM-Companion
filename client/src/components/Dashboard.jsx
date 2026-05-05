@@ -86,7 +86,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
 
       {/* LEADERBOARDS TAB */}
       {activeTab === 'leaderboards' && (
-        <LeaderboardsTab players={players} />
+        <LeaderboardsTab players={players} groupId={groupId} />
       )}
 
       {/* TIPS TAB */}

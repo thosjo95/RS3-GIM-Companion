@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { api } from '../api/client';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -650,51 +651,65 @@ function SkillMastery({ players, colorMap }) {
 
 // ── Boss Kills ────────────────────────────────────────────────────────────────
 
-// Ordered list matching the BOSS_KILLS array in server/services/runescape.js
-const TRACKED_BOSSES = [
-  'Corporeal Beast', 'General Graardor', "K'ril Tsutsaroth", 'Commander Zilyana',
-  "Kree'arra", 'Dagannoth Kings', 'Kalphite Queen', 'Nex', 'TzTok-Jad', 'TzKal-Zuk',
-  'Kalphite King', 'Vorago', 'Araxxi', 'Nex: Angel of Death', 'Telos, the Warden',
-  'Solak', 'Helwyr', 'Vindicta', 'Gregorovic', 'Twin Furies',
-  'Rasial, the First Necromancer', 'Zamorak, Lord of Erebus',
-];
-
-function BossKills({ players, colorMap }) {
+function BossKills({ players, colorMap, groupId }) {
+  const [rawKills, setRawKills] = useState([]);
+  const [loading, setLoading]   = useState(true);
   const [bossFilter, setBossFilter] = useState('All');
 
-  // Build per-player boss kill map from stats_json.bossKills
-  const playerData = useMemo(() => players.map(p => {
-    const stats = parseStats(p.stats_json);
-    return { ...p, bk: stats?.bossKills ?? {} };
-  }), [players]);
+  useEffect(() => {
+    if (!groupId) return;
+    setLoading(true);
+    api.getBossKills(groupId)
+      .then(data => { setRawKills(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [groupId]);
 
-  // Which bosses have any data?
-  const activeBosses = useMemo(() =>
-    TRACKED_BOSSES.filter(b => playerData.some(r => (r.bk[b] ?? 0) > 0)),
-  [playerData]);
+  // Build map: { playerId: { bossKey: kills } }
+  const killMap = useMemo(() => {
+    const map = {};
+    for (const row of rawKills) {
+      if (!map[row.player_id]) map[row.player_id] = {};
+      map[row.player_id][row.boss_key] = row.kills;
+    }
+    return map;
+  }, [rawKills]);
 
-  // Filtered boss list for display
+  // All bosses that have at least one kill, in the order they appear in rawKills
+  const activeBosses = useMemo(() => {
+    const seen = new Set();
+    const result = [];
+    for (const row of rawKills) {
+      if (!seen.has(row.boss_key)) {
+        seen.add(row.boss_key);
+        result.push({ key: row.boss_key, label: row.boss_label });
+      }
+    }
+    return result;
+  }, [rawKills]);
+
   const displayBosses = bossFilter === 'All'
     ? activeBosses
-    : activeBosses.filter(b => b === bossFilter);
+    : activeBosses.filter(b => b.key === bossFilter);
 
-  // Total kills per player (across all active bosses)
+  // Total kills per player across all active bosses
   const playerTotals = useMemo(() =>
-    Object.fromEntries(playerData.map(p => [
+    Object.fromEntries(players.map(p => [
       p.id,
-      activeBosses.reduce((s, b) => s + (p.bk[b] ?? 0), 0),
+      activeBosses.reduce((s, b) => s + (killMap[p.id]?.[b.key] ?? 0), 0),
     ])),
-  [playerData, activeBosses]);
+  [players, killMap, activeBosses]);
 
-  const noData = activeBosses.length === 0;
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /></div>;
+  }
 
-  if (noData) {
+  if (activeBosses.length === 0) {
     return (
       <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '24px 0' }}>
-        <p>No boss kill data yet — sync players to load hiscores.</p>
-        <p style={{ marginTop: 6, fontSize: 11 }}>
-          Note: Boss kill counts come from RS3 hiscores CSV rows 41+. If kills show 0 after syncing,
-          the row indices may need adjustment — compare with the RS3 hiscores site.
+        <p>No boss kills detected yet.</p>
+        <p style={{ marginTop: 8, fontSize: 11, lineHeight: 1.6 }}>
+          Kill counts are built from the RuneMetrics activity feed — they accumulate every time a player is synced.<br />
+          Sync your players and check back shortly. Only kills that appear in the activity feed will be counted.
         </p>
       </div>
     );
@@ -714,7 +729,7 @@ function BossKills({ players, colorMap }) {
             padding: '4px 8px', cursor: 'pointer', minWidth: 200,
           }}>
           <option value="All">All bosses ({activeBosses.length})</option>
-          {activeBosses.map(b => <option key={b} value={b}>{b}</option>)}
+          {activeBosses.map(b => <option key={b.key} value={b.key}>{b.label}</option>)}
         </select>
       </div>
 
@@ -726,14 +741,11 @@ function BossKills({ players, colorMap }) {
               <th align="left" style={{ padding: '4px 12px 8px 4px', fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>
                 Boss
               </th>
-              {playerData.map(p => (
-                <th key={p.id} align="center" style={{
-                  padding: '4px 12px 8px', fontSize: 12, fontWeight: 700,
-                  color: colorMap[p.id], whiteSpace: 'nowrap',
-                }}>
+              {players.map(p => (
+                <th key={p.id} align="center" style={{ padding: '4px 12px 8px', fontSize: 12, fontWeight: 700, color: colorMap[p.id], whiteSpace: 'nowrap' }}>
                   {p.rsn}
                   <div style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>
-                    {playerTotals[p.id].toLocaleString()} total
+                    {(playerTotals[p.id] ?? 0).toLocaleString()} total
                   </div>
                 </th>
               ))}
@@ -741,17 +753,17 @@ function BossKills({ players, colorMap }) {
           </thead>
           <tbody>
             {displayBosses.map((boss, bi) => {
-              const values = playerData.map(p => p.bk[boss] ?? 0);
+              const values = players.map(p => killMap[p.id]?.[boss.key] ?? 0);
               const maxVal = Math.max(...values);
               return (
-                <tr key={boss} style={{
+                <tr key={boss.key} style={{
                   borderTop: '1px solid var(--border)',
                   background: bi % 2 ? 'rgba(255,255,255,0.015)' : 'transparent',
                 }}>
                   <td style={{ padding: '7px 12px 7px 4px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-bright)' }}>
-                    {boss}
+                    {boss.label}
                   </td>
-                  {playerData.map((p, pi) => {
+                  {players.map((p, pi) => {
                     const val = values[pi];
                     const isTop = val > 0 && val === maxVal;
                     return (
@@ -771,6 +783,9 @@ function BossKills({ players, colorMap }) {
             })}
           </tbody>
         </table>
+      </div>
+      <div style={{ marginTop: 10, fontSize: 10, color: 'var(--text-dim)' }}>
+        Counted from RuneMetrics activity feed — accumulates each sync. Numbers grow over time as more kills are detected.
       </div>
     </div>
   );
@@ -848,7 +863,7 @@ function ClueScrolls({ players, colorMap }) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function LeaderboardsTab({ players }) {
+export default function LeaderboardsTab({ players, groupId }) {
   const [section, setSection] = useState('bosses');
   const colorMap = Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]]));
 
@@ -887,7 +902,7 @@ export default function LeaderboardsTab({ players }) {
         <div className="panel-body">
           {section === 'firsts'     && <FirstsBoard    players={players} colorMap={colorMap} />}
           {section === 'milestones' && <MilestonesFeed players={players} colorMap={colorMap} />}
-          {section === 'bosses'     && <BossKills      players={players} colorMap={colorMap} />}
+          {section === 'bosses'     && <BossKills      players={players} colorMap={colorMap} groupId={groupId} />}
           {section === 'clues'      && <ClueScrolls    players={players} colorMap={colorMap} />}
           {section === 'mastery'    && <SkillMastery   players={players} colorMap={colorMap} />}
         </div>

@@ -14,6 +14,7 @@ app.use('/api/players',      require('./routes/players'));
 app.use('/api/goals',        require('./routes/goals'));
 app.use('/api/drops',        require('./routes/drops'));
 app.use('/api/achievements', require('./routes/achievements'));
+app.use('/api/boss-kills',   require('./routes/bossKills'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
@@ -22,7 +23,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().t
 // Detects diary completions (persisted) and auto-logs drops.
 cron.schedule('*/5 * * * *', async () => {
   const { fetchRuneMetrics } = require('./services/runescape');
-  const { autoLogDrops, autoDetectDiaries } = require('./services/activitySync');
+  const { autoLogDrops, autoDetectDiaries, autoCountBossKills } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players WHERE group_id IS NOT NULL').all();
   console.log(`[5-min cron] Syncing activities for ${players.length} player(s)…`);
@@ -34,6 +35,7 @@ cron.schedule('*/5 * * * *', async () => {
         .run(JSON.stringify(rm.activities), player.id);
       autoLogDrops(player.id, rm.activities);
       autoDetectDiaries(player.id, rm.activities);
+      autoCountBossKills(player.id, rm.activities);
     } catch (err) {
       console.error(`[5-min cron] ${player.rsn}: ${err.message}`);
     }
@@ -46,7 +48,7 @@ cron.schedule('*/5 * * * *', async () => {
 // Runs at midnight every day — syncs hiscores (skills, boss kills, clue scrolls).
 cron.schedule('0 0 * * *', async () => {
   const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('./services/runescape');
-  const { autoLogDrops, autoDetectDiaries } = require('./services/activitySync');
+  const { autoLogDrops, autoDetectDiaries, autoCountBossKills } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players').all();
   const today   = new Date().toISOString().slice(0, 10);
@@ -59,9 +61,10 @@ cron.schedule('0 0 * * *', async () => {
       ]);
       const combat = calcCombatLevel(data.skills);
 
+      // stats_json: hiscores activities (clue scrolls) + RuneMetrics meta
+      // Note: bossKills are now tracked separately via the boss_kills table
       const statsJson = JSON.stringify({
-        activities: data.activities,   // clue scrolls etc. (read by LeaderboardsTab)
-        bossKills:  data.bossKills,
+        activities:     data.activities,   // hiscores activities — clue scrolls etc.
         questsComplete: rm?.questsComplete ?? null,
         questsStarted:  rm?.questsStarted  ?? null,
       });
@@ -92,6 +95,7 @@ cron.schedule('0 0 * * *', async () => {
       if (rm?.activities) {
         autoLogDrops(player.id, rm.activities);
         autoDetectDiaries(player.id, rm.activities);
+        autoCountBossKills(player.id, rm.activities);
       }
 
       console.log(`[daily cron] Snapshotted ${player.rsn}`);

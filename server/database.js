@@ -119,6 +119,26 @@ db.exec(`
   );
 `);
 
+// Boss kill tracker — populated from RuneMetrics activity feed (safe to run on existing DBs)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS boss_kills (
+    player_id INTEGER NOT NULL,
+    boss_key  TEXT    NOT NULL,
+    kills     INTEGER NOT NULL DEFAULT 0,
+    last_seen TEXT,
+    PRIMARY KEY (player_id, boss_key),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+
+  -- Dedup log: each unique (player, activity_sig) counted at most once
+  CREATE TABLE IF NOT EXISTS boss_kill_log (
+    player_id    INTEGER NOT NULL,
+    activity_sig TEXT    NOT NULL,
+    PRIMARY KEY (player_id, activity_sig),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+`);
+
 // Migrations — safe to run on existing DBs
 try { db.exec('ALTER TABLE goals ADD COLUMN details_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}

@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
 const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
-const { autoLogDrops, autoDetectDiaries } = require('../services/activitySync');
+const { autoLogDrops, autoDetectDiaries, autoCountBossKills } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 
 function getPlayerGroupId(playerId) {
@@ -111,8 +111,7 @@ router.post('/:id/sync', async (req, res) => {
     const combat = calcCombatLevel(data.skills);
 
     const statsJson = JSON.stringify({
-      activities: data.activities,   // raw hiscores rows (clue scrolls read from here)
-      bossKills:  data.bossKills,
+      activities:     data.activities,   // hiscores activities (clue scrolls etc.)
       questsComplete: runeMetrics?.questsComplete ?? null,
       questsStarted:  runeMetrics?.questsStarted  ?? null,
     });
@@ -147,6 +146,7 @@ router.post('/:id/sync', async (req, res) => {
     if (runeMetrics?.activities) {
       autoLogDrops(player.id, runeMetrics.activities);
       autoDetectDiaries(player.id, runeMetrics.activities);
+      autoCountBossKills(player.id, runeMetrics.activities);
     }
 
     res.json({ success: true, totalXp: data.totalXp, totalLevel: data.totalLevel, combat });
@@ -171,8 +171,7 @@ router.post('/sync-all/:groupId', async (req, res) => {
       const combat = calcCombatLevel(data.skills);
 
       const statsJson = JSON.stringify({
-        activities: data.activities,
-        bossKills:  data.bossKills,
+        activities:     data.activities,
         questsComplete: runeMetrics?.questsComplete ?? null,
         questsStarted:  runeMetrics?.questsStarted  ?? null,
       });
@@ -203,6 +202,7 @@ router.post('/sync-all/:groupId', async (req, res) => {
       if (runeMetrics?.activities) {
         autoLogDrops(player.id, runeMetrics.activities);
         autoDetectDiaries(player.id, runeMetrics.activities);
+        autoCountBossKills(player.id, runeMetrics.activities);
       }
 
       results.push({ rsn: player.rsn, success: true });

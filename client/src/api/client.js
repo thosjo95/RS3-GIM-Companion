@@ -77,4 +77,7 @@ export const api = {
   getAchievements: (groupId) => request(`/achievements?group_id=${groupId}`),
   setAchievement: (playerId, key, achieved) =>
     request(`/achievements/${playerId}/${encodeURIComponent(key)}`, { method: 'PUT', body: { achieved } }),
+
+  // Boss kills (activity-feed based)
+  getBossKills: (groupId) => request(`/boss-kills?group_id=${groupId}`),
 };
