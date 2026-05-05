@@ -160,9 +160,24 @@ function ClaimModal({ group, onConfirm, onCancel }) {
         <div className="modal-body">
           {!secret ? (
             <>
-              <p style={{color:'var(--text-dim)',fontSize:13,marginBottom:16}}>
+              <p style={{color:'var(--text-dim)',fontSize:13,marginBottom:12}}>
                 Claiming <strong style={{color:'var(--text-bright)'}}>{group?.name}</strong> generates a group secret. Share it with your members on Discord so they can unlock and contribute.
               </p>
+
+              {/* Warning */}
+              <div style={{
+                padding:'10px 12px', marginBottom:16, borderRadius:'var(--radius)',
+                background:'rgba(192,64,64,0.10)', border:'1px solid rgba(192,64,64,0.4)',
+                fontSize:12, color:'var(--text-dim)', lineHeight:1.5,
+              }}>
+                <span style={{fontWeight:700, color:'var(--red-bright)'}}>⚠️ Only claim groups you own.</span>
+                {' '}Claiming locks the group to this secret — other members will need it to contribute.
+                <br/><br/>
+                If your group has already been claimed by someone else, or you've lost your secret,{' '}
+                <strong style={{color:'var(--text-bright)'}}>contact the developer</strong> for help:
+                {' '}<a href="mailto:support@example.com" style={{color:'var(--gold)'}}>Discord / GitHub issues</a>.
+              </div>
+
               {players.length > 0 && (
                 <div className="form-group" style={{marginBottom:0}}>
                   <label className="form-label">Who are you? (optional)</label>
@@ -612,7 +627,9 @@ function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
 }
 
 // Group switcher — shown in sidebar when multiple groups exist
-function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch }) {
+function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, onRemove, onFavorite, favoriteGroupIds }) {
+  const [hoveredId, setHoveredId] = React.useState(null);
+
   return (
     <nav className="sidebar">
       <div className="nav-group">
@@ -620,18 +637,54 @@ function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch }) {
           <span>Groups</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onSearch} title="Find or import a group" style={{fontSize:13}}>🔍</button>
         </div>
-        {groups.map(g => (
-          <div
-            key={g.id}
-            className={`nav-item${g.id === activeGroupId ? ' active' : ''}`}
-            onClick={() => onSelect(g.id)}>
-            <span className="icon">🏰</span>
-            <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.name}</span>
-            {g.member_count != null && (
-              <span className="tag" style={{marginLeft:'auto',fontSize:10}}>{g.member_count}</span>
-            )}
-          </div>
-        ))}
+        {groups.map(g => {
+          const isFav = favoriteGroupIds?.includes(g.id);
+          const isHovered = hoveredId === g.id;
+          return (
+            <div
+              key={g.id}
+              className={`nav-item${g.id === activeGroupId ? ' active' : ''}`}
+              style={{position:'relative', paddingRight: isHovered ? 52 : undefined}}
+              onClick={() => onSelect(g.id)}
+              onMouseEnter={() => setHoveredId(g.id)}
+              onMouseLeave={() => setHoveredId(null)}>
+              <span className="icon">🏰</span>
+              <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{g.name}</span>
+              {/* Favorite star — always visible if favorited, else shown on hover */}
+              {(isFav || isHovered) && (
+                <button
+                  onClick={e => { e.stopPropagation(); onFavorite(g.id); }}
+                  title={isFav ? 'Unpin from top' : 'Pin to top'}
+                  style={{
+                    background:'none', border:'none', cursor:'pointer', padding:'0 2px',
+                    fontSize:13, lineHeight:1,
+                    color: isFav ? 'var(--gold)' : 'var(--text-dim)',
+                    flexShrink: 0,
+                  }}>
+                  {isFav ? '★' : '☆'}
+                </button>
+              )}
+              {/* Remove button — shown on hover */}
+              {isHovered && (
+                <button
+                  onClick={e => { e.stopPropagation(); onRemove(g.id); }}
+                  title="Remove from sidebar"
+                  style={{
+                    background:'none', border:'none', cursor:'pointer', padding:'0 2px',
+                    fontSize:13, lineHeight:1,
+                    color:'var(--text-dim)',
+                    flexShrink: 0,
+                  }}>
+                  ✕
+                </button>
+              )}
+              {/* Member count tag — only when not hovered */}
+              {!isHovered && g.member_count != null && (
+                <span className="tag" style={{marginLeft:'auto',fontSize:10,flexShrink:0}}>{g.member_count}</span>
+              )}
+            </div>
+          );
+        })}
         <div className="nav-item" onClick={onSearch} style={{marginTop:4}}>
           <span className="icon">🔍</span>
           <span>Find / Add Group</span>
@@ -653,6 +706,14 @@ function saveMyGroupIds(ids) {
   localStorage.setItem('myGroupIds', JSON.stringify([...new Set(ids)]));
 }
 
+function loadFavoriteIds() {
+  try { return JSON.parse(localStorage.getItem('favoriteGroupIds') || '[]'); } catch { return []; }
+}
+
+function saveFavoriteIds(ids) {
+  localStorage.setItem('favoriteGroupIds', JSON.stringify([...new Set(ids)]));
+}
+
 export default function App() {
   const [allGroups, setAllGroups] = useState([]);
   const [myGroupIds, setMyGroupIdsState] = useState(loadMyGroupIds);
@@ -667,14 +728,21 @@ export default function App() {
   const [toasts, pushToast] = useToasts();
   const [myRsn, setMyRsnState] = useState('');
   const [groupPasswords, setGroupPasswordsState] = useState(loadStoredPasswords);
+  const [favoriteGroupIds, setFavoriteGroupIdsState] = useState(loadFavoriteIds);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showRsnModal, setShowRsnModal] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
 
-  // Only show groups this browser has explicitly added
-  const groups = allGroups.filter(g => myGroupIds.includes(g.id));
+  // Only show groups this browser has explicitly added, favorites first
+  const groups = allGroups
+    .filter(g => myGroupIds.includes(g.id))
+    .sort((a, b) => {
+      const aFav = favoriteGroupIds.includes(a.id) ? 0 : 1;
+      const bFav = favoriteGroupIds.includes(b.id) ? 0 : 1;
+      return aFav - bFav;
+    });
 
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
@@ -688,6 +756,30 @@ export default function App() {
     const updated = [...new Set([...loadMyGroupIds(), id])];
     saveMyGroupIds(updated);
     setMyGroupIdsState(updated);
+  }
+
+  function removeFromSidebar(id) {
+    const updated = loadMyGroupIds().filter(x => x !== id);
+    saveMyGroupIds(updated);
+    setMyGroupIdsState(updated);
+    // Also remove from favorites
+    const updatedFavs = loadFavoriteIds().filter(x => x !== id);
+    saveFavoriteIds(updatedFavs);
+    setFavoriteGroupIdsState(updatedFavs);
+    // If it was the active group, switch to first remaining
+    if (id === activeGroupId) {
+      const remaining = allGroups.filter(g => updated.includes(g.id));
+      setActiveGroupId(remaining[0]?.id ?? null);
+    }
+  }
+
+  function toggleFavorite(id) {
+    const current = loadFavoriteIds();
+    const updated = current.includes(id)
+      ? current.filter(x => x !== id)
+      : [...current, id];
+    saveFavoriteIds(updated);
+    setFavoriteGroupIdsState(updated);
   }
 
   function saveGroupPassword(groupId, pw) {
@@ -851,6 +943,9 @@ export default function App() {
           onSelect={selectGroup}
           onNewGroup={() => setCreatingGroup(true)}
           onSearch={() => setShowSearchModal(true)}
+          onRemove={removeFromSidebar}
+          onFavorite={toggleFavorite}
+          favoriteGroupIds={favoriteGroupIds}
         />
         <main className="content">
           {group ? (
