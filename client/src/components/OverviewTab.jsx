@@ -826,7 +826,7 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn }) {
+export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn, pendingRequests = [], onGoToRequests }) {
   const [selectedId, setSelectedId] = useState(null);
   const [weeklyMode, setWeeklyMode] = useState(false);
   const selectedPlayer = players.find(p => p.id === selectedId) ?? null;
@@ -922,6 +922,31 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
           </div>
         ))}
       </div>
+
+      {/* Pending item requests banner */}
+      {pendingRequests.length > 0 && (
+        <button
+          onClick={onGoToRequests}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 16px', cursor: 'pointer',
+            background: 'rgba(200,168,75,0.07)',
+            border: '1px solid rgba(200,168,75,0.35)',
+            borderRadius: 'var(--radius-lg)', textAlign: 'left',
+          }}
+        >
+          <span style={{ fontSize: 18, flexShrink: 0 }}>🎯</span>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--gold)' }}>
+              {pendingRequests.length} active item request{pendingRequests.length !== 1 ? 's' : ''}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-dim)', marginLeft: 8 }}>
+              {[...new Set(pendingRequests.map(r => r.rsn))].join(', ')}
+            </span>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--gold)', flexShrink: 0 }}>View in Items &amp; Drops →</span>
+        </button>
+      )}
 
       {/* Two-column content */}
       <div className="grid-2">

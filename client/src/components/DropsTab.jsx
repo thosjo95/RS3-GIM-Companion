@@ -147,20 +147,31 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
     item_name: '',
     boss_name: BOSS_NAMES[0] ?? '',
     priority: 'medium',
+    quantity: 1,
     notes: '',
   });
+  // Separate state for the custom activity/boss name so typing doesn't hide the input
+  const [customBoss, setCustomBoss] = useState('');
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  // Auto-fill item suggestions when boss changes
-  const bossDrops = BOSSES[form.boss_name]?.drops ?? [];
+  const isCustom = form.boss_name === '__custom';
+  // Auto-fill item suggestions when a known boss is selected
+  const bossDrops = (!isCustom && BOSSES[form.boss_name]?.drops) ?? [];
 
   async function submit(e) {
     e.preventDefault();
-    if (!form.item_name.trim() || !form.boss_name.trim()) return onToast('Item and boss are required', 'error');
+    const resolvedBoss = isCustom ? customBoss.trim() : form.boss_name.trim();
+    if (!form.item_name.trim()) return onToast('Item name is required', 'error');
+    if (!resolvedBoss) return onToast('Activity/Boss name is required', 'error');
     setSaving(true);
     try {
-      await api.addRequest({ ...form, player_id: Number(form.player_id) });
+      await api.addRequest({
+        ...form,
+        boss_name: resolvedBoss,
+        player_id: Number(form.player_id),
+        quantity: Number(form.quantity) || 1,
+      });
       onSaved();
       onClose();
     } catch (err) { onToast(err.message, 'error'); }
@@ -183,7 +194,7 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Boss</label>
+              <label className="form-label">Activity / Boss</label>
               <select className="form-select" value={form.boss_name} onChange={e => set('boss_name', e.target.value)}>
                 {BOSS_NAMES.map(b => {
                   const boss = BOSSES[b];
@@ -192,18 +203,23 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
                 <option value="__custom">— Other (type below) —</option>
               </select>
             </div>
-            {form.boss_name === '__custom' && (
+            {isCustom && (
               <div className="form-group">
-                <label className="form-label">Custom boss name</label>
-                <input className="form-input" onChange={e => set('boss_name', e.target.value)}
-                  placeholder="Enter boss name" />
+                <label className="form-label">Activity / Boss Name</label>
+                <input
+                  className="form-input"
+                  value={customBoss}
+                  onChange={e => setCustomBoss(e.target.value)}
+                  placeholder="e.g. Clue Scroll, Slayer, Grand Exchange…"
+                  autoFocus
+                />
               </div>
             )}
             <div className="form-group">
               <label className="form-label">Item *</label>
               <input className="form-input" list="drop-list" value={form.item_name}
                 onChange={e => set('item_name', e.target.value)}
-                placeholder="Select from list or type custom item" required />
+                placeholder="Select from list or type any item name" required />
               <datalist id="drop-list">
                 {bossDrops.map(d => <option key={d} value={d} />)}
               </datalist>
@@ -220,18 +236,26 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
             </div>
             <div className="grid-2" style={{ gap: 10 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Priority</label>
-                <select className="form-select" value={form.priority} onChange={e => set('priority', e.target.value)}>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
+                <label className="form-label">Amount needed</label>
+                <input
+                  type="number" min="1" className="form-input"
+                  value={form.quantity}
+                  onChange={e => set('quantity', e.target.value)}
+                />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Notes</label>
-                <input className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)}
-                  placeholder="Optional" />
+                <label className="form-label">Priority</label>
+                <select className="form-select" value={form.priority} onChange={e => set('priority', e.target.value)}>
+                  <option value="high">🔴 High</option>
+                  <option value="medium">🟡 Medium</option>
+                  <option value="low">🟢 Low</option>
+                </select>
               </div>
+            </div>
+            <div className="form-group mt-8" style={{ marginBottom: 0 }}>
+              <label className="form-label">Notes</label>
+              <input className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)}
+                placeholder="Optional — e.g. for BiS gear setup" />
             </div>
           </div>
           <div className="modal-footer">
@@ -319,6 +343,7 @@ function RequestRow({ req, players, onToggle, onDelete }) {
         <div className="flex align-center gap-8">
           <div className={`priority-dot priority-${req.priority}`} title={`${req.priority} priority`} />
           <span style={{ color: 'var(--text-bright)', fontWeight: 600 }}>{req.item_name}</span>
+          {req.quantity > 1 && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>×{req.quantity}</span>}
           {req.obtained ? <span style={{ fontSize: 11, color: 'var(--green-bright)' }}>✓ Obtained</span> : null}
         </div>
         {req.notes && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{req.notes}</div>}

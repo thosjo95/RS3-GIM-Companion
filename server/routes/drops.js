@@ -80,7 +80,7 @@ router.get('/requests', (req, res) => {
 
 // POST /api/drops/requests
 router.post('/requests', (req, res) => {
-  const { player_id, item_name, boss_name, priority, notes } = req.body;
+  const { player_id, item_name, boss_name, priority, notes, quantity } = req.body;
   if (!player_id || !item_name?.trim() || !boss_name?.trim()) {
     return res.status(400).json({ error: 'player_id, item_name, and boss_name are required' });
   }
@@ -88,9 +88,9 @@ router.post('/requests', (req, res) => {
   if (!checkGroupAuth(req, res, groupId)) return;
 
   const result = db.prepare(`
-    INSERT INTO item_requests (player_id, item_name, boss_name, priority, notes)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(player_id, item_name.trim(), boss_name.trim(), priority || 'medium', notes?.trim() || null);
+    INSERT INTO item_requests (player_id, item_name, boss_name, priority, notes, quantity)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(player_id, item_name.trim(), boss_name.trim(), priority || 'medium', notes?.trim() || null, quantity || 1);
   res.status(201).json({ id: result.lastInsertRowid });
 });
 

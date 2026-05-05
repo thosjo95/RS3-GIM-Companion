@@ -623,6 +623,7 @@ export default function App() {
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [group, setGroup] = useState(null);
   const [goals, setGoals] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddPlayer, setShowAddPlayer] = useState(false);
@@ -685,12 +686,14 @@ export default function App() {
   async function loadGroup(id) {
     if (!id) return;
     try {
-      const [g, g_goals] = await Promise.all([
+      const [g, g_goals, g_reqs] = await Promise.all([
         api.getGroup(id),
         api.getGoals(id),
+        api.getRequests(id),
       ]);
       setGroup(g);
       setGoals(g_goals);
+      setPendingRequests(g_reqs.filter(r => !r.obtained));
     } catch (err) {
       pushToast(err.message, 'error');
     }
@@ -825,6 +828,7 @@ export default function App() {
               <Dashboard
                 group={group}
                 goals={goals}
+                pendingRequests={pendingRequests}
                 onRefresh={refresh}
                 onToast={pushToast}
                 activeTab={activeTab}

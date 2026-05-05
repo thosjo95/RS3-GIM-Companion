@@ -5,7 +5,7 @@ import OverviewTab from './OverviewTab';
 import TipsTab from './TipsTab';
 import LeaderboardsTab from './LeaderboardsTab';
 
-export default function Dashboard({ group, goals, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
+export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
   const players = group?.players || [];
 
   const TABS = [
@@ -47,6 +47,8 @@ export default function Dashboard({ group, goals, onRefresh, onToast, activeTab,
           onToast={onToast}
           canWrite={canWrite}
           myRsn={myRsn}
+          pendingRequests={pendingRequests ?? []}
+          onGoToRequests={() => onTabChange('drops')}
         />
       )}
 
