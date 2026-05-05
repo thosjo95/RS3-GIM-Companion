@@ -4,6 +4,41 @@ const db      = require('../database');
 const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
 const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
+const { notifyGoalCompleted } = require('../services/discord');
+
+// Auto-complete any skill-type goals whose target level has been reached.
+// skillsMap = { SkillName: { level, xp, rank }, ... } (from fetchHiscores)
+function autoCompleteGoals(playerId, skillsMap) {
+  const groupId = db.prepare('SELECT group_id FROM players WHERE id = ?').get(playerId)?.group_id;
+  if (!groupId) return;
+
+  const activeGoals = db.prepare(`
+    SELECT * FROM goals
+    WHERE owner_id = ?
+      AND category = 'skill'
+      AND skill IS NOT NULL
+      AND target_value IS NOT NULL
+      AND status != 'complete'
+  `).all(playerId);
+
+  for (const goal of activeGoals) {
+    const skillData = skillsMap[goal.skill];
+    if (!skillData) continue;
+    if (skillData.level >= goal.target_value) {
+      db.prepare(
+        "UPDATE goals SET status = 'complete', completed_at = CURRENT_TIMESTAMP WHERE id = ?"
+      ).run(goal.id);
+
+      const contribs = db.prepare(`
+        SELECT p.rsn FROM goal_contributors gc
+        JOIN players p ON p.id = gc.player_id
+        WHERE gc.goal_id = ?
+      `).all(goal.id);
+      notifyGoalCompleted(groupId, goal.title, contribs.map(c => c.rsn));
+      console.log(`[goals] Auto-completed "${goal.title}" for player ${playerId}`);
+    }
+  }
+}
 
 function getPlayerGroupId(playerId) {
   return db.prepare('SELECT group_id FROM players WHERE id = ?').get(playerId)?.group_id;
@@ -143,6 +178,8 @@ router.post('/:id/sync', async (req, res) => {
       ON CONFLICT(player_id, snapshot_date) DO NOTHING
     `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
+    autoCompleteGoals(player.id, data.skills);
+
     res.json({ success: true, totalXp: data.totalXp, totalLevel: data.totalLevel, combat });
   } catch (err) {
     res.status(502).json({ error: err.message });
@@ -191,6 +228,8 @@ router.post('/sync-all/:groupId', async (req, res) => {
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(player_id, snapshot_date) DO NOTHING
       `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
+
+      autoCompleteGoals(player.id, data.skills);
 
       results.push({ rsn: player.rsn, success: true });
     } catch (err) {
