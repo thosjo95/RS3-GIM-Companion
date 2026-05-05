@@ -171,6 +171,8 @@ try { db.exec('ALTER TABLE groups ADD COLUMN last_activity DATETIME'); } catch {
 try { db.exec('ALTER TABLE players ADD COLUMN stats_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE players ADD COLUMN activities_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE item_requests ADD COLUMN quantity INTEGER DEFAULT 1'); } catch {}
+// confirmed=1 means player has verified they own/wear the item; 0=planning/goal
+try { db.exec('ALTER TABLE equipment_loadouts ADD COLUMN confirmed INTEGER DEFAULT 0'); } catch {}
 
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {

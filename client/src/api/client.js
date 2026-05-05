@@ -86,7 +86,8 @@ export const api = {
   saveGroupNotes: (groupId, content) => request(`/group-notes/${groupId}`, { method: 'PUT', body: { content } }),
 
   // Equipment loadouts
-  getEquipment:      (playerId, style)           => request(`/equipment?player_id=${playerId}&style=${style}`),
-  saveEquipmentSlot: (playerId, style, slot, itemName) =>
-    request(`/equipment/${playerId}/${style}/${encodeURIComponent(slot)}`, { method: 'PUT', body: { item_name: itemName } }),
+  getEquipment:      (playerId, style)                    => request(`/equipment?player_id=${playerId}&style=${style}`),
+  getGroupEquipment: (groupId)                            => request(`/equipment/group/${groupId}`),
+  saveEquipmentSlot: (playerId, style, slot, itemName, confirmed = false) =>
+    request(`/equipment/${playerId}/${style}/${encodeURIComponent(slot)}`, { method: 'PUT', body: { item_name: itemName, confirmed } }),
 };

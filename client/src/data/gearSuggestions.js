@@ -3,6 +3,21 @@
 // reqs: null means no level requirement to wield/wear.
 // Items sorted BiS → entry tier within each slot so the first canWear() hit = best available.
 
+// ── Quest skill prerequisites ─────────────────────────────────────────────────
+// Skills a player needs BEFORE they can even start/complete the quest that
+// unlocks certain items.  Used in canWear() / getMissingReqs() so we don't
+// recommend quest-locked items to players who can't do the quest yet.
+export const QUEST_SKILL_REQUIREMENTS = {
+  'Smoking Kills':        { Slayer: 35 },
+  'Haunted Mine':         { Agility: 15, Strength: 20 },
+  'Barbarian Assault':    {},
+  'Recipe for Disaster':  { Cooking: 48 },
+  'Roving Elves':         { Agility: 56 },
+  'Horror from the Deep': { Agility: 35 },
+  'The World Wakes':      { Attack: 60, Constitution: 60, Defence: 60, Magic: 60,
+                            Prayer: 60, Ranged: 60, Strength: 60, Summoning: 60 },
+};
+
 // ── RS3 XP thresholds for goal creation ──────────────────────────────────────
 export const LEVEL_XP = {
   1: 0, 40: 37224, 50: 101333, 55: 166636, 60: 273742,
@@ -21,16 +36,43 @@ export function levelToXp(lvl) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** True if the player can equip the item (meets item reqs AND quest skill reqs). */
 export function canWear(item, skillLevels) {
-  if (!item?.reqs) return true;
-  return Object.entries(item.reqs).every(([skill, need]) => (skillLevels[skill] ?? 1) >= need);
+  if (!item) return false;
+  // Check item equip requirements
+  if (item.reqs) {
+    const ok = Object.entries(item.reqs).every(([skill, need]) => (skillLevels[skill] ?? 1) >= need);
+    if (!ok) return false;
+  }
+  // Check quest skill prerequisites
+  if (item.quest) {
+    const qReqs = QUEST_SKILL_REQUIREMENTS[item.quest] ?? {};
+    const ok = Object.entries(qReqs).every(([skill, need]) => (skillLevels[skill] ?? 1) >= need);
+    if (!ok) return false;
+  }
+  return true;
 }
 
+/** Returns array of { skill, need, have, forQuest? } for every unmet requirement. */
 export function getMissingReqs(item, skillLevels) {
-  if (!item?.reqs) return [];
-  return Object.entries(item.reqs)
-    .filter(([skill, need]) => (skillLevels[skill] ?? 1) < need)
-    .map(([skill, need]) => ({ skill, need, have: skillLevels[skill] ?? 1 }));
+  const missing = [];
+  if (item?.reqs) {
+    for (const [skill, need] of Object.entries(item.reqs)) {
+      const have = skillLevels[skill] ?? 1;
+      if (have < need) missing.push({ skill, need, have });
+    }
+  }
+  if (item?.quest) {
+    const qReqs = QUEST_SKILL_REQUIREMENTS[item.quest] ?? {};
+    for (const [skill, need] of Object.entries(qReqs)) {
+      const have = skillLevels[skill] ?? 1;
+      if (have < need && !missing.some(m => m.skill === skill)) {
+        missing.push({ skill, need, have, forQuest: item.quest });
+      }
+    }
+  }
+  return missing;
 }
 
 // Returns { best: item|null, next: item|null } for a slot given current skills.
