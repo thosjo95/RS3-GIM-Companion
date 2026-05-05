@@ -1,46 +1,9 @@
 const express = require('express');
-const router = express.Router();
-const db = require('../database');
+const router  = express.Router();
+const db      = require('../database');
 const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
+const { autoLogDrops, autoDetectDiaries } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
-
-// RS3 RuneMetrics drop patterns — "I found a Dragon platebody." etc.
-const DROP_PATTERNS = [
-  /^I found (?:a |an )(.+?)\.?$/i,
-  /^I received (?:a |an )(.+?)\.?$/i,
-];
-
-function parseActivityDate(str) {
-  if (!str) return new Date().toISOString();
-  try {
-    const d = new Date(str.replace(/(\d+)-(\w+)-(\d+)/, '$2 $1 $3'));
-    return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-  } catch { return new Date().toISOString(); }
-}
-
-function autoLogActivityDrops(playerId, activities) {
-  if (!activities?.length) return;
-  for (const act of activities) {
-    for (const pattern of DROP_PATTERNS) {
-      const match = act.text?.match(pattern);
-      if (match) {
-        const itemName = match[1].trim();
-        const droppedAt = parseActivityDate(act.date);
-        // Skip if a drop entry with same player + item + same day already exists
-        const dayStr = droppedAt.slice(0, 10);
-        const existing = db.prepare(
-          "SELECT id FROM drops WHERE player_id = ? AND item_name = ? AND date(dropped_at) = ?"
-        ).get(playerId, itemName, dayStr);
-        if (!existing) {
-          db.prepare(
-            'INSERT INTO drops (player_id, item_name, notes, dropped_at) VALUES (?, ?, ?, ?)'
-          ).run(playerId, itemName, 'Auto-detected from activity feed', droppedAt);
-        }
-        break;
-      }
-    }
-  }
-}
 
 function getPlayerGroupId(playerId) {
   return db.prepare('SELECT group_id FROM players WHERE id = ?').get(playerId)?.group_id;
@@ -148,16 +111,10 @@ router.post('/:id/sync', async (req, res) => {
     const combat = calcCombatLevel(data.skills);
 
     const statsJson = JSON.stringify({
-      clueScrolls: {
-        all: data.activities['Clue Scrolls All'] ?? null,
-        easy: data.activities['Clue Scrolls Easy'] ?? null,
-        medium: data.activities['Clue Scrolls Medium'] ?? null,
-        hard: data.activities['Clue Scrolls Hard'] ?? null,
-        elite: data.activities['Clue Scrolls Elite'] ?? null,
-        master: data.activities['Clue Scrolls Master'] ?? null,
-      },
+      activities: data.activities,   // raw hiscores rows (clue scrolls read from here)
+      bossKills:  data.bossKills,
       questsComplete: runeMetrics?.questsComplete ?? null,
-      questsStarted: runeMetrics?.questsStarted ?? null,
+      questsStarted:  runeMetrics?.questsStarted  ?? null,
     });
     const activitiesJson = runeMetrics ? JSON.stringify(runeMetrics.activities) : null;
 
@@ -187,8 +144,10 @@ router.post('/:id/sync', async (req, res) => {
       ON CONFLICT(player_id, snapshot_date) DO NOTHING
     `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
-    // Auto-log any activity-based drops (e.g. "I found a Dragon platebody.")
-    if (runeMetrics?.activities) autoLogActivityDrops(player.id, runeMetrics.activities);
+    if (runeMetrics?.activities) {
+      autoLogDrops(player.id, runeMetrics.activities);
+      autoDetectDiaries(player.id, runeMetrics.activities);
+    }
 
     res.json({ success: true, totalXp: data.totalXp, totalLevel: data.totalLevel, combat });
   } catch (err) {
@@ -212,16 +171,10 @@ router.post('/sync-all/:groupId', async (req, res) => {
       const combat = calcCombatLevel(data.skills);
 
       const statsJson = JSON.stringify({
-        clueScrolls: {
-          all: data.activities['Clue Scrolls All'] ?? null,
-          easy: data.activities['Clue Scrolls Easy'] ?? null,
-          medium: data.activities['Clue Scrolls Medium'] ?? null,
-          hard: data.activities['Clue Scrolls Hard'] ?? null,
-          elite: data.activities['Clue Scrolls Elite'] ?? null,
-          master: data.activities['Clue Scrolls Master'] ?? null,
-        },
+        activities: data.activities,
+        bossKills:  data.bossKills,
         questsComplete: runeMetrics?.questsComplete ?? null,
-        questsStarted: runeMetrics?.questsStarted ?? null,
+        questsStarted:  runeMetrics?.questsStarted  ?? null,
       });
 
       db.prepare(
@@ -247,7 +200,10 @@ router.post('/sync-all/:groupId', async (req, res) => {
         ON CONFLICT(player_id, snapshot_date) DO NOTHING
       `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
-      if (runeMetrics?.activities) autoLogActivityDrops(player.id, runeMetrics.activities);
+      if (runeMetrics?.activities) {
+        autoLogDrops(player.id, runeMetrics.activities);
+        autoDetectDiaries(player.id, runeMetrics.activities);
+      }
 
       results.push({ rsn: player.rsn, success: true });
     } catch (err) {

@@ -104,6 +104,21 @@ db.exec(`
   );
 `);
 
+// Achievements table (safe to run on existing DBs)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS achievements (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id   INTEGER NOT NULL,
+    type        TEXT    NOT NULL DEFAULT 'diary',
+    key         TEXT    NOT NULL,
+    achieved    INTEGER NOT NULL DEFAULT 0,
+    achieved_at DATETIME,
+    manual      INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(player_id, key),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+`);
+
 // Migrations — safe to run on existing DBs
 try { db.exec('ALTER TABLE goals ADD COLUMN details_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}

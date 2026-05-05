@@ -72,4 +72,9 @@ export const api = {
   addRequest: (body) => request('/drops/requests', { method: 'POST', body }),
   updateRequest: (id, body) => request(`/drops/requests/${id}`, { method: 'PUT', body }),
   deleteRequest: (id) => request(`/drops/requests/${id}`, { method: 'DELETE' }),
+
+  // Achievement diaries
+  getAchievements: (groupId) => request(`/achievements?group_id=${groupId}`),
+  setAchievement: (playerId, key, achieved) =>
+    request(`/achievements/${playerId}/${encodeURIComponent(key)}`, { method: 'PUT', body: { achieved } }),
 };

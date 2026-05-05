@@ -4,6 +4,7 @@ import VaultTab from './VaultTab';
 import OverviewTab from './OverviewTab';
 import TipsTab from './TipsTab';
 import LeaderboardsTab from './LeaderboardsTab';
+import AchievementsTab from './AchievementsTab';
 
 export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
   const players = group?.players || [];
@@ -11,9 +12,10 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
   const TABS = [
     { id: 'overview',      label: '📊 Overview' },
     { id: 'drops',         label: '💎 Items & Drops' },
-    { id: 'leaderboards',  label: '🏅 Leaderboards' },
     { id: 'vault',         label: '🏆 Group Vault' },
     { id: 'tips',          label: '💡 Tips and Milestones' },
+    { id: 'achievements',  label: '📋 Achievement Diaries' },
+    { id: 'leaderboards',  label: '🏅 Leaderboards' },
   ];
 
   return (
@@ -70,6 +72,16 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
               <div className="icon">🏆</div>
               <p>Add players first to use the vault.</p>
             </div>
+      )}
+
+      {/* ACHIEVEMENTS TAB */}
+      {activeTab === 'achievements' && (
+        <AchievementsTab
+          players={players}
+          groupId={groupId}
+          canWrite={canWrite}
+          onToast={onToast}
+        />
       )}
 
       {/* LEADERBOARDS TAB */}

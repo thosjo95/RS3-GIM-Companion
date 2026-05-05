@@ -1,40 +1,83 @@
 const express = require('express');
-const cors = require('cors');
-const cron = require('node-cron');
-const db = require('./database');
+const cors    = require('cors');
+const cron    = require('node-cron');
+const db      = require('./database');
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/groups', require('./routes/groups'));
-app.use('/api/players', require('./routes/players'));
-app.use('/api/goals', require('./routes/goals'));
-app.use('/api/drops', require('./routes/drops'));
+app.use('/api/groups',       require('./routes/groups'));
+app.use('/api/players',      require('./routes/players'));
+app.use('/api/goals',        require('./routes/goals'));
+app.use('/api/drops',        require('./routes/drops'));
+app.use('/api/achievements', require('./routes/achievements'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// Daily snapshot cron: runs at midnight every day
-cron.schedule('0 0 * * *', async () => {
-  const { fetchHiscores, calcCombatLevel } = require('./services/runescape');
-  const players = db.prepare('SELECT * FROM players').all();
-  const today = new Date().toISOString().slice(0, 10);
+// ── 5-minute activity sync ─────────────────────────────────────────────────────
+// Fetches the last 20 RuneMetrics activities for every tracked player.
+// Detects diary completions (persisted) and auto-logs drops.
+cron.schedule('*/5 * * * *', async () => {
+  const { fetchRuneMetrics } = require('./services/runescape');
+  const { autoLogDrops, autoDetectDiaries } = require('./services/activitySync');
+
+  const players = db.prepare('SELECT * FROM players WHERE group_id IS NOT NULL').all();
+  console.log(`[5-min cron] Syncing activities for ${players.length} player(s)…`);
 
   for (const player of players) {
     try {
-      const data = await fetchHiscores(player.rsn);
-      const combat = calcCombatLevel(data.skills);
-      db.prepare('UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ? WHERE id = ?').run(combat, player.id);
+      const rm = await fetchRuneMetrics(player.rsn, 20);
+      db.prepare('UPDATE players SET activities_json = ? WHERE id = ?')
+        .run(JSON.stringify(rm.activities), player.id);
+      autoLogDrops(player.id, rm.activities);
+      autoDetectDiaries(player.id, rm.activities);
+    } catch (err) {
+      console.error(`[5-min cron] ${player.rsn}: ${err.message}`);
+    }
+    // Small delay to avoid hammering the RuneMetrics API
+    await new Promise(r => setTimeout(r, 300));
+  }
+});
 
-      const upsert = db.prepare(`
-        INSERT INTO skills (player_id, skill_name, level, xp, rank)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(player_id, skill_name) DO UPDATE SET
-          level = excluded.level, xp = excluded.xp, rank = excluded.rank
-      `);
+// ── Daily snapshot cron ────────────────────────────────────────────────────────
+// Runs at midnight every day — syncs hiscores (skills, boss kills, clue scrolls).
+cron.schedule('0 0 * * *', async () => {
+  const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('./services/runescape');
+  const { autoLogDrops, autoDetectDiaries } = require('./services/activitySync');
+
+  const players = db.prepare('SELECT * FROM players').all();
+  const today   = new Date().toISOString().slice(0, 10);
+
+  for (const player of players) {
+    try {
+      const [data, rm] = await Promise.all([
+        fetchHiscores(player.rsn),
+        fetchRuneMetrics(player.rsn, 20).catch(() => null),
+      ]);
+      const combat = calcCombatLevel(data.skills);
+
+      const statsJson = JSON.stringify({
+        activities: data.activities,   // clue scrolls etc. (read by LeaderboardsTab)
+        bossKills:  data.bossKills,
+        questsComplete: rm?.questsComplete ?? null,
+        questsStarted:  rm?.questsStarted  ?? null,
+      });
+      const activitiesJson = rm ? JSON.stringify(rm.activities) : null;
+
+      db.prepare(
+        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = COALESCE(?, activities_json) WHERE id = ?'
+      ).run(combat, statsJson, activitiesJson, player.id);
+
       db.runTransaction(() => {
+        const upsert = db.prepare(`
+          INSERT INTO skills (player_id, skill_name, level, xp, rank)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(player_id, skill_name) DO UPDATE SET
+            level = excluded.level, xp = excluded.xp, rank = excluded.rank
+        `);
         for (const [name, s] of Object.entries(data.skills)) {
           upsert.run(player.id, name, s.level, s.xp, s.rank ?? -1);
         }
@@ -46,27 +89,32 @@ cron.schedule('0 0 * * *', async () => {
         ON CONFLICT(player_id, snapshot_date) DO NOTHING
       `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
-      console.log(`[cron] Snapshotted ${player.rsn}`);
+      if (rm?.activities) {
+        autoLogDrops(player.id, rm.activities);
+        autoDetectDiaries(player.id, rm.activities);
+      }
+
+      console.log(`[daily cron] Snapshotted ${player.rsn}`);
     } catch (err) {
-      console.error(`[cron] Failed ${player.rsn}: ${err.message}`);
+      console.error(`[daily cron] Failed ${player.rsn}: ${err.message}`);
     }
   }
 });
 
-// Cleanup cron: runs at 2am every day, deletes groups inactive for 30+ days
+// ── Cleanup cron ───────────────────────────────────────────────────────────────
+// Runs at 2am every day — removes groups inactive for 30+ days.
 cron.schedule('0 2 * * *', () => {
   try {
     const stale = db.prepare(
       "SELECT id FROM groups WHERE last_activity IS NOT NULL AND last_activity < datetime('now', '-30 days')"
     ).all();
-
     for (const group of stale) {
       db.prepare('DELETE FROM groups WHERE id = ?').run(group.id);
-      console.log(`[cron] Deleted stale group ${group.id}`);
+      console.log(`[cleanup cron] Deleted stale group ${group.id}`);
     }
-    if (stale.length) console.log(`[cron] Removed ${stale.length} inactive group(s)`);
+    if (stale.length) console.log(`[cleanup cron] Removed ${stale.length} inactive group(s)`);
   } catch (err) {
-    console.error(`[cron] Cleanup failed: ${err.message}`);
+    console.error(`[cleanup cron] Failed: ${err.message}`);
   }
 });
 

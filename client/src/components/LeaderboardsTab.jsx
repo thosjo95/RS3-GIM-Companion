@@ -384,7 +384,7 @@ function FirstsBoard({ players, colorMap }) {
       )}
 
       <div style={{ marginTop: 16, fontSize: 10, color: 'var(--text-dim)', textAlign: 'center' }}>
-        Firsts are detected from RuneMetrics activity feeds (last ~100 entries per player). Skill milestones without a date come from current hiscores data.
+        Firsts are detected from RuneMetrics activity feeds (last 20 entries, auto-synced every 5 min). Skill milestones without a date come from current hiscores data.
       </div>
     </div>
   );
@@ -648,6 +648,106 @@ function SkillMastery({ players, colorMap }) {
   );
 }
 
+// ── Boss Kills ────────────────────────────────────────────────────────────────
+
+// Ordered list matching the BOSS_KILLS array in server/services/runescape.js
+const TRACKED_BOSSES = [
+  'Corporeal Beast', 'General Graardor', "K'ril Tsutsaroth", 'Commander Zilyana',
+  "Kree'arra", 'Dagannoth Kings', 'Kalphite Queen', 'Nex', 'TzTok-Jad', 'TzKal-Zuk',
+  'Kalphite King', 'Vorago', 'Araxxi', 'Nex: Angel of Death', 'Telos, the Warden',
+  'Solak', 'Helwyr', 'Vindicta', 'Gregorovic', 'Twin Furies',
+  'Rasial, the First Necromancer', 'Zamorak, Lord of Erebus',
+];
+
+function BossKills({ players, colorMap }) {
+  const [sortBoss, setSortBoss] = useState(null);
+
+  // Build per-player boss kill map from stats_json.bossKills
+  const rows = useMemo(() => players.map(p => {
+    const stats = parseStats(p.stats_json);
+    return { ...p, bk: stats?.bossKills ?? {} };
+  }), [players]);
+
+  // Which bosses have any data?
+  const activeBosses = useMemo(() =>
+    TRACKED_BOSSES.filter(b => rows.some(r => (r.bk[b] ?? 0) > 0)),
+  [rows]);
+
+  // Sort rows by chosen boss or by total kills
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      if (sortBoss) return (b.bk[sortBoss] ?? 0) - (a.bk[sortBoss] ?? 0);
+      const totA = activeBosses.reduce((s, k) => s + (a.bk[k] ?? 0), 0);
+      const totB = activeBosses.reduce((s, k) => s + (b.bk[k] ?? 0), 0);
+      return totB - totA;
+    });
+  }, [rows, sortBoss, activeBosses]);
+
+  const noData = activeBosses.length === 0;
+
+  if (noData) {
+    return (
+      <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '24px 0' }}>
+        <p>No boss kill data yet — sync players to load hiscores.</p>
+        <p style={{ marginTop: 6, fontSize: 11 }}>
+          Note: Boss kill counts come from RS3 hiscores CSV rows 41+. If kills show 0 after syncing,
+          the row indices may need adjustment — compare with the RS3 hiscores site.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
+        <thead>
+          <tr style={{ color: 'var(--text-dim)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            <th align="left" style={{ padding: '4px 8px 8px 4px', fontWeight: 600 }}>Player</th>
+            {activeBosses.map(b => (
+              <th key={b} align="center"
+                style={{ padding: '4px 6px 8px', fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer',
+                  color: sortBoss === b ? 'var(--gold)' : undefined }}
+                title={`Sort by ${b}`}
+                onClick={() => setSortBoss(sortBoss === b ? null : b)}>
+                {b.length > 14 ? b.slice(0, 13) + '…' : b}
+                {sortBoss === b ? ' ▼' : ''}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedRows.map((p, ri) => {
+            const total = activeBosses.reduce((s, k) => s + (p.bk[k] ?? 0), 0);
+            return (
+              <tr key={p.id} style={{ borderTop: '1px solid var(--border)', background: ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent' }}>
+                <td style={{ padding: '6px 8px 6px 4px', fontWeight: 700, color: colorMap[p.id], whiteSpace: 'nowrap' }}>
+                  {p.rsn}
+                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-dim)', marginLeft: 6 }}>({total.toLocaleString()})</span>
+                </td>
+                {activeBosses.map(b => {
+                  const val = p.bk[b] ?? 0;
+                  const maxVal = Math.max(...rows.map(r => r.bk[b] ?? 0));
+                  const isTop = val > 0 && val === maxVal;
+                  return (
+                    <td key={b} align="center" style={{
+                      padding: '6px 6px',
+                      background: isTop ? 'rgba(200,168,75,0.18)' : undefined,
+                      fontWeight: isTop ? 700 : 400,
+                      color: isTop ? 'var(--gold)' : val > 0 ? 'var(--text)' : 'var(--text-dim)',
+                    }}>
+                      {val > 0 ? val.toLocaleString() : '—'}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ── Clue Scrolls ──────────────────────────────────────────────────────────────
 
 function ClueScrolls({ players, colorMap }) {
@@ -727,8 +827,9 @@ export default function LeaderboardsTab({ players }) {
   const SECTIONS = [
     { id: 'firsts',     label: '🥇 Firsts' },
     { id: 'milestones', label: '🏆 Milestones' },
-    { id: 'mastery',    label: '⭐ Skill Mastery' },
+    { id: 'bosses',     label: '⚔️ Boss Kills' },
     { id: 'clues',      label: '📜 Clue Scrolls' },
+    { id: 'mastery',    label: '⭐ Skill Mastery' },
   ];
 
   if (players.length === 0) {
@@ -758,13 +859,14 @@ export default function LeaderboardsTab({ players }) {
         <div className="panel-body">
           {section === 'firsts'     && <FirstsBoard    players={players} colorMap={colorMap} />}
           {section === 'milestones' && <MilestonesFeed players={players} colorMap={colorMap} />}
-          {section === 'mastery'    && <SkillMastery   players={players} colorMap={colorMap} />}
+          {section === 'bosses'     && <BossKills      players={players} colorMap={colorMap} />}
           {section === 'clues'      && <ClueScrolls    players={players} colorMap={colorMap} />}
+          {section === 'mastery'    && <SkillMastery   players={players} colorMap={colorMap} />}
         </div>
       </div>
 
       <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
-        Firsts and milestones are auto-detected from RuneMetrics activity feeds during sync · Clue scroll counts from RS3 hiscores
+        Firsts/Milestones auto-detected from RuneMetrics activity feeds (synced every 5 min) · Boss kills &amp; clue scroll counts from RS3 hiscores
       </div>
     </div>
   );

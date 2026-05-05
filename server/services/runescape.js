@@ -9,7 +9,7 @@ const SKILLS = [
   'Necromancy',
 ];
 
-// Post-skill rows in the RS3 hiscores CSV (indices 30+)
+// Post-skill rows in the RS3 hiscores CSV (indices 30–40)
 const ACTIVITIES = [
   'Bounty Hunter Hunter',
   'Bounty Hunter Rogue',
@@ -22,6 +22,34 @@ const ACTIVITIES = [
   'LMS',
   'Soul Wars Zeal',
   'Rifts Closed',
+];
+
+// Boss kill-count rows in the RS3 hiscores CSV (indices 41+).
+// Note: exact ordering may vary between Jagex updates — values will be null if
+// an index is missing. Compare synced data with the RS3 hiscores site to verify.
+const BOSS_KILLS = [
+  'Corporeal Beast',
+  'General Graardor',
+  "K'ril Tsutsaroth",
+  'Commander Zilyana',
+  "Kree'arra",
+  'Dagannoth Kings',
+  'Kalphite Queen',
+  'Nex',
+  'TzTok-Jad',
+  'TzKal-Zuk',
+  'Kalphite King',
+  'Vorago',
+  'Araxxi',
+  'Nex: Angel of Death',
+  'Telos, the Warden',
+  'Solak',
+  'Helwyr',
+  'Vindicta',
+  'Gregorovic',
+  'Twin Furies',
+  'Rasial, the First Necromancer',
+  'Zamorak, Lord of Erebus',
 ];
 
 const HISCORES_URL = 'https://secure.runescape.com/m=hiscore/index_lite.ws';
@@ -43,26 +71,26 @@ async function fetchHiscores(rsn) {
 
 function parseHiscores(csv) {
   const lines = csv.trim().split('\n');
-  const result = { skills: {}, activities: {}, totalXp: 0, totalLevel: 0 };
+  const result = { skills: {}, activities: {}, bossKills: {}, totalXp: 0, totalLevel: 0 };
 
   for (let i = 0; i < SKILLS.length && i < lines.length; i++) {
     const parts = lines[i].trim().split(',');
     if (parts.length < 3) continue;
 
-    const rank = parseInt(parts[0], 10);
+    const rank  = parseInt(parts[0], 10);
     const level = parseInt(parts[1], 10);
-    const xp = parseInt(parts[2], 10);
-    const name = SKILLS[i];
+    const xp    = parseInt(parts[2], 10);
+    const name  = SKILLS[i];
 
     result.skills[name] = { rank: rank < 0 ? null : rank, level, xp };
 
     if (i === 0) {
-      result.totalXp = xp > 0 ? xp : 0;
+      result.totalXp    = xp    > 0 ? xp    : 0;
       result.totalLevel = level > 0 ? level : 0;
     }
   }
 
-  // Parse activities/minigames (best-effort — indices may not be exact for all accounts)
+  // Activities / minigames (indices 30–40, format: rank,score)
   for (let i = 0; i < ACTIVITIES.length; i++) {
     const csvIdx = SKILLS.length + i;
     if (csvIdx >= lines.length) break;
@@ -72,11 +100,21 @@ function parseHiscores(csv) {
     if (score >= 0) result.activities[ACTIVITIES[i]] = score;
   }
 
+  // Boss kill counts (indices 41+, format: rank,kills)
+  for (let i = 0; i < BOSS_KILLS.length; i++) {
+    const csvIdx = SKILLS.length + ACTIVITIES.length + i;
+    if (csvIdx >= lines.length) break;
+    const parts = lines[csvIdx].trim().split(',');
+    if (parts.length < 2) continue;
+    const kills = parseInt(parts[1], 10);
+    if (kills >= 0) result.bossKills[BOSS_KILLS[i]] = kills;
+  }
+
   return result;
 }
 
-async function fetchRuneMetrics(rsn) {
-  const url = `${RUNEMETRICS_URL}?user=${encodeURIComponent(rsn)}&activities=100`;
+async function fetchRuneMetrics(rsn, activityCount = 20) {
+  const url = `${RUNEMETRICS_URL}?user=${encodeURIComponent(rsn)}&activities=${activityCount}`;
   const response = await fetch(url, {
     headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
     signal: AbortSignal.timeout(8000),
@@ -189,4 +227,4 @@ function generateSuggestedGoals(players) {
   return suggestions;
 }
 
-module.exports = { fetchHiscores, fetchRuneMetrics, calcCombatLevel, generateSuggestedGoals, SKILLS };
+module.exports = { fetchHiscores, fetchRuneMetrics, calcCombatLevel, generateSuggestedGoals, SKILLS, BOSS_KILLS };
