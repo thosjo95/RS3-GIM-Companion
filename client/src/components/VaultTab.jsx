@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { api } from '../api/client';
 import GearLoadouts from './GearLoadouts';
 
@@ -33,7 +33,6 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
     api.getGroupNotes(groupId)
       .then(data => { setContent(data.content || ''); setSaved(data.content || ''); setUpdatedAt(data.updated_at); })
       .catch(() => {});
-    // Close on Escape
     function onKey(e) { if (e.key === 'Escape') onClose(); }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -65,7 +64,6 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
   const isDirty = content !== savedContent;
 
   return (
-    /* Backdrop */
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
@@ -73,16 +71,13 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
         background: 'rgba(0,0,0,0.55)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end',
       }}>
-      {/* Panel slides in from the right */}
       <div style={{
-        width: 420, maxWidth: '90vw',
-        height: '100%',
+        width: 420, maxWidth: '90vw', height: '100%',
         background: 'var(--bg-panel)',
         borderLeft: '1px solid var(--border)',
         display: 'flex', flexDirection: 'column',
         boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
       }}>
-        {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0,
@@ -94,7 +89,6 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Save status */}
             <span style={{
               fontSize: 11,
               color: status === 'saved' ? 'var(--green-bright)' : status === 'saving' ? 'var(--text-dim)' : status === 'error' ? 'var(--red)' : 'var(--text-dim)',
@@ -112,7 +106,6 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
           </div>
         </div>
 
-        {/* Textarea */}
         <textarea
           autoFocus
           value={content}
@@ -123,20 +116,16 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
             : 'No notes yet. Unlock the group to add notes.'}
           style={{
             flex: 1, padding: '16px 20px',
-            background: 'transparent',
-            border: 'none', outline: 'none',
-            color: 'var(--text-bright)',
-            fontSize: 13, lineHeight: 1.7,
+            background: 'transparent', border: 'none', outline: 'none',
+            color: 'var(--text-bright)', fontSize: 13, lineHeight: 1.7,
             resize: 'none', fontFamily: 'inherit',
             cursor: canWrite ? 'text' : 'default',
           }}
         />
 
-        {/* Footer */}
         <div style={{
           padding: '10px 20px', borderTop: '1px solid var(--border)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          flexShrink: 0,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
         }}>
           <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
             {content.length} chars{!canWrite && ' · 🔒 Unlock to edit'}
@@ -157,66 +146,53 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
 
 // ── Drop item card ────────────────────────────────────────────────────────────
 
-function ItemCard({ item, groupEquipment, myRsn, canWrite, groupId, onToast, onGearAssigned }) {
+function ItemCard({ item, groupEquipment, myRsn, canWrite, onToast }) {
   const isDupe   = item.players.length > 1;
   const totalQty = item.drops.reduce((a, d) => a + (d.quantity || 1), 0);
   const maxValue = Math.max(...item.drops.map(d => d.value_gp || 0));
-  const [assigning, setAssigning] = useState(false);
 
   // Find confirmed gear entries that match this item name (case-insensitive)
   const wornBy = useMemo(() => {
     if (!groupEquipment?.length) return [];
     const nameLower = item.name.toLowerCase();
     const matches = groupEquipment.filter(e => e.confirmed && e.item_name.toLowerCase() === nameLower);
-    // Deduplicate by rsn
     const seen = new Set();
     return matches.filter(e => { if (seen.has(e.rsn)) return false; seen.add(e.rsn); return true; });
   }, [groupEquipment, item.name]);
 
-  // Find if myRsn already has this item confirmed in any slot
   const alreadyAssigned = useMemo(() => {
     if (!myRsn || !groupEquipment?.length) return false;
     const nameLower = item.name.toLowerCase();
     return groupEquipment.some(e => e.rsn === myRsn && e.item_name.toLowerCase() === nameLower && e.confirmed);
   }, [groupEquipment, myRsn, item.name]);
 
-  // Whether the logged-in player dropped this item (to enable "Assign to my gear")
   const myDropped = item.drops.some(d => d.rsn === myRsn);
-
-  async function handleAssign() {
-    // We assign the item to the "weapon" slot as a planning/confirmed entry.
-    // We don't know the exact slot, so we'll call a special approach:
-    // open the gear tab — instead, we notify user with a toast + open nothing (they can set it in the Gear panel).
-    // Better: just mark it as confirmed in the 'weapon' slot if it sounds like a weapon, else leave slot choice to them.
-    // We'll show a toast telling them to assign it via the Gear panel.
-    onToast?.(`To assign "${item.name}" to your gear, use the ⚔️ Gear Loadouts section below.`, 'info');
-  }
 
   return (
     <div style={{
       background: 'var(--bg-panel)',
-      border: `1px solid ${isDupe ? 'var(--gold-dark)' : wornBy.length ? '#4caf5055' : 'var(--border)'}`,
+      border: `1px solid ${wornBy.length ? '#4caf5055' : isDupe ? 'var(--gold-dark)' : 'var(--border)'}`,
       borderRadius: 'var(--radius-lg)',
       padding: '12px 14px',
       display: 'flex', flexDirection: 'column', gap: 8,
       position: 'relative', transition: 'border-color 0.15s',
     }}>
-      {isDupe && !wornBy.length && (
-        <div style={{
-          position: 'absolute', top: -1, right: 10,
-          background: 'var(--gold-dark)', color: 'var(--bg-root)',
-          fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
-          padding: '2px 6px', borderRadius: '0 0 5px 5px',
-        }}>DUPE</div>
-      )}
-      {wornBy.length > 0 && (
+      {wornBy.length > 0 ? (
         <div style={{
           position: 'absolute', top: -1, right: 10,
           background: '#4caf50', color: '#fff',
           fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
           padding: '2px 6px', borderRadius: '0 0 5px 5px',
         }}>WORN</div>
-      )}
+      ) : isDupe ? (
+        <div style={{
+          position: 'absolute', top: -1, right: 10,
+          background: 'var(--gold-dark)', color: 'var(--bg-root)',
+          fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
+          padding: '2px 6px', borderRadius: '0 0 5px 5px',
+        }}>DUPE</div>
+      ) : null}
+
       <div>
         <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)', marginBottom: 1 }}>
           💎 {item.name}
@@ -225,6 +201,7 @@ function ItemCard({ item, groupEquipment, myRsn, canWrite, groupId, onToast, onG
         {item.boss && <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>🗡️ {item.boss}</div>}
         {maxValue > 0 && <div style={{ fontSize: 11, color: 'var(--green-bright)' }}>{fmtGp(maxValue)}</div>}
       </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {item.drops.map((drop, i) => (
           <div key={i} style={{
@@ -240,7 +217,7 @@ function ItemCard({ item, groupEquipment, myRsn, canWrite, groupId, onToast, onG
         ))}
       </div>
 
-      {/* Worn-by status */}
+      {/* Worn-by status row */}
       {wornBy.length > 0 && (
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 2,
@@ -259,11 +236,10 @@ function ItemCard({ item, groupEquipment, myRsn, canWrite, groupId, onToast, onG
         </div>
       )}
 
-      {/* Assign to my gear button — only for logged-in player who dropped it and hasn't assigned yet */}
+      {/* Assign hint — only if logged-in player dropped it but hasn't assigned yet */}
       {canWrite && myRsn && myDropped && !alreadyAssigned && (
         <button
-          onClick={handleAssign}
-          disabled={assigning}
+          onClick={() => onToast?.(`To assign "${item.name}" to your gear, use the ⚔️ Gear Loadouts panel on the right.`, 'info')}
           style={{
             padding: '5px 10px', fontSize: 11, fontWeight: 600,
             background: 'rgba(200,168,75,0.12)',
@@ -275,6 +251,68 @@ function ItemCard({ item, groupEquipment, myRsn, canWrite, groupId, onToast, onG
           ⚔️ Assign to my gear
         </button>
       )}
+    </div>
+  );
+}
+
+// ── Worn Equipment section ────────────────────────────────────────────────────
+// Shows confirmed gear even if the item was never logged as a drop
+
+function WornEquipmentSection({ groupEquipment }) {
+  // Group by item name → list of { rsn, slot, updated_at }
+  const byItem = useMemo(() => {
+    const confirmed = groupEquipment.filter(e => e.confirmed && e.item_name?.trim());
+    const map = {};
+    for (const e of confirmed) {
+      const key = e.item_name.toLowerCase();
+      if (!map[key]) map[key] = { name: e.item_name, wearers: [] };
+      map[key].wearers.push({ rsn: e.rsn, slot: e.slot, updated_at: e.updated_at });
+    }
+    // Sort by most recently updated
+    return Object.values(map).sort((a, b) => {
+      const aMax = Math.max(...a.wearers.map(w => w.updated_at || '').map(d => d ? new Date(d).getTime() : 0));
+      const bMax = Math.max(...b.wearers.map(w => w.updated_at || '').map(d => d ? new Date(d).getTime() : 0));
+      return bMax - aMax;
+    });
+  }, [groupEquipment]);
+
+  if (!byItem.length) return null;
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, color: 'var(--text-dim)',
+        textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8,
+      }}>
+        ⚔️ Confirmed Worn Gear <span style={{ fontWeight: 400 }}>({byItem.length})</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {byItem.map(item => (
+          <div key={item.name.toLowerCase()} style={{
+            background: 'var(--bg-panel)',
+            border: '1px solid #4caf5033',
+            borderLeft: '3px solid #4caf50',
+            borderRadius: 'var(--radius)',
+            padding: '8px 12px',
+            display: 'flex', flexDirection: 'column', gap: 4,
+          }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-bright)' }}>
+              ✅ {item.name}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {item.wearers.map((w, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+                  <span style={{ color: 'var(--gold)', fontWeight: 600 }}>👤 {w.rsn}</span>
+                  <span style={{ color: 'var(--text-dim)' }}>· {w.slot}</span>
+                  {w.updated_at && (
+                    <span style={{ color: 'var(--text-dim)' }}>· claimed {fmtDate(w.updated_at)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -323,31 +361,23 @@ function AchievementCard({ goal }) {
   );
 }
 
-// ── Group Vault (drops + achievements) ────────────────────────────────────────
+// ── Group Vault panel ─────────────────────────────────────────────────────────
 
-function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite }) {
-  const [drops, setDrops]               = useState([]);
-  const [groupEquipment, setGroupEquip] = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [sortBy, setSortBy]             = useState('recent');
-  const [filterBoss, setFilterBoss]     = useState('all');
+function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEquipment, onReloadDrops }) {
+  const [drops, setDrops]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [sortBy, setSortBy]         = useState('recent');
+  const [filterBoss, setFilterBoss] = useState('all');
   const [filterPlayer, setFilterPlayer] = useState('all');
 
-  async function load() {
+  async function loadDrops() {
     setLoading(true);
-    try {
-      const [dropsData, gearData] = await Promise.all([
-        api.getDrops(groupId),
-        api.getGroupEquipment(groupId).catch(() => []),
-      ]);
-      setDrops(dropsData);
-      setGroupEquip(gearData);
-    }
+    try { setDrops(await api.getDrops(groupId)); }
     catch (err) { onToast?.(err.message, 'error'); }
     finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); }, [groupId]);
+  useEffect(() => { loadDrops(); }, [groupId]);
 
   const bosses = useMemo(() => [...new Set(drops.map(d => d.boss_name).filter(Boolean))].sort(), [drops]);
 
@@ -377,6 +407,11 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite }) {
   const dupeCount    = vaultItems.filter(i => i.players.length > 1).length;
   const achievements = goals.filter(g => g.status === 'vaulted');
 
+  function handleRefreshAll() {
+    loadDrops();
+    onReloadDrops(); // also refreshes groupEquipment in parent
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Title row */}
@@ -392,7 +427,7 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite }) {
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{vaultItems.length} item{vaultItems.length !== 1 ? 's' : ''} logged</div>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={load}>↻</button>
+        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={handleRefreshAll}>↻</button>
       </div>
 
       {/* Sort buttons */}
@@ -424,7 +459,7 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite }) {
       ) : vaultItems.length === 0 ? (
         <div className="empty-state" style={{ padding: '24px 0' }}>
           <div className="icon" style={{ fontSize: 28 }}>💎</div>
-          <p style={{ fontSize: 12 }}>No drops logged yet. Add them in the Items & Drops tab.</p>
+          <p style={{ fontSize: 12 }}>No drops logged yet. Add them in the Items &amp; Drops tab.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -435,14 +470,16 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite }) {
               groupEquipment={groupEquipment}
               myRsn={myRsn}
               canWrite={canWrite}
-              groupId={groupId}
               onToast={onToast}
             />
           ))}
         </div>
       )}
 
-      {/* Achievements */}
+      {/* Worn Equipment — confirmed gear, always visible even without drops */}
+      <WornEquipmentSection groupEquipment={groupEquipment} />
+
+      {/* Vaulted achievements */}
       {achievements.length > 0 && (
         <div style={{ marginTop: 8 }}>
           <div className="section-title" style={{ marginBottom: 10, fontSize: 12 }}>🏆 Achievements</div>
@@ -458,12 +495,21 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite }) {
 // ── Root VaultTab ─────────────────────────────────────────────────────────────
 
 export default function VaultTab({ players, groupId, goals = [], onToast, canWrite, myRsn }) {
-  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesOpen, setNotesOpen]         = useState(false);
+  const [groupEquipment, setGroupEquip]   = useState([]);
+
+  // Central fetch for group equipment — shared by VaultPanel and GearLoadouts
+  const loadEquipment = useCallback(async () => {
+    try { setGroupEquip(await api.getGroupEquipment(groupId)); }
+    catch { /* silently ignore */ }
+  }, [groupId]);
+
+  useEffect(() => { loadEquipment(); }, [loadEquipment]);
 
   return (
     <div style={{ position: 'relative' }}>
 
-      {/* Floating Notes button — top right of section */}
+      {/* Floating Notes button */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
           onClick={() => setNotesOpen(true)}
@@ -480,7 +526,6 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
         </button>
       </div>
 
-      {/* Notes slide-in overlay */}
       {notesOpen && (
         <NotesOverlay
           groupId={groupId}
@@ -491,17 +536,21 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
       )}
 
       {/* Side-by-side: Vault (left) + Gear (right) */}
-      <div style={{
-        display: 'flex',
-        gap: 24,
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
-      }}>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
         {/* LEFT — Group Vault */}
         <div style={{ flex: '1 1 0', minWidth: 280 }}>
           {players.length > 0
-            ? <VaultPanel players={players} groupId={groupId} goals={goals} onToast={onToast} myRsn={myRsn} canWrite={canWrite} />
+            ? <VaultPanel
+                players={players}
+                groupId={groupId}
+                goals={goals}
+                onToast={onToast}
+                myRsn={myRsn}
+                canWrite={canWrite}
+                groupEquipment={groupEquipment}
+                onReloadDrops={loadEquipment}
+              />
             : (
               <div className="empty-state">
                 <div className="icon">💎</div>
@@ -515,7 +564,14 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
         <div style={{ flex: '1 1 0', minWidth: 320 }}>
           <div className="section-title" style={{ marginBottom: 14 }}>⚔️ Gear Loadouts</div>
           {players.length > 0
-            ? <GearLoadouts players={players} groupId={groupId} canWrite={canWrite} onToast={onToast} myRsn={myRsn} />
+            ? <GearLoadouts
+                players={players}
+                groupId={groupId}
+                canWrite={canWrite}
+                onToast={onToast}
+                myRsn={myRsn}
+                onEquipmentChanged={loadEquipment}
+              />
             : (
               <div className="empty-state">
                 <div className="icon">⚔️</div>

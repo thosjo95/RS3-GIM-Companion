@@ -554,7 +554,7 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
 
 // ── Main GearLoadouts component ───────────────────────────────────────────────
 
-export default function GearLoadouts({ players, groupId, canWrite, onToast, myRsn }) {
+export default function GearLoadouts({ players, groupId, canWrite, onToast, myRsn, onEquipmentChanged }) {
   // Default-select the logged-in player's character if available
   const myPlayer = myRsn ? players.find(p => p.rsn === myRsn) : null;
   const [selectedPlayerId, setSelectedPlayerId] = useState(myPlayer?.id ?? players[0]?.id ?? null);
@@ -603,6 +603,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
     setSaving(slot);
     try {
       await api.saveEquipmentSlot(selectedPlayerId, style, slot, itemName, confirmed);
+      onEquipmentChanged?.(); // refresh vault's gear list
     } catch (err) {
       onToast?.(err.message, 'error');
     } finally {
@@ -615,6 +616,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
     setActiveSlot(null);
     try {
       await api.saveEquipmentSlot(selectedPlayerId, style, slot, '', false);
+      onEquipmentChanged?.();
     } catch (err) {
       onToast?.(err.message, 'error');
     }
@@ -626,10 +628,8 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
       onToast?.('No gear to clear.', 'info');
       return;
     }
-    // Optimistic clear
     setLoadout({});
     setActiveSlot(null);
-    // Persist each cleared slot
     let failed = 0;
     for (const slotDef of slotsWithItems) {
       try {
@@ -640,6 +640,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
     }
     if (failed) onToast?.(`${failed} slot(s) failed to clear.`, 'error');
     else onToast?.(`Cleared ${slotsWithItems.length} slot(s) for ${selectedPlayer?.rsn} — ${style}`, 'success');
+    onEquipmentChanged?.();
   }
 
   async function handleQuickFill() {
