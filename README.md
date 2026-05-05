@@ -4,7 +4,7 @@
   <p><strong>A private companion web app for RuneScape 3 Group Ironman teams.</strong></p>
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
-    <a href="https://discord.gg/INVITE_CODE"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
+    <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
     <img src="https://img.shields.io/badge/version-1.0.0-4caf50?style=flat-square" alt="v1.0.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
@@ -84,7 +84,7 @@ Click **👥 Find or Manage Groups** in the sidebar to:
 
 Join the community for support, bug reports, and feature requests:
 
-**[discord.gg/INVITE_CODE](https://discord.gg/INVITE_CODE)**
+**[discord.gg/uZT4JDdtn2](https://discord.gg/uZT4JDdtn2)**
 
 | Channel | Purpose |
 |---|---|

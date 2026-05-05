@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background gradient: deep iron-black to dark slate -->
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1e2a1a"/>
+      <stop offset="100%" stop-color="#0d1208"/>
+    </radialGradient>
+
+    <!-- Shield gold gradient -->
+    <linearGradient id="shieldGold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#f0d060"/>
+      <stop offset="40%"  stop-color="#c8a84b"/>
+      <stop offset="100%" stop-color="#8a6820"/>
+    </linearGradient>
+
+    <!-- Shield dark fill -->
+    <linearGradient id="shieldFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#1c2b1c"/>
+      <stop offset="100%" stop-color="#0f1a0f"/>
+    </linearGradient>
+
+    <!-- Helm gradient -->
+    <linearGradient id="helmMetal" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%"   stop-color="#c0ccc0"/>
+      <stop offset="35%"  stop-color="#8a9a8a"/>
+      <stop offset="100%" stop-color="#4a564a"/>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+      <feFlood flood-color="#c8a84b" flood-opacity="0.55" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Subtle glow for helm -->
+    <filter id="helmGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#c0ccc0" flood-opacity="0.3" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Circular background -->
+  <circle cx="256" cy="256" r="256" fill="url(#bgGrad)"/>
+
+  <!-- Subtle inner ring -->
+  <circle cx="256" cy="256" r="228" fill="none" stroke="#c8a84b" stroke-width="1.5" opacity="0.25"/>
+
+  <!-- === SHIELD === -->
+  <!-- Shield body -->
+  <g filter="url(#glow)">
+    <path d="M256 80 L380 120 L380 270 Q380 360 256 430 Q132 360 132 270 L132 120 Z"
+          fill="url(#shieldFill)" stroke="url(#shieldGold)" stroke-width="6"/>
+    <!-- Shield inner border line -->
+    <path d="M256 100 L360 134 L360 268 Q360 346 256 408 Q152 346 152 268 L152 134 Z"
+          fill="none" stroke="#c8a84b" stroke-width="2" opacity="0.4"/>
+    <!-- Gold chevron on shield -->
+    <path d="M256 150 L330 175 L330 195 L256 170 L182 195 L182 175 Z"
+          fill="url(#shieldGold)" opacity="0.85"/>
+  </g>
+
+  <!-- === IRON HELM === -->
+  <g filter="url(#helmGlow)">
+    <!-- Helm dome -->
+    <ellipse cx="256" cy="215" rx="68" ry="58" fill="url(#helmMetal)"/>
+    <!-- Helm body / cheek plates -->
+    <rect x="194" y="235" width="124" height="68" rx="6" fill="url(#helmMetal)"/>
+    <!-- Cheek cutout shadow -->
+    <rect x="194" y="235" width="124" height="68" rx="6" fill="#000" opacity="0.15"/>
+    <!-- Visor bar (horizontal divider) -->
+    <rect x="194" y="256" width="124" height="8" fill="#2a3a2a" rx="2"/>
+    <!-- Eye slits -->
+    <rect x="203" y="248" width="42" height="10" rx="5" fill="#1a2a1a"/>
+    <rect x="267" y="248" width="42" height="10" rx="5" fill="#1a2a1a"/>
+    <!-- Nasal guard -->
+    <rect x="251" y="235" width="10" height="35" rx="4" fill="#6a7a6a"/>
+    <!-- Chin guard -->
+    <rect x="208" y="295" width="96" height="14" rx="5" fill="#7a8a7a"/>
+    <!-- Highlight on dome -->
+    <ellipse cx="235" cy="200" rx="22" ry="14" fill="#d8e8d8" opacity="0.25" transform="rotate(-15 235 200)"/>
+    <!-- Rim of helm -->
+    <path d="M188 238 Q256 250 324 238" fill="none" stroke="#a0b0a0" stroke-width="3" opacity="0.6"/>
+  </g>
+
+  <!-- === GROUP DOTS (bottom of shield) === -->
+  <!-- Three member silhouettes at base of shield -->
+  <g opacity="0.9">
+    <!-- Left member -->
+    <circle cx="208" cy="368" r="10" fill="#c8a84b"/>
+    <circle cx="208" cy="350" r="6" fill="#c8a84b"/>
+    <!-- Center member (slightly larger = team leader feel) -->
+    <circle cx="256" cy="370" r="11" fill="#f0d060"/>
+    <circle cx="256" cy="351" r="7" fill="#f0d060"/>
+    <!-- Right member -->
+    <circle cx="304" cy="368" r="10" fill="#c8a84b"/>
+    <circle cx="304" cy="350" r="6" fill="#c8a84b"/>
+  </g>
+
+  <!-- === "GIM" text label === -->
+  <text x="256" y="470"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="38"
+        font-weight="bold"
+        fill="url(#shieldGold)"
+        text-anchor="middle"
+        letter-spacing="8"
+        filter="url(#glow)">GIM</text>
+</svg>

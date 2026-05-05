@@ -115,7 +115,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
 
         {/* Discord link */}
         <a
-          href="https://discord.gg/INVITE_CODE"
+          href="https://discord.gg/uZT4JDdtn2"
           target="_blank"
           rel="noopener noreferrer"
           title="Join our Discord — support & feedback"
