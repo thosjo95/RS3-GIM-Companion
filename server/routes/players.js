@@ -117,7 +117,7 @@ router.post('/:id/sync', async (req, res) => {
     const activitiesJson = runeMetrics ? JSON.stringify(runeMetrics.activities) : null;
 
     db.prepare(
-      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = ? WHERE id = ?'
+      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = COALESCE(?, activities_json) WHERE id = ?'
     ).run(combat, statsJson, activitiesJson, player.id);
 
     const upsertSkill = db.prepare(`
@@ -176,7 +176,7 @@ router.post('/sync-all/:groupId', async (req, res) => {
       });
 
       db.prepare(
-        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = ? WHERE id = ?'
+        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = COALESCE(?, activities_json) WHERE id = ?'
       ).run(combat, statsJson, runeMetrics ? JSON.stringify(runeMetrics.activities) : null, player.id);
 
       const upsertSkill = db.prepare(`
