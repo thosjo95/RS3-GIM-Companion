@@ -80,4 +80,13 @@ export const api = {
 
   // Boss kills (activity-feed based)
   getBossKills: (groupId) => request(`/boss-kills?group_id=${groupId}`),
+
+  // Group notes / pinboard
+  getGroupNotes:  (groupId)          => request(`/group-notes/${groupId}`),
+  saveGroupNotes: (groupId, content) => request(`/group-notes/${groupId}`, { method: 'PUT', body: { content } }),
+
+  // Equipment loadouts
+  getEquipment:      (playerId, style)           => request(`/equipment?player_id=${playerId}&style=${style}`),
+  saveEquipmentSlot: (playerId, style, slot, itemName) =>
+    request(`/equipment/${playerId}/${style}/${encodeURIComponent(slot)}`, { method: 'PUT', body: { item_name: itemName } }),
 };

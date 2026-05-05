@@ -15,6 +15,8 @@ app.use('/api/goals',        require('./routes/goals'));
 app.use('/api/drops',        require('./routes/drops'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/boss-kills',   require('./routes/bossKills'));
+app.use('/api/group-notes',  require('./routes/groupNotes'));
+app.use('/api/equipment',    require('./routes/equipment'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 

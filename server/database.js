@@ -139,6 +139,29 @@ db.exec(`
   );
 `);
 
+// Group notes — one shared text note per group
+db.exec(`
+  CREATE TABLE IF NOT EXISTS group_notes (
+    group_id   INTEGER PRIMARY KEY,
+    content    TEXT    NOT NULL DEFAULT '',
+    updated_at DATETIME,
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+  );
+`);
+
+// Equipment loadouts — per player, per style, per slot
+db.exec(`
+  CREATE TABLE IF NOT EXISTS equipment_loadouts (
+    player_id  INTEGER NOT NULL,
+    style      TEXT    NOT NULL,
+    slot       TEXT    NOT NULL,
+    item_name  TEXT,
+    updated_at DATETIME,
+    PRIMARY KEY (player_id, style, slot),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+`);
+
 // Migrations — safe to run on existing DBs
 try { db.exec('ALTER TABLE goals ADD COLUMN details_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}

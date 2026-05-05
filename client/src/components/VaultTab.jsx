@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../api/client';
+import GearLoadouts from './GearLoadouts';
 
 function fmtGp(n) {
   if (!n) return null;
@@ -11,14 +12,20 @@ function fmtGp(n) {
 
 function fmtDate(iso) {
   if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Drop item card ────────────────────────────────────────────────────────────
+
 function ItemCard({ item }) {
-  const isDupe = item.players.length > 1;
-  const totalQty = item.drops.reduce((a, d) => a + (d.quantity || 1), 0);
-  const maxValue = Math.max(...item.drops.map(d => d.value_gp || 0));
+  const isDupe    = item.players.length > 1;
+  const totalQty  = item.drops.reduce((a, d) => a + (d.quantity || 1), 0);
+  const maxValue  = Math.max(...item.drops.map(d => d.value_gp || 0));
 
   return (
     <div style={{
@@ -26,11 +33,8 @@ function ItemCard({ item }) {
       border: `1px solid ${isDupe ? 'var(--gold-dark)' : 'var(--border)'}`,
       borderRadius: 'var(--radius-lg)',
       padding: '14px 16px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 10,
-      position: 'relative',
-      transition: 'border-color 0.15s',
+      display: 'flex', flexDirection: 'column', gap: 10,
+      position: 'relative', transition: 'border-color 0.15s',
     }}>
       {isDupe && (
         <div style={{
@@ -38,36 +42,21 @@ function ItemCard({ item }) {
           background: 'var(--gold-dark)', color: 'var(--bg-root)',
           fontSize: 10, fontWeight: 800, letterSpacing: '0.5px',
           padding: '2px 8px', borderRadius: '0 0 6px 6px',
-        }}>
-          DUPLICATE
-        </div>
+        }}>DUPLICATE</div>
       )}
-
       <div>
         <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-bright)', marginBottom: 2 }}>
           💎 {item.name}
           {totalQty > 1 && <span style={{ color: 'var(--text-dim)', fontWeight: 400, fontSize: 12 }}> ×{totalQty}</span>}
         </div>
-        {item.boss && (
-          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-            🗡️ {item.boss}
-          </div>
-        )}
-        {maxValue > 0 && (
-          <div style={{ fontSize: 12, color: 'var(--green-bright)', marginTop: 2 }}>
-            {fmtGp(maxValue)}
-          </div>
-        )}
+        {item.boss && <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>🗡️ {item.boss}</div>}
+        {maxValue > 0 && <div style={{ fontSize: 12, color: 'var(--green-bright)', marginTop: 2 }}>{fmtGp(maxValue)}</div>}
       </div>
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {item.drops.map((drop, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '5px 8px',
-            background: 'var(--bg-panel-alt)',
-            borderRadius: 'var(--radius)',
-            fontSize: 12,
+            padding: '5px 8px', background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', fontSize: 12,
           }}>
             <span style={{ color: 'var(--gold)', fontWeight: 600 }}>👤 {drop.rsn}</span>
             <div style={{ display: 'flex', gap: 8, color: 'var(--text-dim)' }}>
@@ -77,7 +66,6 @@ function ItemCard({ item }) {
           </div>
         ))}
       </div>
-
       {item.drops.some(d => d.notes) && (
         <div style={{ fontSize: 11, color: 'var(--text-dim)', fontStyle: 'italic' }}>
           {item.drops.filter(d => d.notes).map(d => d.notes).join(' · ')}
@@ -87,19 +75,26 @@ function ItemCard({ item }) {
   );
 }
 
+// ── Vaulted goal card ─────────────────────────────────────────────────────────
+
 function AchievementCard({ goal }) {
   const details = goal.details_json
-    ? (typeof goal.details_json === 'string' ? (() => { try { return JSON.parse(goal.details_json); } catch { return null; } })() : goal.details_json)
+    ? (typeof goal.details_json === 'string'
+        ? (() => { try { return JSON.parse(goal.details_json); } catch { return null; } })()
+        : goal.details_json)
     : null;
-  const typeIcon = details?.goalType === 'quest' ? '📜' : details?.goalType === 'level' ? '⭐' : details?.goalType === 'item' ? '📦' : '🎯';
-  const completedAt = goal.completed_at ? new Date(goal.completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+  const typeIcon = details?.goalType === 'quest' ? '📜'
+    : details?.goalType === 'level' ? '⭐'
+    : details?.goalType === 'item'  ? '📦'
+    : '🎯';
+  const completedAt = goal.completed_at
+    ? new Date(goal.completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
 
   return (
     <div style={{
-      background: 'var(--bg-panel)',
-      border: '1px solid var(--gold-dark)',
-      borderRadius: 'var(--radius-lg)',
-      padding: '14px 16px',
+      background: 'var(--bg-panel)', border: '1px solid var(--gold-dark)',
+      borderRadius: 'var(--radius-lg)', padding: '14px 16px',
       display: 'flex', gap: 12, alignItems: 'flex-start',
     }}>
       <div style={{
@@ -127,20 +122,21 @@ function AchievementCard({ goal }) {
   );
 }
 
-export default function VaultTab({ players, groupId, goals = [], onToast }) {
-  const [drops, setDrops] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('recent'); // recent | value | dupes | name
+// ── Vault section (drops + vaulted goals) ─────────────────────────────────────
+
+function VaultSection({ players, groupId, goals, onToast }) {
+  const [drops, setDrops]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [sortBy, setSortBy]         = useState('recent');
   const [filterBoss, setFilterBoss] = useState('all');
   const [filterPlayer, setFilterPlayer] = useState('all');
 
   async function load() {
     setLoading(true);
     try {
-      const data = await api.getDrops(groupId);
-      setDrops(data);
+      setDrops(await api.getDrops(groupId));
     } catch (err) {
-      onToast(err.message, 'error');
+      onToast?.(err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -153,25 +149,15 @@ export default function VaultTab({ players, groupId, goals = [], onToast }) {
     return [...set].sort();
   }, [drops]);
 
-  // Group drops by item name (case-insensitive)
   const vaultItems = useMemo(() => {
     let filtered = drops;
-    if (filterBoss !== 'all') filtered = filtered.filter(d => d.boss_name === filterBoss);
+    if (filterBoss   !== 'all') filtered = filtered.filter(d => d.boss_name === filterBoss);
     if (filterPlayer !== 'all') filtered = filtered.filter(d => d.rsn === filterPlayer);
 
     const byItem = {};
     for (const drop of filtered) {
       const key = drop.item_name.toLowerCase();
-      if (!byItem[key]) {
-        byItem[key] = {
-          name: drop.item_name,
-          boss: drop.boss_name || null,
-          drops: [],
-          players: new Set(),
-          latestDate: null,
-          maxValue: 0,
-        };
-      }
+      if (!byItem[key]) byItem[key] = { name: drop.item_name, boss: drop.boss_name || null, drops: [], players: new Set(), latestDate: null, maxValue: 0 };
       byItem[key].drops.push(drop);
       byItem[key].players.add(drop.rsn);
       if (drop.dropped_at > (byItem[key].latestDate || '')) byItem[key].latestDate = drop.dropped_at;
@@ -180,65 +166,46 @@ export default function VaultTab({ players, groupId, goals = [], onToast }) {
 
     let items = Object.values(byItem).map(i => ({ ...i, players: [...i.players] }));
 
-    if (sortBy === 'recent') items.sort((a, b) => (b.latestDate || '').localeCompare(a.latestDate || ''));
-    else if (sortBy === 'value') items.sort((a, b) => b.maxValue - a.maxValue);
-    else if (sortBy === 'dupes') items.sort((a, b) => b.players.length - a.players.length || (b.latestDate || '').localeCompare(a.latestDate || ''));
-    else if (sortBy === 'name') items.sort((a, b) => a.name.localeCompare(b.name));
+    if      (sortBy === 'recent') items.sort((a, b) => (b.latestDate || '').localeCompare(a.latestDate || ''));
+    else if (sortBy === 'value')  items.sort((a, b) => b.maxValue - a.maxValue);
+    else if (sortBy === 'dupes')  items.sort((a, b) => b.players.length - a.players.length || (b.latestDate || '').localeCompare(a.latestDate || ''));
+    else if (sortBy === 'name')   items.sort((a, b) => a.name.localeCompare(b.name));
 
     return items;
   }, [drops, sortBy, filterBoss, filterPlayer]);
 
-  const dupeCount = vaultItems.filter(i => i.players.length > 1).length;
+  const dupeCount    = vaultItems.filter(i => i.players.length > 1).length;
   const achievements = goals.filter(g => g.status === 'vaulted');
 
-  if (loading) {
-    return (
-      <div className="empty-state" style={{ marginTop: 40 }}>
-        <span className="spinner" style={{ width: 24, height: 24 }} />
-      </div>
-    );
-  }
+  if (loading) return <div className="empty-state" style={{ marginTop: 40 }}><span className="spinner" style={{ width: 24, height: 24 }} /></div>;
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <div>
           <div className="section-title" style={{ marginBottom: 2 }}>
-            🏆 Group Vault
+            💎 Notable Drops
             <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 12, color: 'var(--text-dim)', marginLeft: 8 }}>
               {vaultItems.length} item{vaultItems.length !== 1 ? 's' : ''}
               {dupeCount > 0 && <span style={{ color: 'var(--gold)', marginLeft: 8 }}>· {dupeCount} duplicate{dupeCount !== 1 ? 's' : ''}</span>}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-            Notable drops logged by your group. Duplicates are highlighted.
-          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Notable drops logged by your group.</div>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={load}>↻ Refresh</button>
       </div>
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {[
-            { id: 'recent', label: 'Recent' },
-            { id: 'dupes', label: 'Dupes first' },
-            { id: 'value', label: 'Most valuable' },
-            { id: 'name', label: 'A–Z' },
-          ].map(s => (
-            <button key={s.id} onClick={() => setSortBy(s.id)}
-              className={`btn btn-sm ${sortBy === s.id ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ fontSize: 11 }}>
-              {s.label}
-            </button>
+        <div className="flex gap-4">
+          {[{ id: 'recent', label: 'Recent' }, { id: 'dupes', label: 'Dupes first' }, { id: 'value', label: 'Most valuable' }, { id: 'name', label: 'A–Z' }].map(s => (
+            <button key={s.id} onClick={() => setSortBy(s.id)} className={`btn btn-sm ${sortBy === s.id ? 'btn-primary' : 'btn-secondary'}`} style={{ fontSize: 11 }}>{s.label}</button>
           ))}
         </div>
-
         <select className="form-select" style={{ width: 'auto', fontSize: 12 }} value={filterPlayer} onChange={e => setFilterPlayer(e.target.value)}>
           <option value="all">All members</option>
           {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
         </select>
-
         {bosses.length > 0 && (
           <select className="form-select" style={{ width: 'auto', fontSize: 12 }} value={filterBoss} onChange={e => setFilterBoss(e.target.value)}>
             <option value="all">All bosses</option>
@@ -253,34 +220,172 @@ export default function VaultTab({ players, groupId, goals = [], onToast }) {
           <p>No drops logged yet. Log drops in the Drops tab to fill your vault.</p>
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: 12,
-        }}>
-          {vaultItems.map(item => (
-            <ItemCard key={item.name.toLowerCase()} item={item} />
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {vaultItems.map(item => <ItemCard key={item.name.toLowerCase()} item={item} />)}
         </div>
       )}
 
-      {/* Achievements section */}
       {achievements.length > 0 && (
         <div style={{ marginTop: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>
-              🏆 Achievements
-            </div>
+            <div className="section-title" style={{ marginBottom: 0 }}>🏆 Achievements</div>
             <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
               {achievements.length} completed goal{achievements.length !== 1 ? 's' : ''} in the vault
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {achievements.map(g => (
-              <AchievementCard key={g.id} goal={g} />
-            ))}
+            {achievements.map(g => <AchievementCard key={g.id} goal={g} />)}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Notes / Pinboard section ──────────────────────────────────────────────────
+
+function NotesSection({ groupId, canWrite, onToast }) {
+  const [content, setContent]     = useState('');
+  const [savedContent, setSaved]  = useState('');
+  const [updatedAt, setUpdatedAt] = useState(null);
+  const [status, setStatus]       = useState('idle'); // idle | saving | saved | error
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    api.getGroupNotes(groupId)
+      .then(data => { setContent(data.content || ''); setSaved(data.content || ''); setUpdatedAt(data.updated_at); })
+      .catch(() => {});
+  }, [groupId]);
+
+  function handleChange(e) {
+    const val = e.target.value;
+    setContent(val);
+    setStatus('idle');
+
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => saveNotes(val), 1500);
+  }
+
+  async function saveNotes(text) {
+    if (!canWrite) return;
+    setStatus('saving');
+    try {
+      await api.saveGroupNotes(groupId, text);
+      setSaved(text);
+      setUpdatedAt(new Date().toISOString());
+      setStatus('saved');
+      setTimeout(() => setStatus('idle'), 2500);
+    } catch (err) {
+      setStatus('error');
+      onToast?.(err.message, 'error');
+    }
+  }
+
+  const isDirty = content !== savedContent;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div className="section-title" style={{ marginBottom: 2 }}>📝 Group Notes</div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+            Shared pinboard — boss strategies, loot split rules, session notes, anything goes.
+          </div>
+        </div>
+
+        {/* Status indicator */}
+        <div style={{ fontSize: 11, color: status === 'saved' ? 'var(--green-bright)' : status === 'saving' ? 'var(--text-dim)' : status === 'error' ? 'var(--red)' : 'var(--text-dim)' }}>
+          {status === 'saving' && <><span className="spinner" style={{ width: 10, height: 10, marginRight: 4 }} />Saving…</>}
+          {status === 'saved'  && '✓ Saved'}
+          {status === 'error'  && '✗ Save failed'}
+          {status === 'idle' && updatedAt && !isDirty && `Last saved ${fmtDateTime(updatedAt)}`}
+        </div>
+      </div>
+
+      <textarea
+        value={content}
+        onChange={canWrite ? handleChange : undefined}
+        readOnly={!canWrite}
+        placeholder={canWrite
+          ? 'Write anything here — strategy notes, loot rules, session plans, links…\n\nThis is shared with all group members who have the app open.'
+          : 'No group notes yet. Unlock the group to add notes.'}
+        style={{
+          width: '100%',
+          minHeight: 320,
+          padding: '14px 16px',
+          background: 'var(--bg-panel)',
+          border: `1px solid ${isDirty ? 'var(--gold-dark)' : 'var(--border)'}`,
+          borderRadius: 'var(--radius-lg)',
+          color: 'var(--text-bright)',
+          fontSize: 13,
+          lineHeight: 1.65,
+          resize: 'vertical',
+          fontFamily: 'inherit',
+          outline: 'none',
+          transition: 'border-color 0.2s',
+          cursor: canWrite ? 'text' : 'default',
+        }}
+      />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+          {content.length} characters
+          {!canWrite && ' · 🔒 Unlock group to edit'}
+        </span>
+        {canWrite && isDirty && (
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => { clearTimeout(debounceRef.current); saveNotes(content); }}
+            style={{ fontSize: 11 }}>
+            Save now
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Root VaultTab component ───────────────────────────────────────────────────
+
+const SUB_TABS = [
+  { id: 'vault', label: '🏆 Vault'       },
+  { id: 'notes', label: '📝 Notes'       },
+  { id: 'gear',  label: '⚔️ Gear Loadouts' },
+];
+
+export default function VaultTab({ players, groupId, goals = [], onToast, canWrite }) {
+  const [subTab, setSubTab] = useState('vault');
+
+  return (
+    <div>
+      {/* Sub-tab bar */}
+      <div className="flex gap-8 mb-20 tab-bar-scroll" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 1 }}>
+        {SUB_TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id)}
+            className="btn btn-ghost"
+            style={{
+              borderBottom: subTab === t.id ? '2px solid var(--gold)' : '2px solid transparent',
+              borderRadius: 0,
+              color: subTab === t.id ? 'var(--gold)' : 'var(--text-dim)',
+              paddingBottom: 8,
+            }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === 'vault' && (
+        <VaultSection players={players} groupId={groupId} goals={goals} onToast={onToast} />
+      )}
+
+      {subTab === 'notes' && (
+        <NotesSection groupId={groupId} canWrite={canWrite} onToast={onToast} />
+      )}
+
+      {subTab === 'gear' && (
+        <GearLoadouts players={players} groupId={groupId} canWrite={canWrite} onToast={onToast} />
       )}
     </div>
   );
