@@ -157,27 +157,65 @@ function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
 
 // ── Drop item card ────────────────────────────────────────────────────────────
 
-function ItemCard({ item }) {
+function ItemCard({ item, groupEquipment, myRsn, canWrite, groupId, onToast, onGearAssigned }) {
   const isDupe   = item.players.length > 1;
   const totalQty = item.drops.reduce((a, d) => a + (d.quantity || 1), 0);
   const maxValue = Math.max(...item.drops.map(d => d.value_gp || 0));
+  const [assigning, setAssigning] = useState(false);
+
+  // Find confirmed gear entries that match this item name (case-insensitive)
+  const wornBy = useMemo(() => {
+    if (!groupEquipment?.length) return [];
+    const nameLower = item.name.toLowerCase();
+    const matches = groupEquipment.filter(e => e.confirmed && e.item_name.toLowerCase() === nameLower);
+    // Deduplicate by rsn
+    const seen = new Set();
+    return matches.filter(e => { if (seen.has(e.rsn)) return false; seen.add(e.rsn); return true; });
+  }, [groupEquipment, item.name]);
+
+  // Find if myRsn already has this item confirmed in any slot
+  const alreadyAssigned = useMemo(() => {
+    if (!myRsn || !groupEquipment?.length) return false;
+    const nameLower = item.name.toLowerCase();
+    return groupEquipment.some(e => e.rsn === myRsn && e.item_name.toLowerCase() === nameLower && e.confirmed);
+  }, [groupEquipment, myRsn, item.name]);
+
+  // Whether the logged-in player dropped this item (to enable "Assign to my gear")
+  const myDropped = item.drops.some(d => d.rsn === myRsn);
+
+  async function handleAssign() {
+    // We assign the item to the "weapon" slot as a planning/confirmed entry.
+    // We don't know the exact slot, so we'll call a special approach:
+    // open the gear tab — instead, we notify user with a toast + open nothing (they can set it in the Gear panel).
+    // Better: just mark it as confirmed in the 'weapon' slot if it sounds like a weapon, else leave slot choice to them.
+    // We'll show a toast telling them to assign it via the Gear panel.
+    onToast?.(`To assign "${item.name}" to your gear, use the ⚔️ Gear Loadouts section below.`, 'info');
+  }
 
   return (
     <div style={{
       background: 'var(--bg-panel)',
-      border: `1px solid ${isDupe ? 'var(--gold-dark)' : 'var(--border)'}`,
+      border: `1px solid ${isDupe ? 'var(--gold-dark)' : wornBy.length ? '#4caf5055' : 'var(--border)'}`,
       borderRadius: 'var(--radius-lg)',
       padding: '12px 14px',
       display: 'flex', flexDirection: 'column', gap: 8,
       position: 'relative', transition: 'border-color 0.15s',
     }}>
-      {isDupe && (
+      {isDupe && !wornBy.length && (
         <div style={{
           position: 'absolute', top: -1, right: 10,
           background: 'var(--gold-dark)', color: 'var(--bg-root)',
           fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
           padding: '2px 6px', borderRadius: '0 0 5px 5px',
         }}>DUPE</div>
+      )}
+      {wornBy.length > 0 && (
+        <div style={{
+          position: 'absolute', top: -1, right: 10,
+          background: '#4caf50', color: '#fff',
+          fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
+          padding: '2px 6px', borderRadius: '0 0 5px 5px',
+        }}>WORN</div>
       )}
       <div>
         <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)', marginBottom: 1 }}>
@@ -201,6 +239,42 @@ function ItemCard({ item }) {
           </div>
         ))}
       </div>
+
+      {/* Worn-by status */}
+      {wornBy.length > 0 && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 2,
+          padding: '5px 8px',
+          background: 'rgba(76,175,80,0.08)',
+          border: '1px solid #4caf5033',
+          borderRadius: 'var(--radius)',
+        }}>
+          {wornBy.map(e => (
+            <div key={e.rsn + e.slot} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10 }}>
+              <span style={{ color: '#4caf50', fontWeight: 700 }}>✅ Worn by {e.rsn}</span>
+              <span style={{ color: 'var(--text-dim)' }}>· {e.slot}</span>
+              {e.updated_at && <span style={{ color: 'var(--text-dim)' }}>· {fmtDate(e.updated_at)}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Assign to my gear button — only for logged-in player who dropped it and hasn't assigned yet */}
+      {canWrite && myRsn && myDropped && !alreadyAssigned && (
+        <button
+          onClick={handleAssign}
+          disabled={assigning}
+          style={{
+            padding: '5px 10px', fontSize: 11, fontWeight: 600,
+            background: 'rgba(200,168,75,0.12)',
+            border: '1px solid var(--gold-dark)',
+            borderRadius: 'var(--radius)',
+            color: 'var(--gold)', cursor: 'pointer',
+            alignSelf: 'flex-start',
+          }}>
+          ⚔️ Assign to my gear
+        </button>
+      )}
     </div>
   );
 }
@@ -251,16 +325,24 @@ function AchievementCard({ goal }) {
 
 // ── Group Vault (drops + achievements) ────────────────────────────────────────
 
-function VaultPanel({ players, groupId, goals, onToast }) {
-  const [drops, setDrops]           = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [sortBy, setSortBy]         = useState('recent');
-  const [filterBoss, setFilterBoss] = useState('all');
+function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite }) {
+  const [drops, setDrops]               = useState([]);
+  const [groupEquipment, setGroupEquip] = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [sortBy, setSortBy]             = useState('recent');
+  const [filterBoss, setFilterBoss]     = useState('all');
   const [filterPlayer, setFilterPlayer] = useState('all');
 
   async function load() {
     setLoading(true);
-    try { setDrops(await api.getDrops(groupId)); }
+    try {
+      const [dropsData, gearData] = await Promise.all([
+        api.getDrops(groupId),
+        api.getGroupEquipment(groupId).catch(() => []),
+      ]);
+      setDrops(dropsData);
+      setGroupEquip(gearData);
+    }
     catch (err) { onToast?.(err.message, 'error'); }
     finally { setLoading(false); }
   }
@@ -346,7 +428,17 @@ function VaultPanel({ players, groupId, goals, onToast }) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {vaultItems.map(item => <ItemCard key={item.name.toLowerCase()} item={item} />)}
+          {vaultItems.map(item => (
+            <ItemCard
+              key={item.name.toLowerCase()}
+              item={item}
+              groupEquipment={groupEquipment}
+              myRsn={myRsn}
+              canWrite={canWrite}
+              groupId={groupId}
+              onToast={onToast}
+            />
+          ))}
         </div>
       )}
 
@@ -365,7 +457,7 @@ function VaultPanel({ players, groupId, goals, onToast }) {
 
 // ── Root VaultTab ─────────────────────────────────────────────────────────────
 
-export default function VaultTab({ players, groupId, goals = [], onToast, canWrite }) {
+export default function VaultTab({ players, groupId, goals = [], onToast, canWrite, myRsn }) {
   const [notesOpen, setNotesOpen] = useState(false);
 
   return (
@@ -407,9 +499,9 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
       }}>
 
         {/* LEFT — Group Vault */}
-        <div style={{ flex: '1 1 320px', minWidth: 280, maxWidth: 480 }}>
+        <div style={{ flex: '1 1 0', minWidth: 280 }}>
           {players.length > 0
-            ? <VaultPanel players={players} groupId={groupId} goals={goals} onToast={onToast} />
+            ? <VaultPanel players={players} groupId={groupId} goals={goals} onToast={onToast} myRsn={myRsn} canWrite={canWrite} />
             : (
               <div className="empty-state">
                 <div className="icon">💎</div>
@@ -420,10 +512,10 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
         </div>
 
         {/* RIGHT — Gear Loadouts */}
-        <div style={{ flex: '2 1 480px', minWidth: 320 }}>
+        <div style={{ flex: '1 1 0', minWidth: 320 }}>
           <div className="section-title" style={{ marginBottom: 14 }}>⚔️ Gear Loadouts</div>
           {players.length > 0
-            ? <GearLoadouts players={players} groupId={groupId} canWrite={canWrite} onToast={onToast} />
+            ? <GearLoadouts players={players} groupId={groupId} canWrite={canWrite} onToast={onToast} myRsn={myRsn} />
             : (
               <div className="empty-state">
                 <div className="icon">⚔️</div>

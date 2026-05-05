@@ -554,8 +554,10 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
 
 // ── Main GearLoadouts component ───────────────────────────────────────────────
 
-export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
-  const [selectedPlayerId, setSelectedPlayerId] = useState(players[0]?.id ?? null);
+export default function GearLoadouts({ players, groupId, canWrite, onToast, myRsn }) {
+  // Default-select the logged-in player's character if available
+  const myPlayer = myRsn ? players.find(p => p.rsn === myRsn) : null;
+  const [selectedPlayerId, setSelectedPlayerId] = useState(myPlayer?.id ?? players[0]?.id ?? null);
   const [style, setStyle]       = useState('melee');
   // loadout: { [slot]: { name: string, confirmed: boolean } }
   const [loadout, setLoadout]   = useState({});
@@ -568,6 +570,10 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
   const activeStyle    = STYLES.find(s => s.key === style);
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
   const skillLevels    = buildSkillLevels(selectedPlayer);
+
+  // Only allow editing if: group is unlocked AND the selected player is the logged-in player
+  // If myRsn is null/undefined (not logged in), fall back to canWrite for all
+  const canEditCurrentPlayer = canWrite && (myRsn == null || selectedPlayer?.rsn === myRsn);
 
   // Load loadout whenever player or style changes
   useEffect(() => {
@@ -707,7 +713,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
             {' · '}
             {EQUIPMENT_SLOTS.length - filledCount} empty
           </span>
-          {canWrite && filledCount > 0 && (
+          {canEditCurrentPlayer && filledCount > 0 && (
             <button
               onClick={handleClearAll}
               title={`Clear all ${style} gear for ${selectedPlayer?.rsn}`}
@@ -744,7 +750,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
                   slotDef={slotDef}
                   entry={entry}
                   active={activeSlot === slotDef.slot}
-                  canWrite={canWrite}
+                  canWrite={canEditCurrentPlayer}
                   onClick={() => setActiveSlot(activeSlot === slotDef.slot ? null : slotDef.slot)}
                   styleColor={activeStyle.color}
                 />
@@ -774,7 +780,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
               activeStyle={activeStyle}
               skillLevels={skillLevels}
               loadout={loadout}
-              canWrite={canWrite}
+              canWrite={canEditCurrentPlayer}
               onSlotClick={slot => setActiveSlot(slot)}
               onQuickFill={handleQuickFill}
               groupId={groupId}
@@ -784,9 +790,14 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
         </div>
       )}
 
-      {!canWrite && (
+      {!canEditCurrentPlayer && (
         <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-dim)' }}>
-          🔒 Unlock the group to set gear — slots are visible to all members
+          {!canWrite
+            ? '🔒 Unlock the group to set gear — slots are visible to all members'
+            : myRsn && selectedPlayer?.rsn !== myRsn
+              ? `🔒 View only — switch to your character (${myRsn}) to edit gear`
+              : '🔒 Unlock the group to set gear'
+          }
         </div>
       )}
     </div>

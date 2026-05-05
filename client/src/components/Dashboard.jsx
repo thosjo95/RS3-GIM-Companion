@@ -67,7 +67,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
       {/* VAULT TAB */}
       {activeTab === 'vault' && (
         players.length > 0
-          ? <VaultTab players={players} groupId={groupId} goals={goals} onToast={onToast} canWrite={canWrite} />
+          ? <VaultTab players={players} groupId={groupId} goals={goals} onToast={onToast} canWrite={canWrite} myRsn={myRsn} />
           : <div className="empty-state">
               <div className="icon">🏆</div>
               <p>Add players first to use the vault.</p>
