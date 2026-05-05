@@ -4,6 +4,34 @@ import { STYLES, EQUIPMENT_SLOTS, GEAR_SUGGESTIONS } from '../data/gearSuggestio
 
 // ── Equipment grid slot button ────────────────────────────────────────────────
 
+// ── Style tab button with RS3 skill icon ──────────────────────────────────────
+
+function StyleTab({ styleDef, active, onClick }) {
+  const [imgFailed, setImgFailed] = React.useState(false);
+  const src = styleDef.wikiImg ? `https://runescape.wiki/images/${styleDef.wikiImg}` : null;
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '4px 10px', fontSize: 11, borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer',
+        background: active ? styleDef.color : 'transparent',
+        color: active ? '#111' : 'var(--text-dim)',
+        fontWeight: active ? 700 : 400,
+        transition: 'all 0.15s',
+      }}>
+      {src && !imgFailed
+        ? <img src={src} alt={styleDef.label} width={14} height={14} onError={() => setImgFailed(true)} style={{ flexShrink: 0 }} />
+        : <span style={{ fontSize: 12 }}>{styleDef.icon}</span>
+      }
+      {styleDef.label}
+    </button>
+  );
+}
+
+// ── Slot icon with RS3 wiki image + emoji fallback ────────────────────────────
+
 function SlotIcon({ slotDef }) {
   const [imgFailed, setImgFailed] = React.useState(false);
   const src = `https://runescape.wiki/images/${slotDef.wikiImg}`;
@@ -275,18 +303,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
         {/* Style tabs */}
         <div className="flex gap-4 tab-bar-scroll" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
           {STYLES.map(s => (
-            <button
-              key={s.key}
-              onClick={() => { setStyle(s.key); setActiveSlot(null); }}
-              style={{
-                padding: '4px 12px', fontSize: 11, borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer',
-                background: style === s.key ? s.color : 'transparent',
-                color: style === s.key ? '#111' : 'var(--text-dim)',
-                fontWeight: style === s.key ? 700 : 400,
-                transition: 'all 0.15s',
-              }}>
-              {s.icon} {s.label}
-            </button>
+            <StyleTab key={s.key} styleDef={s} active={style === s.key} onClick={() => { setStyle(s.key); setActiveSlot(null); }} />
           ))}
         </div>
 
@@ -346,7 +363,10 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
               borderRadius: 'var(--radius-lg)',
               minHeight: 120,
             }}>
-              <span style={{ fontSize: 28 }}>{activeStyle.icon}</span>
+              {activeStyle.wikiImg
+                ? <img src={`https://runescape.wiki/images/${activeStyle.wikiImg}`} alt={activeStyle.label} width={32} height={32} style={{ imageRendering: 'crisp-edges' }} onError={e => { e.target.style.display='none'; }} />
+                : <span style={{ fontSize: 28 }}>{activeStyle.icon}</span>
+              }
               <div style={{ fontSize: 13, fontWeight: 600, color: activeStyle.color }}>{activeStyle.label} loadout</div>
               <div style={{ fontSize: 11 }}>
                 {canWrite
