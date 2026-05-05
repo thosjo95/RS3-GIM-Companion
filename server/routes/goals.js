@@ -73,8 +73,7 @@ router.post('/', (req, res) => {
 
   if (contributor_ids?.length) {
     const ins = db.prepare('INSERT OR IGNORE INTO goal_contributors (goal_id, player_id) VALUES (?, ?)');
-    const addContribs = db.transaction((ids) => ids.forEach(pid => ins.run(goalId, pid)));
-    addContribs(contributor_ids);
+    db.runTransaction(() => contributor_ids.forEach(pid => ins.run(goalId, pid)));
   }
 
   res.status(201).json({ id: goalId });
@@ -115,8 +114,7 @@ router.put('/:id', (req, res) => {
     db.prepare('DELETE FROM goal_contributors WHERE goal_id = ?').run(req.params.id);
     if (contributor_ids.length) {
       const ins = db.prepare('INSERT OR IGNORE INTO goal_contributors (goal_id, player_id) VALUES (?, ?)');
-      const tx = db.transaction((ids) => ids.forEach(pid => ins.run(req.params.id, pid)));
-      tx(contributor_ids);
+      db.runTransaction(() => contributor_ids.forEach(pid => ins.run(req.params.id, pid)));
     }
   }
 
