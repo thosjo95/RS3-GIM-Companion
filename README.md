@@ -311,6 +311,52 @@ Note: **429 Too Many Requests** would indicate rate limiting (throttle your sync
 
 ---
 
+### A group lost their secret / need to re-claim
+
+**Symptom:** The group owner lost the secret code and can no longer edit their group.
+
+**Fix:** Clear the `password_hash` on their group record. This resets it to unclaimed — everyone can view, nobody can edit until they claim again.
+
+**Step 1 — find their group ID (if you don't already know it):**
+
+```bash
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const groups = db.prepare('SELECT id, name, password_hash, (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS players FROM groups g ORDER BY id').all();
+console.log(JSON.stringify(groups, null, 2));
+"
+```
+
+**Step 2 — clear the password (replace `26` with their actual group ID):**
+
+```bash
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const result = db.prepare('UPDATE groups SET password_hash = NULL WHERE id = ?').run(26);
+console.log('Updated rows:', result.changes);
+"
+```
+
+If it prints `Updated rows: 1` you're done. Tell the group to refresh the app — **🔒 Claim group** will reappear in the header. They click it, get a new secret shown once, and save it somewhere safe (e.g. a private Discord channel). All their players, goals, drops, and gear data are untouched.
+
+---
+
+### Permanently delete a group
+
+**Use case:** Removing a test group, a duplicate, or a group that explicitly asked to be removed.
+
+```bash
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const result = db.prepare('DELETE FROM groups WHERE id = ?').run(GROUP_ID);
+console.log('Deleted groups:', result.changes);
+"
+```
+
+Replace `GROUP_ID` with the target ID. All players belonging to that group are cascade-deleted automatically.
+
+---
+
 ### When to use `deploy.sh` vs `pm2 restart`
 
 | Change type | Command |

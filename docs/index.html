@@ -611,6 +611,32 @@ curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m
       <p><strong>502</strong> = Jagex server error (just wait). <strong>429</strong> = rate limited (reduce sync frequency). In practice, at 1 req/sec with a 2-hour window the app is well within safe limits for thousands of players.</p>
     </div>
 
+    <h3>A group lost their secret / need to re-claim</h3>
+    <p><strong>Symptom:</strong> The group owner lost their secret code and can no longer edit the group.</p>
+    <p><strong>Fix:</strong> Clear the <code>password_hash</code> — this resets the group to unclaimed so they can claim it again and get a new secret. All data (players, goals, drops, gear) is untouched.</p>
+    <p><strong>Step 1 — list all groups to find their ID:</strong></p>
+    <pre><code>node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const groups = db.prepare('SELECT id, name, password_hash, (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS players FROM groups g ORDER BY id').all();
+console.log(JSON.stringify(groups, null, 2));
+"</code></pre>
+    <p><strong>Step 2 — clear the password (replace <code>26</code> with their actual group ID):</strong></p>
+    <pre><code>node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const result = db.prepare('UPDATE groups SET password_hash = NULL WHERE id = ?').run(26);
+console.log('Updated rows:', result.changes);
+"</code></pre>
+    <p>If it prints <code>Updated rows: 1</code> you're done. Tell them to refresh — <strong>🔒 Claim group</strong> reappears in the header. They click it, get a new secret shown once, and save it somewhere safe (e.g. a private Discord channel).</p>
+
+    <h3>Permanently delete a group</h3>
+    <p>Removes the group and all its players from the database (cascade delete).</p>
+    <pre><code>node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const result = db.prepare('DELETE FROM groups WHERE id = ?').run(GROUP_ID);
+console.log('Deleted groups:', result.changes);
+"</code></pre>
+    <p>Replace <code>GROUP_ID</code> with the target ID found from the listing above.</p>
+
     <h3>When to use <code>deploy.sh</code> vs <code>pm2 restart</code></h3>
     <table>
       <thead><tr><th>Change type</th><th>Command</th></tr></thead>
