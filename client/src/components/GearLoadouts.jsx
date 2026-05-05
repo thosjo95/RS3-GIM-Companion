@@ -265,6 +265,7 @@ function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skil
             canWrite={canWrite}
             onClick={() => onSlotClick(slotDef.slot)}
             groupId={groupId}
+            playerId={selectedPlayerId}
             onToast={onToast}
           />
         );
@@ -273,7 +274,7 @@ function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skil
   );
 }
 
-function SlotRecommendationRow({ slotDef, best, next, entry, styleColor, skillLevels, canWrite, onClick, groupId, onToast }) {
+function SlotRecommendationRow({ slotDef, best, next, entry, styleColor, skillLevels, canWrite, onClick, groupId, playerId, onToast }) {
   const [addingGoal, setAddingGoal] = useState(false);
   const equippedName = entry?.name ?? null;
   const confirmed    = !!entry?.confirmed;
@@ -282,9 +283,14 @@ function SlotRecommendationRow({ slotDef, best, next, entry, styleColor, skillLe
     setAddingGoal(true);
     try {
       await api.createGoal({
-        group_id: groupId, skill: req.skill,
-        target_level: req.need, target_xp: levelToXp(req.need),
-        note: `Wear ${item.name}`,
+        type: 'personal',
+        owner_id: playerId ?? null,
+        title: `${req.skill} ${req.need} (for ${item.name})`,
+        category: 'skill',
+        skill: req.skill,
+        target_value: req.need,
+        priority: 'medium',
+        details_json: { goalType: 'level' },
       });
       onToast?.(`Goal added: ${req.skill} ${req.need}`, 'success');
     } catch (err) { onToast?.(err.message, 'error'); }
@@ -451,6 +457,7 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
             skillLevels={skillLevels}
             styleColor={styleColor}
             groupId={groupId}
+            playerId={selectedPlayerId}
             onToast={onToast}
             onSelect={() => onSelect(item.name)}
           />
@@ -472,7 +479,7 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
   );
 }
 
-function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleColor, groupId, onToast, onSelect }) {
+function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleColor, groupId, playerId, onToast, onSelect }) {
   const [addingGoal, setAddingGoal] = useState(false);
   const wearable = canWear(item, skillLevels);
   const missing  = getMissingReqs(item, skillLevels);
@@ -481,7 +488,16 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
     e.stopPropagation();
     setAddingGoal(true);
     try {
-      await api.createGoal({ group_id: groupId, skill: req.skill, target_level: req.need, target_xp: levelToXp(req.need), note: `Wear ${item.name}` });
+      await api.createGoal({
+        type: 'personal',
+        owner_id: playerId ?? null,
+        title: `${req.skill} ${req.need} (for ${item.name})`,
+        category: 'skill',
+        skill: req.skill,
+        target_value: req.need,
+        priority: 'medium',
+        details_json: { goalType: 'level' },
+      });
       onToast?.(`Goal added: ${req.skill} ${req.need}`, 'success');
     } catch (err) { onToast?.(err.message, 'error'); }
     finally { setAddingGoal(false); }

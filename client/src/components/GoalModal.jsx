@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 import { QUESTS, QUEST_NAMES } from '../data/quests';
 import { RECIPES, RECIPE_NAMES, expandRecipe } from '../data/itemRecipes';
@@ -12,15 +12,100 @@ const SKILL_LIST = [
 ];
 
 const SKILL_ICONS = {
-  Attack: '⚔️', Defence: '🛡️', Strength: '💪', Constitution: '❤️',
-  Ranged: '🏹', Prayer: '🙏', Magic: '🔮', Cooking: '🍳',
-  Woodcutting: '🪵', Fletching: '🎯', Fishing: '🐟', Firemaking: '🔥',
-  Crafting: '💎', Smithing: '⚒️', Mining: '⛏️', Herblore: '🌿',
-  Agility: '🏃', Thieving: '🕵️', Slayer: '💀', Farming: '🌾',
-  Runecrafting: '🔵', Hunter: '🦌', Construction: '🏠', Summoning: '🐉',
-  Dungeoneering: '🏰', Divination: '✨', Invention: '🔬', Archaeology: '🦴',
-  Necromancy: '☠️',
+  Attack:       'https://runescape.wiki/images/Attack.png',
+  Defence:      'https://runescape.wiki/images/Defence.png',
+  Strength:     'https://runescape.wiki/images/Strength.png',
+  Constitution: 'https://runescape.wiki/images/Constitution.png',
+  Ranged:       'https://runescape.wiki/images/Ranged.png',
+  Prayer:       'https://runescape.wiki/images/Prayer.png',
+  Magic:        'https://runescape.wiki/images/Magic.png',
+  Cooking:      'https://runescape.wiki/images/Cooking.png',
+  Woodcutting:  'https://runescape.wiki/images/Woodcutting.png',
+  Fletching:    'https://runescape.wiki/images/Fletching.png',
+  Fishing:      'https://runescape.wiki/images/Fishing.png',
+  Firemaking:   'https://runescape.wiki/images/Firemaking.png',
+  Crafting:     'https://runescape.wiki/images/Crafting.png',
+  Smithing:     'https://runescape.wiki/images/Smithing.png',
+  Mining:       'https://runescape.wiki/images/Mining.png',
+  Herblore:     'https://runescape.wiki/images/Herblore.png',
+  Agility:      'https://runescape.wiki/images/Agility.png',
+  Thieving:     'https://runescape.wiki/images/Thieving.png',
+  Slayer:       'https://runescape.wiki/images/Slayer.png',
+  Farming:      'https://runescape.wiki/images/Farming.png',
+  Runecrafting: 'https://runescape.wiki/images/Runecrafting.png',
+  Hunter:       'https://runescape.wiki/images/Hunter.png',
+  Construction: 'https://runescape.wiki/images/Construction.png',
+  Summoning:    'https://runescape.wiki/images/Summoning.png',
+  Dungeoneering:'https://runescape.wiki/images/Dungeoneering.png',
+  Divination:   'https://runescape.wiki/images/Divination.png',
+  Invention:    'https://runescape.wiki/images/Invention.png',
+  Archaeology:  'https://runescape.wiki/images/Archaeology.png',
+  Necromancy:   'https://runescape.wiki/images/Necromancy.png',
 };
+
+// Custom skill picker that shows RS3 wiki icons (native <select> can't render images)
+function SkillSelect({ value, onChange, owner }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '7px 10px', borderRadius: 'var(--radius)',
+          background: 'var(--bg-input)', border: '1px solid var(--border)',
+          color: value ? 'var(--text-bright)' : 'var(--text-dim)',
+          cursor: 'pointer', fontSize: 13, textAlign: 'left',
+        }}>
+        {value
+          ? <><img src={SKILL_ICONS[value]} alt={value} style={{ width: 18, height: 18, imageRendering: 'auto' }} />{value}{owner ? ` (${getPlayerSkill(owner, value)})` : ''}</>
+          : '— Select skill —'}
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-dim)' }}>▼</span>
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
+          background: 'var(--bg-panel)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
+          maxHeight: 280, overflowY: 'auto', marginTop: 2,
+        }}>
+          {SKILL_LIST.map(s => (
+            <button
+              key={s} type="button"
+              onClick={() => { onChange(s); setOpen(false); }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '6px 10px', background: s === value ? 'rgba(200,168,75,0.15)' : 'transparent',
+                border: 'none', borderBottom: '1px solid var(--border)',
+                color: s === value ? 'var(--gold)' : 'var(--text)',
+                cursor: 'pointer', fontSize: 12, textAlign: 'left',
+              }}
+              onMouseEnter={e => { if (s !== value) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+              onMouseLeave={e => { if (s !== value) e.currentTarget.style.background = 'transparent'; }}
+            >
+              <img src={SKILL_ICONS[s]} alt={s} style={{ width: 18, height: 18, imageRendering: 'auto', flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{s}</span>
+              {owner && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{getPlayerSkill(owner, s)}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -75,14 +160,7 @@ function LevelGoalForm({ players, form, set }) {
       <div className="grid-2" style={{ gap: 10 }}>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Skill</label>
-          <select className="form-select" value={form.skill} onChange={e => set('skill', e.target.value)}>
-            <option value="">— Select skill —</option>
-            {SKILL_LIST.map(s => (
-              <option key={s} value={s}>
-                {SKILL_ICONS[s]} {s}{owner ? ` (${getPlayerSkill(owner, s)})` : ''}
-              </option>
-            ))}
-          </select>
+          <SkillSelect value={form.skill} onChange={v => set('skill', v)} owner={owner} />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Target Level</label>
@@ -99,8 +177,9 @@ function LevelGoalForm({ players, form, set }) {
           borderRadius: 'var(--radius)', fontSize: 12,
         }}>
           <div className="flex align-center justify-between mb-8">
-            <span style={{ color: 'var(--text-dim)' }}>
-              {SKILL_ICONS[form.skill]} {form.skill}: <strong style={{ color: 'var(--text-bright)' }}>{currentLevel}</strong> → <strong style={{ color: 'var(--gold)' }}>{targetLevel}</strong>
+            <span style={{ color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              {SKILL_ICONS[form.skill] && <img src={SKILL_ICONS[form.skill]} alt={form.skill} style={{ width: 16, height: 16 }} />}
+              {form.skill}: <strong style={{ color: 'var(--text-bright)' }}>{currentLevel}</strong> → <strong style={{ color: 'var(--gold)' }}>{targetLevel}</strong>
             </span>
             {xpNeeded > 0 && (
               <span style={{ color: 'var(--text-dim)' }}>{fmtNum(xpNeeded)} XP needed</span>
@@ -215,7 +294,10 @@ function QuestGoalForm({ players, form, set }) {
                       border: `1px solid ${met ? 'var(--green)' : 'var(--red)'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     }}>
-                      <span>{SKILL_ICONS[skill]} {skill}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {SKILL_ICONS[skill] && <img src={SKILL_ICONS[skill]} alt={skill} style={{ width: 14, height: 14 }} />}
+                        {skill}
+                      </span>
                       <span style={{ fontWeight: 700, color: met ? 'var(--green-bright)' : 'var(--red-bright)' }}>
                         {met ? `✓ ${have}` : `${have}/${needed}`}
                         {!met && shortfall > 0 && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 3 }}>(-{shortfall})</span>}
