@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.0.0-4caf50?style=flat-square" alt="v1.0.0"/>
+    <img src="https://img.shields.io/badge/version-1.1.0-4caf50?style=flat-square" alt="v1.1.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -59,6 +59,18 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Milestones** — full chronological feed of 99s, 120s, quest completions, boss kills
 - **Skill Mastery** — 99 and 120 breakdown per player with RS3 wiki skill icons
 - **Clue Scrolls** — hiscores leaderboard across all 5 tiers
+
+### 🔔 Discord Notifications
+- Connect any Discord channel via a webhook URL — click **🔔** in the header (requires group to be unlocked)
+- Fully configurable per group: toggle each event type on or off
+- **Supported events:**
+  - 🎉 Level 99s & 120s — detected automatically from the activity feed
+  - 📋 Achievement diary completions
+  - ⚔️ Boss first kills — fires the first time a player defeats a boss
+  - 🎯 Group goals completed — when any goal is marked as complete
+  - 🎁 Drops — every auto-detected drop (off by default, can be noisy)
+- Rich Discord embeds with player name, event details, timestamp, and group footer
+- **📨 Test** button sends a test embed instantly so you can confirm the hook works before saving
 
 ---
 
@@ -170,7 +182,8 @@ RS3-GIM-Companion/
 │           ├── TipsTab.jsx          # Quests · Skill goals · Milestone items (custom milestones)
 │           ├── AchievementsTab.jsx  # Achievement Diaries — grid + player view
 │           ├── LeaderboardsTab.jsx  # Boss Kills · Firsts · Milestones · Skill Mastery · Clue Scrolls
-│           └── GoalModal.jsx        # Goal creation wizard
+│           ├── GoalModal.jsx        # Goal creation wizard
+│           └── WebhookSettings.jsx  # Discord webhook config modal (URL + event toggles + test)
 │   └── data/
 │       ├── gearSuggestions.js       # Wiki-verified item requirements for all 5 combat styles
 │       └── bosses.js                # Boss requirements, tiers, and drop tables
@@ -187,7 +200,8 @@ RS3-GIM-Companion/
     │   └── bossKills.js             # Boss kill counts by group
     ├── services/
     │   ├── runescape.js             # fetchHiscores · fetchRuneMetrics · calcCombatLevel
-    │   └── activitySync.js          # Auto-detect drops · diaries · boss kills from feed
+    │   ├── activitySync.js          # Auto-detect drops · diaries · boss kills · level milestones from feed
+    │   └── discord.js               # Webhook sender + embed builders for all notification types
     └── utils/
         └── auth.js                  # SHA-256 hashing · checkGroupAuth middleware
 ```
@@ -198,7 +212,7 @@ RS3-GIM-Companion/
 
 | Table | Purpose |
 |---|---|
-| `groups` | Name, type, size, password hash, last activity |
+| `groups` | Name, type, size, password hash, last activity, Discord webhook URL + event config |
 | `players` | RSN, combat level, hiscores JSON, RuneMetrics JSON |
 | `skills` | Per-player skill levels, XP, hiscores rank |
 | `snapshots` | Daily XP snapshots for weekly gain calculation |
@@ -215,6 +229,13 @@ RS3-GIM-Companion/
 ---
 
 ## Changelog
+
+### v1.1.0 — May 2026
+- 🔔 **Discord Notifications** — connect any Discord channel via webhook; configurable per event type (level 99/120, diary completions, boss first kills, goal completions, drops); rich embeds with player name, timestamp, and group footer; test button
+- 🐛 **Last sync timezone fix** — sync time now displays correctly regardless of browser timezone (UTC parsing for SQLite timestamps)
+- 🐛 **RSN picker fix** — "Set your name" now accepts free-text input with autocomplete, so names not yet in the group list can be entered
+- 📖 **Docs site** — self-contained documentation published via GitHub Pages at `thosjo95.github.io/RS3-GIM-Companion`
+- 🔗 **Docs + Discord links** added to the app header
 
 ### v1.0.0 — May 2026
 - ⚔️ **Gear Loadouts** — per-player equipment grids for all 5 combat styles with wiki-verified requirements

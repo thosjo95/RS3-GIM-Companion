@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Documentation v1.0</title>
+  <title>RS3 GIM Companion — Documentation v1.1</title>
   <style>
     :root {
       --bg:        #0d0b14;
@@ -188,7 +188,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.0 documentation</div>
+        <div class="sidebar-version">v1.1 documentation</div>
       </div>
     </div>
 
@@ -206,6 +206,7 @@
       <a href="#tab-tips">💡 Tips &amp; Milestones</a>
       <a href="#tab-diaries">📋 Achievement Diaries</a>
       <a href="#tab-leaderboards">🏅 Leaderboards</a>
+      <a href="#tab-notifications">🔔 Notifications</a>
 
       <div class="sidebar-section">Reference</div>
       <a href="#tech">Tech Stack</a>
@@ -230,7 +231,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, drops, gear loadouts, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.0.0</span>
+          <span class="badge badge-green">v1.1.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -462,6 +463,38 @@
 
     <hr />
 
+    <!-- Discord Notifications -->
+    <h2 id="tab-notifications">🔔 Discord Notifications</h2>
+    <p>Connect your group to a Discord channel to receive automatic notifications when things happen in-game. Each group stores its own webhook and event preferences.</p>
+
+    <h3>Setup</h3>
+    <ol style="padding-left:20px;color:var(--text-dim);line-height:2;">
+      <li>Unlock your group (enter the group secret)</li>
+      <li>Click the <strong>🔔</strong> button in the header</li>
+      <li>In Discord: right-click a channel → <em>Edit Channel</em> → <em>Integrations</em> → <em>Webhooks</em> → <em>New Webhook</em> → copy the URL</li>
+      <li>Paste the URL, choose which events to enable, click <strong>✓ Save</strong></li>
+      <li>Click <strong>📨 Test</strong> to confirm the connection — a test embed will appear in your Discord channel immediately</li>
+    </ol>
+
+    <h3>Notification Events</h3>
+    <table>
+      <thead><tr><th>Event</th><th>Default</th><th>Trigger</th></tr></thead>
+      <tbody>
+        <tr><td>🎉 <strong>Level 99s &amp; 120s</strong></td><td><span class="tag-green">On</span></td><td>Detected from RuneMetrics activity feed on every sync</td></tr>
+        <tr><td>📋 <strong>Achievement Diaries</strong></td><td><span class="tag-green">On</span></td><td>When a diary tier completion is detected or manually toggled</td></tr>
+        <tr><td>⚔️ <strong>Boss First Kills</strong></td><td><span class="tag-green">On</span></td><td>First time a player's kill count for a boss goes above zero</td></tr>
+        <tr><td>🎯 <strong>Group Goals</strong></td><td><span class="tag-green">On</span></td><td>When any goal is marked as complete</td></tr>
+        <tr><td>🎁 <strong>Drops</strong></td><td><span class="tag-dim">Off</span></td><td>Every drop auto-detected from activity feed — can be noisy</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">🔒</span>
+      <p>The webhook URL is stored server-side and only readable by browsers with the group secret. Only group owners can view or change it.</p>
+    </div>
+
+    <hr />
+
     <!-- Tech Stack -->
     <h2 id="tech">Tech Stack</h2>
     <table>
@@ -484,7 +517,7 @@
     <table>
       <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td><code>groups</code></td><td>Group name, type, size, password hash, last activity</td></tr>
+        <tr><td><code>groups</code></td><td>Group name, type, size, password hash, last activity, Discord webhook URL + enabled events JSON</td></tr>
         <tr><td><code>players</code></td><td>RSN, combat level, hiscores JSON, RuneMetrics JSON</td></tr>
         <tr><td><code>skills</code></td><td>Per-player skill levels, XP, hiscores rank</td></tr>
         <tr><td><code>snapshots</code></td><td>Daily XP snapshots for weekly gain calculation</td></tr>
@@ -526,7 +559,16 @@ bash /root/deploy.sh
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.0.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.1.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li>🔔 <strong>Discord Notifications</strong> — webhook integration with configurable events: level 99/120, diary completions, boss first kills, goal completions, drops; rich embeds; test button</li>
+      <li>🐛 <strong>Last sync timezone fix</strong> — hiscores sync time now displays correctly in all timezones</li>
+      <li>🐛 <strong>RSN picker</strong> — "Set your name" now accepts free-text input with autocomplete suggestions</li>
+      <li>📖 <strong>Docs site</strong> — documentation published via GitHub Pages</li>
+      <li>🔗 <strong>Docs &amp; Discord links</strong> added to the app header</li>
+    </ul>
+
+    <h3>v1.0.0 — May 2026</h3>
     <ul>
       <li>⚔️ <strong>Gear Loadouts</strong> — per-player equipment grids for all 5 combat styles with wiki-verified requirements and quest-chained prereqs</li>
       <li>💎 <strong>Group Vault</strong> redesign — confirmed gear shows real-time "Worn by" status on matching vault drops; live updates on gear change</li>
@@ -546,7 +588,7 @@ bash /root/deploy.sh
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.0.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.1.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
