@@ -1,9 +1,18 @@
 // Shared activity-sync helpers used by both the 5-minute cron and the manual sync routes.
 const db = require('../database');
+const discord = require('./discord');
 
 const DROP_PATTERNS = [
   /^I found (?:a |an )(.+?)\.?$/i,
   /^I received (?:a |an )(.+?)\.?$/i,
+];
+
+// Level milestone detection — only care about 99 and 120
+const LEVEL_MILESTONE_PATTERNS = [
+  // "I levelled my Slayer skill, I am now level 99."
+  /I (?:levelled|leveled) my ([\w\s]+?) skill.*?(?:I am|now) (?:at )?level (\d+)/i,
+  // "I've reached level 120 in Slayer." / "I achieved level 99 in Cooking."
+  /I(?:'ve)? (?:reached|achieved) level (\d+) in ([\w\s]+)/i,
 ];
 
 // "I completed the Easy Lumbridge & Draynor Achievement Diary."
@@ -106,6 +115,7 @@ function autoLogDrops(playerId, activities) {
           db.prepare(
             'INSERT INTO drops (player_id, item_name, notes, dropped_at) VALUES (?, ?, ?, ?)'
           ).run(playerId, itemName, 'Auto-detected from activity feed', droppedAt);
+          discord.notifyDrop(playerId, itemName);
         }
         break;
       }
@@ -124,9 +134,10 @@ function autoDetectDiaries(playerId, activities) {
     const key    = `diary_${diaryRegionKey(region)}_${tier}`;
     const achievedAt = parseActivityDate(act.date);
     // INSERT OR IGNORE — once marked, never overwrite the date
-    db.prepare(
+    const result = db.prepare(
       'INSERT OR IGNORE INTO achievements (player_id, type, key, achieved, achieved_at, manual) VALUES (?, ?, ?, 1, ?, 0)'
     ).run(playerId, 'diary', key, achievedAt);
+    if (result.changes > 0) discord.notifyDiary(playerId, match[1], region);
   }
 }
 
@@ -181,13 +192,17 @@ function autoCountBossKills(playerId, activities) {
 
       if (killCount !== null) {
         // Absolute count from details — most accurate
+        const prev = db.prepare('SELECT kills FROM boss_kills WHERE player_id = ? AND boss_key = ?').get(playerId, boss.key);
         upsertAbsolute.run(playerId, boss.key, killCount, seenAt);
+        if (!prev || prev.kills === 0) discord.notifyBossFirstKill(playerId, boss.label);
       } else {
         // Fall back to +1 with dedup
         const sig = `${boss.key}:${act.date || ''}:${text.slice(0, 80)}`;
         const inserted = logSig.run(playerId, sig);
         if (inserted.changes > 0) {
+          const prev = db.prepare('SELECT kills FROM boss_kills WHERE player_id = ? AND boss_key = ?').get(playerId, boss.key);
           upsertIncrement.run(playerId, boss.key, seenAt);
+          if (!prev || prev.kills === 0) discord.notifyBossFirstKill(playerId, boss.label);
         }
       }
       break; // Only match the first (most specific) boss pattern
@@ -195,4 +210,31 @@ function autoCountBossKills(playerId, activities) {
   }
 }
 
-module.exports = { autoLogDrops, autoDetectDiaries, autoCountBossKills, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };
+/** Detect level 99 and 120 milestones from activity feed and fire Discord notifications */
+function autoDetectLevelMilestones(playerId, activities) {
+  if (!activities?.length) return;
+  for (const act of activities) {
+    const text = act.text || '';
+    for (const pattern of LEVEL_MILESTONE_PATTERNS) {
+      const m = text.match(pattern);
+      if (!m) continue;
+      // Depending on pattern group order, skill and level are in different positions
+      let skill, level;
+      if (/reached|achieved/.test(pattern.source)) {
+        // groups: (level)(skill)
+        level = parseInt(m[1], 10);
+        skill = m[2]?.trim();
+      } else {
+        // groups: (skill)(level)
+        skill = m[1]?.trim();
+        level = parseInt(m[2], 10);
+      }
+      if ((level === 99 || level === 120) && skill) {
+        discord.notifyLevelMilestone(playerId, skill, level);
+      }
+      break;
+    }
+  }
+}
+
+module.exports = { autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };

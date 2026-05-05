@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
 const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
-const { autoLogDrops, autoDetectDiaries, autoCountBossKills } = require('../services/activitySync');
+const { autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 
 function getPlayerGroupId(playerId) {
@@ -147,6 +147,7 @@ router.post('/:id/sync', async (req, res) => {
       autoLogDrops(player.id, runeMetrics.activities);
       autoDetectDiaries(player.id, runeMetrics.activities);
       autoCountBossKills(player.id, runeMetrics.activities);
+      autoDetectLevelMilestones(player.id, runeMetrics.activities);
     }
 
     res.json({ success: true, totalXp: data.totalXp, totalLevel: data.totalLevel, combat });

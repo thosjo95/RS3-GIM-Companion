@@ -44,6 +44,9 @@ export const api = {
   setupGroup: (body) => request('/groups/setup', { method: 'POST', body }),
   verifyGroup: (id) => request(`/groups/${id}/verify`, { method: 'POST' }),
   claimGroup: (id) => request(`/groups/${id}/claim`, { method: 'POST', body: {} }),
+  getWebhook:  (id)        => request(`/groups/${id}/webhook`),
+  saveWebhook: (id, body)  => request(`/groups/${id}/webhook`, { method: 'PUT', body }),
+  testWebhook: (id, url)   => request(`/groups/${id}/webhook/test`, { method: 'POST', body: { webhook_url: url } }),
 
   // Players
   getPlayers: () => request('/players'),

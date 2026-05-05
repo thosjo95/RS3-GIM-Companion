@@ -3,6 +3,7 @@ import { api, setGroupContext, setOnUnauthorized } from './api/client';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import AddPlayerModal from './components/AddPlayerModal';
+import WebhookSettings from './components/WebhookSettings';
 
 // Toast notification system
 function useToasts() {
@@ -751,6 +752,7 @@ export default function App() {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showRsnModal, setShowRsnModal] = useState(false);
+  const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
 
@@ -955,6 +957,7 @@ export default function App() {
         onLockClick={() => setShowPasswordModal(true)}
         onClaimClick={() => setShowClaimModal(true)}
         onSetRsnClick={() => setShowRsnModal(true)}
+        onWebhookClick={() => setShowWebhookModal(true)}
         onMenuToggle={() => setShowMobileSidebar(s => !s)}
         mobileMenuOpen={showMobileSidebar}
       />
@@ -1017,6 +1020,13 @@ export default function App() {
           )}
         </main>
       </div>
+      {showWebhookModal && activeGroupId && (
+        <WebhookSettings
+          groupId={activeGroupId}
+          onClose={() => setShowWebhookModal(false)}
+          onToast={pushToast}
+        />
+      )}
       {showRsnModal && (
         <SetRsnModal
           group={group}

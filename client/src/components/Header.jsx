@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
-export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick, onMenuToggle, mobileMenuOpen }) {
+export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick, onWebhookClick, onMenuToggle, mobileMenuOpen }) {
   const [syncing, setSyncing] = useState(false);
 
   async function syncAll() {
@@ -112,6 +112,22 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
               padding: '0 12px', fontSize: 12, fontWeight: myRsn ? 600 : 400,
             }}>
             👤 {myRsn || 'Set your name'}
+          </button>
+        )}
+
+        {/* Notifications / webhook settings — only when unlocked */}
+        {group && isClaimed && isUnlocked && onWebhookClick && (
+          <button
+            className="sync-btn"
+            onClick={onWebhookClick}
+            title="Discord notification settings"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              padding: '0 10px', fontSize: 14,
+            }}>
+            🔔
           </button>
         )}
 

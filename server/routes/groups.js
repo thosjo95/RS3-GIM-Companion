@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../database');
 const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
 const { hashPassword, checkGroupAuth } = require('../utils/auth');
+const { sendTestWebhook, DEFAULT_EVENTS } = require('../services/discord');
 
 function fmtXp(n) {
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -403,6 +404,45 @@ router.delete('/:id', (req, res) => {
   db.prepare('UPDATE players SET group_id = NULL WHERE group_id = ?').run(req.params.id);
   db.prepare('DELETE FROM groups WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+// ── Webhook settings ───────────────────────────────────────────────────────────
+
+// GET /api/groups/:id/webhook — read webhook config (auth required)
+router.get('/:id/webhook', (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.id)) return;
+  const row = db.prepare('SELECT discord_webhook_url, webhook_events FROM groups WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Group not found' });
+  let events;
+  try { events = JSON.parse(row.webhook_events || 'null') ?? DEFAULT_EVENTS; } catch { events = DEFAULT_EVENTS; }
+  res.json({
+    configured: !!row.discord_webhook_url,
+    webhook_url: row.discord_webhook_url || '',
+    events,
+  });
+});
+
+// PUT /api/groups/:id/webhook — save webhook URL + events (auth required)
+router.put('/:id/webhook', (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.id)) return;
+  const { webhook_url, events } = req.body;
+  db.prepare('UPDATE groups SET discord_webhook_url = ?, webhook_events = ? WHERE id = ?')
+    .run(webhook_url?.trim() || null, JSON.stringify(events ?? DEFAULT_EVENTS), req.params.id);
+  res.json({ success: true });
+});
+
+// POST /api/groups/:id/webhook/test — send a test embed (auth required)
+router.post('/:id/webhook/test', async (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.id)) return;
+  const { webhook_url } = req.body;
+  const group = db.prepare('SELECT name FROM groups WHERE id = ?').get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  try {
+    await sendTestWebhook(webhook_url, group.name);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
 });
 
 module.exports = router;

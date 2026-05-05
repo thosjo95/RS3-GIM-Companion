@@ -173,6 +173,9 @@ try { db.exec('ALTER TABLE players ADD COLUMN activities_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE item_requests ADD COLUMN quantity INTEGER DEFAULT 1'); } catch {}
 // confirmed=1 means player has verified they own/wear the item; 0=planning/goal
 try { db.exec('ALTER TABLE equipment_loadouts ADD COLUMN confirmed INTEGER DEFAULT 0'); } catch {}
+// Discord webhook settings per group
+try { db.exec('ALTER TABLE groups ADD COLUMN discord_webhook_url TEXT'); } catch {}
+try { db.exec("ALTER TABLE groups ADD COLUMN webhook_events TEXT DEFAULT '[\"level_milestones\",\"diary_completions\",\"boss_first_kills\",\"goal_completions\"]'"); } catch {}
 
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {

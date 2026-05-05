@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../database');
 const { generateSuggestedGoals } = require('../services/runescape');
 const { checkGroupAuth } = require('../utils/auth');
+const { notifyGoalCompleted } = require('../services/discord');
 
 function goalGroupId(goalId) {
   const goal = db.prepare('SELECT owner_id FROM goals WHERE id = ?').get(goalId);
@@ -88,9 +89,8 @@ router.put('/:id', (req, res) => {
   const groupId = req.headers['x-group-id'] || goalGroupId(req.params.id);
   if (!checkGroupAuth(req, res, groupId)) return;
 
-  const completed_at = status === 'complete' && goal.status !== 'complete'
-    ? new Date().toISOString()
-    : goal.completed_at;
+  const justCompleted = status === 'complete' && goal.status !== 'complete';
+  const completed_at = justCompleted ? new Date().toISOString() : goal.completed_at;
 
   db.prepare(`
     UPDATE goals SET
@@ -118,6 +118,14 @@ router.put('/:id', (req, res) => {
       const tx = db.transaction((ids) => ids.forEach(pid => ins.run(req.params.id, pid)));
       tx(contributor_ids);
     }
+  }
+
+  // Fire Discord notification when a goal is first marked complete
+  if (justCompleted && groupId) {
+    const contribs = db.prepare(`
+      SELECT p.rsn FROM goal_contributors gc JOIN players p ON p.id = gc.player_id WHERE gc.goal_id = ?
+    `).all(req.params.id);
+    notifyGoalCompleted(groupId, title ?? goal.title, contribs.map(c => c.rsn));
   }
 
   res.json({ success: true });
