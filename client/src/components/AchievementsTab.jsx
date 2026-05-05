@@ -5,18 +5,19 @@ import { api } from '../api/client';
 
 // Base key must match the server-side diaryRegionKey() in activitySync.js
 const DIARY_REGIONS = [
-  { base: 'diary_lumbridge_draynor', label: 'Lumbridge & Draynor', icon: '🏰' },
-  { base: 'diary_varrock',           label: 'Varrock',             icon: '🏛️' },
-  { base: 'diary_falador',           label: 'Falador',             icon: '⚔️' },
-  { base: 'diary_karamja',           label: 'Karamja',             icon: '🌴' },
-  { base: 'diary_ardougne',          label: 'Ardougne',            icon: '🎪' },
-  { base: 'diary_seers_village',     label: "Seers' Village",      icon: '🔮' },
-  { base: 'diary_fremennik',         label: 'Fremennik',           icon: '🐺' },
-  { base: 'diary_morytania',         label: 'Morytania',           icon: '🧛' },
-  { base: 'diary_desert',            label: 'Desert',              icon: '🐪' },
-  { base: 'diary_daemonheim',        label: 'Daemonheim',          icon: '⛏️' },
-  { base: 'diary_tirannwn',          label: 'Tirannwn',            icon: '🌿' },
-  { base: 'diary_wilderness',        label: 'Wilderness',          icon: '💀' },
+  { base: 'diary_lumbridge_draynor', label: 'Lumbridge & Draynor' },
+  { base: 'diary_varrock',           label: 'Varrock'             },
+  { base: 'diary_falador',           label: 'Falador'             },
+  { base: 'diary_karamja',           label: 'Karamja'             },
+  { base: 'diary_ardougne',          label: 'Ardougne'            },
+  { base: 'diary_seers_village',     label: "Seers' Village"      },
+  { base: 'diary_fremennik',         label: 'Fremennik'           },
+  { base: 'diary_morytania',         label: 'Morytania'           },
+  { base: 'diary_desert',            label: 'Desert'              },
+  { base: 'diary_daemonheim',        label: 'Daemonheim'          },
+  { base: 'diary_tirannwn',          label: 'Tirannwn'            },
+  { base: 'diary_wilderness',        label: 'Wilderness'          },
+  { base: 'diary_underworld',        label: 'Underworld'          },
 ];
 
 const TIERS = [
@@ -201,7 +202,7 @@ function GridView({ players, colorMap, getAchievement, toggleManual, toggling, c
           {DIARY_REGIONS.map((region, ri) => (
             <tr key={region.base} style={{ borderTop: '1px solid var(--border)', background: ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent' }}>
               <td style={{ padding: '8px 10px 8px 4px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-bright)' }}>
-                <span style={{ marginRight: 6 }}>{region.icon}</span>{region.label}
+                {region.label}
               </td>
               {TIERS.map(tier => {
                 // Check if ALL players have completed this
@@ -289,7 +290,7 @@ function PlayerView({ players, colorMap, getAchievement, toggleManual, toggling,
                     border: `1px solid ${doneCount === TIERS.length ? colorMap[p.id] + '80' : 'var(--border)'}`,
                   }}>
                     <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-bright)', marginBottom: 6 }}>
-                      {region.icon} {region.label}
+                      {region.label}
                     </div>
                     <div style={{ display: 'flex', gap: 4 }}>
                       {tierStatuses.map(ts => {
