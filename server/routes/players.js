@@ -1,8 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
-const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
-const { autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
+const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
 const { checkGroupAuth } = require('../utils/auth');
 
 function getPlayerGroupId(playerId) {
@@ -97,28 +96,29 @@ router.delete('/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// POST /api/players/:id/sync - pull hiscores and update (no auth — RS3 data is public)
+// POST /api/players/:id/sync - pull hiscores only (no auth — RS3 data is public)
+// RuneMetrics (activity feed) is fetched separately by the 6-hour background cron
+// to avoid Jagex rate-limits when many groups sync simultaneously.
 router.post('/:id/sync', async (req, res) => {
   const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
   if (!player) return res.status(404).json({ error: 'Player not found' });
 
   try {
-    const [data, runeMetrics] = await Promise.all([
-      fetchHiscores(player.rsn),
-      fetchRuneMetrics(player.rsn).catch(() => null),
-    ]);
+    const data = await fetchHiscores(player.rsn);
     const combat = calcCombatLevel(data.skills);
 
+    // Preserve existing RuneMetrics quest data — only hiscores activities updated here
+    const existing = player.stats_json ? JSON.parse(player.stats_json) : {};
     const statsJson = JSON.stringify({
-      activities:     data.activities,   // hiscores activities (clue scrolls etc.)
-      questsComplete: runeMetrics?.questsComplete ?? null,
-      questsStarted:  runeMetrics?.questsStarted  ?? null,
+      activities:     data.activities,
+      questsComplete: existing.questsComplete ?? null,
+      questsStarted:  existing.questsStarted  ?? null,
     });
-    const activitiesJson = runeMetrics ? JSON.stringify(runeMetrics.activities) : null;
 
+    // activities_json (RuneMetrics feed) is NOT touched here — cron keeps it fresh
     db.prepare(
-      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = COALESCE(?, activities_json) WHERE id = ?'
-    ).run(combat, statsJson, activitiesJson, player.id);
+      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ? WHERE id = ?'
+    ).run(combat, statsJson, player.id);
 
     const upsertSkill = db.prepare(`
       INSERT INTO skills (player_id, skill_name, level, xp, rank)
@@ -142,42 +142,35 @@ router.post('/:id/sync', async (req, res) => {
       ON CONFLICT(player_id, snapshot_date) DO NOTHING
     `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
-    if (runeMetrics?.activities) {
-      autoLogDrops(player.id, runeMetrics.activities);
-      autoDetectDiaries(player.id, runeMetrics.activities);
-      autoCountBossKills(player.id, runeMetrics.activities);
-      autoDetectLevelMilestones(player.id, runeMetrics.activities);
-    }
-
     res.json({ success: true, totalXp: data.totalXp, totalLevel: data.totalLevel, combat });
   } catch (err) {
     res.status(502).json({ error: err.message });
   }
 });
 
-// POST /api/players/sync-all - sync all players in a group (no auth — RS3 data is public)
+// POST /api/players/sync-all - hiscores only (no auth — RS3 data is public)
+// RuneMetrics (activity feed) is fetched separately by the 6-hour background cron.
 router.post('/sync-all/:groupId', async (req, res) => {
-
   const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(req.params.groupId);
   const results = [];
 
   for (const player of players) {
     try {
-      const [data, runeMetrics] = await Promise.all([
-        fetchHiscores(player.rsn),
-        fetchRuneMetrics(player.rsn).catch(() => null),
-      ]);
+      const data = await fetchHiscores(player.rsn);
       const combat = calcCombatLevel(data.skills);
 
+      // Preserve existing RuneMetrics quest data
+      const existing = player.stats_json ? JSON.parse(player.stats_json) : {};
       const statsJson = JSON.stringify({
         activities:     data.activities,
-        questsComplete: runeMetrics?.questsComplete ?? null,
-        questsStarted:  runeMetrics?.questsStarted  ?? null,
+        questsComplete: existing.questsComplete ?? null,
+        questsStarted:  existing.questsStarted  ?? null,
       });
 
+      // activities_json (RuneMetrics feed) NOT touched — cron keeps it fresh
       db.prepare(
-        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, activities_json = COALESCE(?, activities_json) WHERE id = ?'
-      ).run(combat, statsJson, runeMetrics ? JSON.stringify(runeMetrics.activities) : null, player.id);
+        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ? WHERE id = ?'
+      ).run(combat, statsJson, player.id);
 
       const upsertSkill = db.prepare(`
         INSERT INTO skills (player_id, skill_name, level, xp, rank)
@@ -197,12 +190,6 @@ router.post('/sync-all/:groupId', async (req, res) => {
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(player_id, snapshot_date) DO NOTHING
       `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
-
-      if (runeMetrics?.activities) {
-        autoLogDrops(player.id, runeMetrics.activities);
-        autoDetectDiaries(player.id, runeMetrics.activities);
-        autoCountBossKills(player.id, runeMetrics.activities);
-      }
 
       results.push({ rsn: player.rsn, success: true });
     } catch (err) {
