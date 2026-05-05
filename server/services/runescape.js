@@ -9,19 +9,40 @@ const SKILLS = [
   'Necromancy',
 ];
 
-// Post-skill rows in the RS3 hiscores CSV (indices 30–40)
+// Post-skill activity rows in the RS3 hiscores CSV (indices 30–60).
+// Order matches the RS3 hiscores lite endpoint exactly.
+// Note: RS3 does NOT have a "Clue Scrolls All" row — only the 5 tiers.
 const ACTIVITIES = [
-  'Bounty Hunter Hunter',
-  'Bounty Hunter Rogue',
-  'Clue Scrolls All',
-  'Clue Scrolls Easy',
-  'Clue Scrolls Medium',
-  'Clue Scrolls Hard',
-  'Clue Scrolls Elite',
-  'Clue Scrolls Master',
-  'LMS',
-  'Soul Wars Zeal',
-  'Rifts Closed',
+  'Bounty Hunter Hunter',                  // 30
+  'Bounty Hunter Rogues',                  // 31
+  'Dominion Tower',                        // 32
+  'The Crucible',                          // 33
+  'Castle Wars Games',                     // 34
+  'B.A. Attackers',                        // 35
+  'B.A. Defenders',                        // 36
+  'B.A. Collectors',                       // 37
+  'B.A. Healers',                          // 38
+  'Duel Tournament',                       // 39
+  'Mobilising Armies',                     // 40
+  'Conquest',                              // 41
+  'Fist of Guthix',                        // 42
+  'GG: Athletics',                         // 43
+  'GG: Resource Race',                     // 44
+  'WE2: Armadyl Lifetime Contribution',    // 45
+  'WE2: Bandos Lifetime Contribution',     // 46
+  'WE2: Armadyl PvP Kills',               // 47
+  'WE2: Bandos PvP Kills',                // 48
+  'Heist Guard Level',                     // 49
+  'Heist Robber Level',                    // 50
+  'CFP: 5 Game Average',                   // 51
+  'AF15: Cow Tipping',                     // 52
+  'AF15: Rats Killed After the Miniquest', // 53
+  'RuneScore',                             // 54
+  'Clue Scrolls Easy',                     // 55
+  'Clue Scrolls Medium',                   // 56
+  'Clue Scrolls Hard',                     // 57
+  'Clue Scrolls Elite',                    // 58
+  'Clue Scrolls Master',                   // 59
 ];
 
 // Boss kill-count rows in the RS3 hiscores CSV (indices 41+).

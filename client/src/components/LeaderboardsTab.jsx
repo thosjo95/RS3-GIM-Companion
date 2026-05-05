@@ -8,8 +8,8 @@ const SKILL_ICON_URL = name =>
 
 const MEMBER_COLORS = ['#c8a84b', '#7eb8f7', '#7ef7a8', '#f77e7e', '#d07ef7', '#f7c97e'];
 
+// RS3 hiscores has no "All" row — only the 5 individual tiers
 const CLUE_TYPES = [
-  { key: 'Clue Scrolls All',    label: 'All',    icon: '📜' },
   { key: 'Clue Scrolls Easy',   label: 'Easy',   icon: '🟢' },
   { key: 'Clue Scrolls Medium', label: 'Medium', icon: '🔵' },
   { key: 'Clue Scrolls Hard',   label: 'Hard',   icon: '🟠' },
@@ -794,25 +794,26 @@ function BossKills({ players, colorMap, groupId }) {
 // ── Clue Scrolls ──────────────────────────────────────────────────────────────
 
 function ClueScrolls({ players, colorMap }) {
-  const rows = useMemo(() => players.map(p => {
-    const stats = parseStats(p.stats_json);
-    const acts = stats?.activities ?? {};
-    return {
-      ...p,
-      clues: {
-        all:    acts['Clue Scrolls All']    ?? null,
+  const rows = useMemo(() => {
+    const mapped = players.map(p => {
+      const stats = parseStats(p.stats_json);
+      const acts = stats?.activities ?? {};
+      const clues = {
         easy:   acts['Clue Scrolls Easy']   ?? null,
         medium: acts['Clue Scrolls Medium'] ?? null,
         hard:   acts['Clue Scrolls Hard']   ?? null,
         elite:  acts['Clue Scrolls Elite']  ?? null,
         master: acts['Clue Scrolls Master'] ?? null,
-      },
-    };
-  }).sort((a, b) => (b.clues.all ?? -1) - (a.clues.all ?? -1)), [players]);
+      };
+      const total = Object.values(clues).reduce((s, v) => s + (v ?? 0), 0);
+      return { ...p, clues, total };
+    });
+    return mapped.sort((a, b) => b.total - a.total);
+  }, [players]);
 
-  const colKeys = ['all', 'easy', 'medium', 'hard', 'elite', 'master'];
+  const colKeys = ['easy', 'medium', 'hard', 'elite', 'master'];
   const maxPerCol = Object.fromEntries(colKeys.map(k => [k, Math.max(...rows.map(r => r.clues[k] ?? 0), 0)]));
-  const noData = rows.every(r => r.clues.all === null);
+  const noData = rows.every(r => Object.values(r.clues).every(v => v === null));
 
   if (noData) {
     return (
@@ -838,7 +839,12 @@ function ClueScrolls({ players, colorMap }) {
         <tbody>
           {rows.map((p, ri) => (
             <tr key={p.id} style={{ borderTop: '1px solid var(--border)', background: ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent' }}>
-              <td style={{ padding: '6px 8px 6px 4px', fontWeight: 700, color: colorMap[p.id], whiteSpace: 'nowrap' }}>{p.rsn}</td>
+              <td style={{ padding: '6px 8px 6px 4px', fontWeight: 700, color: colorMap[p.id], whiteSpace: 'nowrap' }}>
+                {p.rsn}
+                <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-dim)', marginLeft: 6 }}>
+                  ({p.total.toLocaleString()} total)
+                </span>
+              </td>
               {colKeys.map(k => {
                 const val = p.clues[k];
                 const isTop = val !== null && val > 0 && val === maxPerCol[k];
