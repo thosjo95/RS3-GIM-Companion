@@ -539,7 +539,13 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
         {/* LEFT — Group Vault */}
-        <div style={{ flex: '1 1 0', minWidth: 280 }}>
+        <div style={{
+          flex: '1 1 0', minWidth: 280,
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '20px 18px',
+        }}>
           {players.length > 0
             ? <VaultPanel
                 players={players}
@@ -561,7 +567,13 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
         </div>
 
         {/* RIGHT — Gear Loadouts */}
-        <div style={{ flex: '1 1 0', minWidth: 320 }}>
+        <div style={{
+          flex: '1 1 0', minWidth: 320,
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '20px 18px',
+        }}>
           <div className="section-title" style={{ marginBottom: 14 }}>⚔️ Gear Loadouts</div>
           {players.length > 0
             ? <GearLoadouts

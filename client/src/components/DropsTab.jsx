@@ -19,10 +19,10 @@ function fmtGp(n) {
   return `${n} gp`;
 }
 
-// Boss coloured badge
+// ── Boss coloured chip ────────────────────────────────────────────────────────
+
 function BossChip({ bossName, players }) {
   const { status, eligible, closest, shortfall } = getBossStatus(bossName, players);
-
   const colors = {
     green:   { bg: 'rgba(90,154,80,0.15)',  border: 'var(--green)',        text: 'var(--green-bright)' },
     orange:  { bg: 'rgba(200,120,48,0.15)', border: 'var(--orange)',       text: 'var(--orange)' },
@@ -31,7 +31,6 @@ function BossChip({ bossName, players }) {
   };
   const c = colors[status] ?? colors.unknown;
   const boss = BOSSES[bossName];
-
   const tooltip = [
     boss ? `Tier: ${TIER_LABELS[boss.tier] ?? boss.tier}` : '',
     boss?.location ? `📍 ${boss.location}` : '',
@@ -44,30 +43,67 @@ function BossChip({ bossName, players }) {
   ].filter(Boolean).join('\n');
 
   return (
-    <span
-      title={tooltip}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        padding: '2px 8px', borderRadius: 10,
-        background: c.bg, border: `1px solid ${c.border}`, color: c.text,
-        fontSize: 12, fontWeight: 600, cursor: 'help', whiteSpace: 'nowrap',
-      }}>
+    <span title={tooltip} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '2px 8px', borderRadius: 10,
+      background: c.bg, border: `1px solid ${c.border}`, color: c.text,
+      fontSize: 11, fontWeight: 600, cursor: 'help', whiteSpace: 'nowrap',
+    }}>
       {status === 'green' ? '🟢' : status === 'orange' ? '🟠' : status === 'red' ? '🔴' : '⚪'} {bossName}
     </span>
+  );
+}
+
+// ── Boss req popup ────────────────────────────────────────────────────────────
+
+function BossReqPopup({ bossName, players }) {
+  const boss = BOSSES[bossName];
+  if (!boss) return null;
+  const { eligible, closest, shortfall } = getBossStatus(bossName, players);
+  const reqs = Object.entries(boss.requirements ?? {});
+  const rec  = Object.entries(boss.recommended  ?? {});
+
+  return (
+    <div style={{
+      position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: 4,
+      background: 'var(--bg-panel-alt)', border: '1px solid var(--border-light)',
+      borderRadius: 'var(--radius-lg)', padding: '12px 14px', minWidth: 220,
+      boxShadow: 'var(--shadow-lg)', fontSize: 12,
+    }}>
+      <div style={{ fontWeight: 700, color: 'var(--text-bright)', marginBottom: 4 }}>{bossName}</div>
+      <div style={{ color: 'var(--text-dim)', marginBottom: 8 }}>📍 {boss.location}</div>
+      {reqs.length > 0 && (
+        <>
+          <div style={{ color: 'var(--gold)', fontWeight: 600, marginBottom: 4 }}>Hard requirements</div>
+          {reqs.map(([s, l]) => {
+            const met = players.some(p => (p.skills || []).find(sk => sk.skill_name === s)?.level >= l);
+            return <div key={s} style={{ color: met ? 'var(--green-bright)' : 'var(--red-bright)', marginBottom: 2 }}>{met ? '✓' : '✗'} {s} {l}</div>;
+          })}
+        </>
+      )}
+      {rec.length > 0 && (
+        <>
+          <div style={{ color: 'var(--text-dim)', fontWeight: 600, marginTop: 8, marginBottom: 4 }}>Recommended</div>
+          {rec.map(([s, l]) => {
+            const best = Math.max(...players.map(p => (p.skills || []).find(sk => sk.skill_name === s)?.level ?? 1));
+            const color = best >= l ? 'var(--green-bright)' : best >= l - 10 ? 'var(--orange)' : 'var(--red-bright)';
+            return <div key={s} style={{ color, marginBottom: 2 }}>{s} {l} <span style={{ color: 'var(--text-dim)' }}>(best: {best})</span></div>;
+          })}
+        </>
+      )}
+      {eligible.length > 0 && <div style={{ marginTop: 8, color: 'var(--green-bright)' }}>✓ {eligible.join(', ')}</div>}
+      {eligible.length === 0 && closest && (
+        <div style={{ marginTop: 8, color: 'var(--orange)' }}>Closest: {closest} ({Math.ceil(shortfall)} lvls away)</div>
+      )}
+      {boss.note && <div style={{ marginTop: 8, color: 'var(--text-dim)', fontStyle: 'italic' }}>{boss.note}</div>}
+    </div>
   );
 }
 
 // ── Add Drop Modal ────────────────────────────────────────────────────────────
 
 function AddDropModal({ players, onClose, onSaved, onToast }) {
-  const [form, setForm] = useState({
-    player_id: players[0]?.id ?? '',
-    item_name: '',
-    boss_name: '',
-    quantity: 1,
-    value_gp: '',
-    notes: '',
-  });
+  const [form, setForm] = useState({ player_id: players[0]?.id ?? '', item_name: '', boss_name: '', quantity: 1, value_gp: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -77,8 +113,7 @@ function AddDropModal({ players, onClose, onSaved, onToast }) {
     setSaving(true);
     try {
       await api.addDrop({ ...form, player_id: Number(form.player_id), value_gp: form.value_gp ? Number(form.value_gp) : null });
-      onSaved();
-      onClose();
+      onSaved(); onClose();
     } catch (err) { onToast(err.message, 'error'); }
     finally { setSaving(false); }
   }
@@ -100,31 +135,26 @@ function AddDropModal({ players, onClose, onSaved, onToast }) {
             </div>
             <div className="form-group">
               <label className="form-label">Item name *</label>
-              <input className="form-input" value={form.item_name} onChange={e => set('item_name', e.target.value)}
-                placeholder="e.g. Bandos chestplate" autoFocus required />
+              <input className="form-input" value={form.item_name} onChange={e => set('item_name', e.target.value)} placeholder="e.g. Bandos chestplate" autoFocus required />
             </div>
             <div className="form-group">
               <label className="form-label">Boss / Source</label>
-              <input className="form-input" list="boss-list" value={form.boss_name}
-                onChange={e => set('boss_name', e.target.value)} placeholder="e.g. General Graardor" />
+              <input className="form-input" list="boss-list" value={form.boss_name} onChange={e => set('boss_name', e.target.value)} placeholder="e.g. General Graardor" />
               <datalist id="boss-list">{BOSS_NAMES.map(b => <option key={b} value={b} />)}</datalist>
             </div>
             <div className="grid-2" style={{ gap: 10 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Quantity</label>
-                <input type="number" min="1" className="form-input" value={form.quantity}
-                  onChange={e => set('quantity', e.target.value)} />
+                <input type="number" min="1" className="form-input" value={form.quantity} onChange={e => set('quantity', e.target.value)} />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Value (gp)</label>
-                <input type="number" min="0" className="form-input" value={form.value_gp}
-                  onChange={e => set('value_gp', e.target.value)} placeholder="Optional" />
+                <input type="number" min="0" className="form-input" value={form.value_gp} onChange={e => set('value_gp', e.target.value)} placeholder="Optional" />
               </div>
             </div>
             <div className="form-group mt-8" style={{ marginBottom: 0 }}>
               <label className="form-label">Notes</label>
-              <input className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)}
-                placeholder="e.g. 1/512 drop, 3rd kill" />
+              <input className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="e.g. 1/512 drop, 3rd kill" />
             </div>
           </div>
           <div className="modal-footer">
@@ -142,21 +172,11 @@ function AddDropModal({ players, onClose, onSaved, onToast }) {
 // ── Add Request Modal ─────────────────────────────────────────────────────────
 
 function AddRequestModal({ players, onClose, onSaved, onToast }) {
-  const [form, setForm] = useState({
-    player_id: players[0]?.id ?? '',
-    item_name: '',
-    boss_name: BOSS_NAMES[0] ?? '',
-    priority: 'medium',
-    quantity: 1,
-    notes: '',
-  });
-  // Separate state for the custom activity/boss name so typing doesn't hide the input
+  const [form, setForm] = useState({ player_id: players[0]?.id ?? '', item_name: '', boss_name: BOSS_NAMES[0] ?? '', priority: 'medium', quantity: 1, notes: '' });
   const [customBoss, setCustomBoss] = useState('');
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  const isCustom = form.boss_name === '__custom';
-  // Auto-fill item suggestions when a known boss is selected
+  const isCustom  = form.boss_name === '__custom';
   const bossDrops = isCustom ? [] : (BOSSES[form.boss_name]?.drops ?? []);
 
   async function submit(e) {
@@ -166,14 +186,8 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
     if (!resolvedBoss) return onToast('Activity/Boss name is required', 'error');
     setSaving(true);
     try {
-      await api.addRequest({
-        ...form,
-        boss_name: resolvedBoss,
-        player_id: Number(form.player_id),
-        quantity: Number(form.quantity) || 1,
-      });
-      onSaved();
-      onClose();
+      await api.addRequest({ ...form, boss_name: resolvedBoss, player_id: Number(form.player_id), quantity: Number(form.quantity) || 1 });
+      onSaved(); onClose();
     } catch (err) { onToast(err.message, 'error'); }
     finally { setSaving(false); }
   }
@@ -206,30 +220,17 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
             {isCustom && (
               <div className="form-group">
                 <label className="form-label">Activity / Boss Name</label>
-                <input
-                  className="form-input"
-                  value={customBoss}
-                  onChange={e => setCustomBoss(e.target.value)}
-                  placeholder="e.g. Clue Scroll, Slayer, Grand Exchange…"
-                  autoFocus
-                />
+                <input className="form-input" value={customBoss} onChange={e => setCustomBoss(e.target.value)} placeholder="e.g. Clue Scroll, Slayer, Grand Exchange…" autoFocus />
               </div>
             )}
             <div className="form-group">
               <label className="form-label">Item *</label>
-              <input className="form-input" list="drop-list" value={form.item_name}
-                onChange={e => set('item_name', e.target.value)}
-                placeholder="Select from list or type any item name" required />
-              <datalist id="drop-list">
-                {bossDrops.map(d => <option key={d} value={d} />)}
-              </datalist>
+              <input className="form-input" list="drop-list" value={form.item_name} onChange={e => set('item_name', e.target.value)} placeholder="Select from list or type any item name" required />
+              <datalist id="drop-list">{bossDrops.map(d => <option key={d} value={d} />)}</datalist>
               {bossDrops.length > 0 && (
                 <div className="flex gap-4 mt-8" style={{ flexWrap: 'wrap' }}>
                   {bossDrops.map(d => (
-                    <button key={d} type="button" className="tag" style={{ cursor: 'pointer', fontSize: 11 }}
-                      onClick={() => set('item_name', d)}>
-                      {d}
-                    </button>
+                    <button key={d} type="button" className="tag" style={{ cursor: 'pointer', fontSize: 11 }} onClick={() => set('item_name', d)}>{d}</button>
                   ))}
                 </div>
               )}
@@ -237,11 +238,7 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
             <div className="grid-2" style={{ gap: 10 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Amount needed</label>
-                <input
-                  type="number" min="1" className="form-input"
-                  value={form.quantity}
-                  onChange={e => set('quantity', e.target.value)}
-                />
+                <input type="number" min="1" className="form-input" value={form.quantity} onChange={e => set('quantity', e.target.value)} />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Priority</label>
@@ -254,8 +251,7 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
             </div>
             <div className="form-group mt-8" style={{ marginBottom: 0 }}>
               <label className="form-label">Notes</label>
-              <input className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)}
-                placeholder="Optional — e.g. for BiS gear setup" />
+              <input className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Optional — e.g. for BiS gear setup" />
             </div>
           </div>
           <div className="modal-footer">
@@ -270,83 +266,20 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
   );
 }
 
-// ── Boss Requirements Legend ──────────────────────────────────────────────────
-
-function BossReqPopup({ bossName, players }) {
-  const boss = BOSSES[bossName];
-  if (!boss) return null;
-  const { eligible, closest, shortfall } = getBossStatus(bossName, players);
-
-  const reqs = Object.entries(boss.requirements ?? {});
-  const rec = Object.entries(boss.recommended ?? {});
-
-  return (
-    <div style={{
-      position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: 4,
-      background: 'var(--bg-panel-alt)', border: '1px solid var(--border-light)',
-      borderRadius: 'var(--radius-lg)', padding: '12px 14px', minWidth: 240,
-      boxShadow: 'var(--shadow-lg)', fontSize: 12,
-    }}>
-      <div style={{ fontWeight: 700, color: 'var(--text-bright)', marginBottom: 6 }}>{bossName}</div>
-      <div style={{ color: 'var(--text-dim)', marginBottom: 8 }}>📍 {boss.location}</div>
-
-      {reqs.length > 0 && (
-        <>
-          <div style={{ color: 'var(--gold)', fontWeight: 600, marginBottom: 4 }}>Hard requirements</div>
-          {reqs.map(([s, l]) => {
-            const met = players.some(p => (p.skills || []).find(sk => sk.skill_name === s)?.level >= l);
-            return (
-              <div key={s} style={{ color: met ? 'var(--green-bright)' : 'var(--red-bright)', marginBottom: 2 }}>
-                {met ? '✓' : '✗'} {s} {l}
-              </div>
-            );
-          })}
-        </>
-      )}
-
-      {rec.length > 0 && (
-        <>
-          <div style={{ color: 'var(--text-dim)', fontWeight: 600, marginTop: 8, marginBottom: 4 }}>Recommended</div>
-          {rec.map(([s, l]) => {
-            const best = Math.max(...players.map(p => (p.skills || []).find(sk => sk.skill_name === s)?.level ?? 1));
-            const color = best >= l ? 'var(--green-bright)' : best >= l - 10 ? 'var(--orange)' : 'var(--red-bright)';
-            return (
-              <div key={s} style={{ color, marginBottom: 2 }}>
-                {s} {l} <span style={{ color: 'var(--text-dim)' }}>(best: {best})</span>
-              </div>
-            );
-          })}
-        </>
-      )}
-
-      {eligible.length > 0 && (
-        <div style={{ marginTop: 8, color: 'var(--green-bright)' }}>✓ Eligible: {eligible.join(', ')}</div>
-      )}
-      {eligible.length === 0 && closest && (
-        <div style={{ marginTop: 8, color: 'var(--orange)' }}>
-          Closest: {closest} ({Math.ceil(shortfall)} lvl{shortfall !== 1 ? 's' : ''} away)
-        </div>
-      )}
-      {boss.note && <div style={{ marginTop: 8, color: 'var(--text-dim)', fontStyle: 'italic' }}>{boss.note}</div>}
-    </div>
-  );
-}
-
-// ── Item Requests Table ───────────────────────────────────────────────────────
+// ── Item Requests panel ───────────────────────────────────────────────────────
 
 function RequestRow({ req, players, onToggle, onDelete }) {
   const [showPopup, setShowPopup] = useState(false);
-
   return (
     <tr style={{ opacity: req.obtained ? 0.55 : 1 }}>
       <td>
         <div className="flex align-center gap-8">
           <div className={`priority-dot priority-${req.priority}`} title={`${req.priority} priority`} />
-          <span style={{ color: 'var(--text-bright)', fontWeight: 600 }}>{req.item_name}</span>
-          {req.quantity > 1 && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>×{req.quantity}</span>}
-          {req.obtained ? <span style={{ fontSize: 11, color: 'var(--green-bright)' }}>✓ Obtained</span> : null}
+          <span style={{ color: 'var(--text-bright)', fontWeight: 600, fontSize: 12 }}>{req.item_name}</span>
+          {req.quantity > 1 && <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>×{req.quantity}</span>}
         </div>
-        {req.notes && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{req.notes}</div>}
+        {req.obtained && <div style={{ fontSize: 10, color: 'var(--green-bright)' }}>✓ Obtained</div>}
+        {req.notes && <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>{req.notes}</div>}
       </td>
       <td>
         <div style={{ position: 'relative', display: 'inline-block' }}
@@ -355,47 +288,39 @@ function RequestRow({ req, players, onToggle, onDelete }) {
           {showPopup && <BossReqPopup bossName={req.boss_name} players={players} />}
         </div>
       </td>
-      <td style={{ color: 'var(--gold)' }}>{req.rsn}</td>
-      <td style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtDate(req.created_at)}</td>
+      <td style={{ color: 'var(--gold)', fontSize: 12 }}>{req.rsn}</td>
+      <td style={{ fontSize: 10, color: 'var(--text-dim)' }}>{fmtDate(req.created_at)}</td>
       <td>
-        <div className="flex gap-8 align-center">
-          <button
-            className={`btn btn-sm ${req.obtained ? 'btn-secondary' : 'btn-primary'}`}
-            style={{ fontSize: 11 }}
-            onClick={() => onToggle(req)}>
-            {req.obtained ? '↩ Reopen' : '✓ Mark obtained'}
+        <div className="flex gap-6 align-center">
+          <button className={`btn btn-sm ${req.obtained ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 10 }} onClick={() => onToggle(req)}>
+            {req.obtained ? '↩' : '✓'}
           </button>
-          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--red-bright)' }}
-            onClick={() => onDelete(req.id)}>✕</button>
+          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--red-bright)', fontSize: 12 }} onClick={() => onDelete(req.id)}>✕</button>
         </div>
       </td>
     </tr>
   );
 }
 
-// ── Drop Log Row ──────────────────────────────────────────────────────────────
+// ── Drop Log panel ────────────────────────────────────────────────────────────
 
 function DropRow({ drop, players, onDelete }) {
   return (
     <tr>
+      <td style={{ color: 'var(--gold)', fontWeight: 600, fontSize: 12 }}>{drop.rsn}</td>
       <td>
-        <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{drop.rsn}</span>
-      </td>
-      <td>
-        <span style={{ color: 'var(--text-bright)', fontWeight: 600 }}>{drop.item_name}</span>
-        {drop.quantity > 1 && <span style={{ color: 'var(--text-dim)', fontSize: 11 }}> ×{drop.quantity}</span>}
+        <span style={{ color: 'var(--text-bright)', fontWeight: 600, fontSize: 12 }}>{drop.item_name}</span>
+        {drop.quantity > 1 && <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> ×{drop.quantity}</span>}
       </td>
       <td>
         {drop.boss_name
           ? <BossChip bossName={drop.boss_name} players={players} />
-          : <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>—</span>}
+          : <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>—</span>}
       </td>
-      <td style={{ color: 'var(--green-bright)', fontSize: 12 }}>{fmtGp(drop.value_gp)}</td>
-      <td style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtDate(drop.dropped_at)}</td>
-      <td style={{ fontSize: 11, color: 'var(--text-dim)' }}>{drop.notes}</td>
+      <td style={{ color: 'var(--green-bright)', fontSize: 11 }}>{fmtGp(drop.value_gp)}</td>
+      <td style={{ fontSize: 10, color: 'var(--text-dim)' }}>{fmtDate(drop.dropped_at)}</td>
       <td>
-        <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--red-bright)' }}
-          onClick={() => onDelete(drop.id)}>✕</button>
+        <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--red-bright)' }} onClick={() => onDelete(drop.id)}>✕</button>
       </td>
     </tr>
   );
@@ -404,13 +329,12 @@ function DropRow({ drop, players, onDelete }) {
 // ── Main DropsTab ─────────────────────────────────────────────────────────────
 
 export default function DropsTab({ players, groupId, onToast, canWrite }) {
-  const [drops, setDrops] = useState([]);
-  const [requests, setRequests] = useState([]);
+  const [drops, setDrops]         = useState([]);
+  const [requests, setRequests]   = useState([]);
   const [showAddDrop, setShowAddDrop] = useState(false);
-  const [showAddReq, setShowAddReq] = useState(false);
-  const [activeSection, setActiveSection] = useState('requests');
-  const [reqFilter, setReqFilter] = useState('pending');
-  const [dropFilter, setDropFilter] = useState('all');
+  const [showAddReq, setShowAddReq]   = useState(false);
+  const [reqFilter, setReqFilter]     = useState('pending');
+  const [dropFilter, setDropFilter]   = useState('all');
 
   async function load() {
     const [d, r] = await Promise.all([api.getDrops(groupId), api.getRequests(groupId)]);
@@ -421,17 +345,13 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
   useEffect(() => { load(); }, [groupId]);
 
   async function toggleRequest(req) {
-    try {
-      await api.updateRequest(req.id, { obtained: req.obtained ? 0 : 1 });
-      load();
-    } catch (err) { onToast(err.message, 'error'); }
+    try { await api.updateRequest(req.id, { obtained: req.obtained ? 0 : 1 }); load(); }
+    catch (err) { onToast(err.message, 'error'); }
   }
-
   async function deleteRequest(id) {
     if (!confirm('Remove this request?')) return;
     try { await api.deleteRequest(id); load(); } catch (err) { onToast(err.message, 'error'); }
   }
-
   async function deleteDrop(id) {
     if (!confirm('Remove this drop log entry?')) return;
     try { await api.deleteDrop(id); load(); } catch (err) { onToast(err.message, 'error'); }
@@ -439,17 +359,15 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
 
   const filteredRequests = useMemo(() => {
     let r = requests;
-    if (reqFilter === 'pending') r = r.filter(x => !x.obtained);
-    if (reqFilter === 'obtained') r = r.filter(x => x.obtained);
+    if (reqFilter === 'pending')  r = r.filter(x => !x.obtained);
+    if (reqFilter === 'obtained') r = r.filter(x =>  x.obtained);
     return r.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
   }, [requests, reqFilter]);
 
-  const filteredDrops = useMemo(() => {
-    if (dropFilter === 'all') return drops;
-    return drops.filter(d => d.rsn === dropFilter);
-  }, [drops, dropFilter]);
+  const filteredDrops = useMemo(() => (
+    dropFilter === 'all' ? drops : drops.filter(d => d.rsn === dropFilter)
+  ), [drops, dropFilter]);
 
-  // Boss summary: group requests by boss to show "can we kill this?"
   const bossSummary = useMemo(() => {
     const pending = requests.filter(r => !r.obtained);
     const byBoss = {};
@@ -460,242 +378,195 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
     }
     return Object.values(byBoss)
       .map(b => ({ ...b, requesters: [...b.requesters], status: getBossStatus(b.boss, players).status }))
-      .sort((a, b) => {
-        const order = { green: 0, orange: 1, red: 2, unknown: 3 };
-        return order[a.status] - order[b.status];
-      });
+      .sort((a, b) => ({ green: 0, orange: 1, red: 2, unknown: 3 }[a.status] - { green: 0, orange: 1, red: 2, unknown: 3 }[b.status]));
   }, [requests, players]);
 
+  // ── Panel style shared between the two main panels ──
+  const panelStyle = {
+    background: 'var(--bg-panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '16px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    minWidth: 0,
+    overflow: 'hidden',
+  };
+
+  const panelHeaderStyle = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    flexWrap: 'wrap', gap: 6, flexShrink: 0,
+  };
+
   return (
-    <div>
-      {/* Section switcher */}
-      <div className="flex gap-8 mb-20" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 1 }}>
-        {[
-          { id: 'requests', label: '🎯 Item Requests' },
-          { id: 'drops', label: '💎 Drop Log' },
-          { id: 'bosses', label: '🗡️ Boss Overview' },
-        ].map(s => (
-          <button key={s.id} onClick={() => setActiveSection(s.id)} className="btn btn-ghost"
-            style={{
-              borderBottom: activeSection === s.id ? '2px solid var(--gold)' : '2px solid transparent',
-              borderRadius: 0, paddingBottom: 8,
-              color: activeSection === s.id ? 'var(--gold)' : 'var(--text-dim)',
-            }}>
-            {s.label}
-          </button>
-        ))}
+    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+
+      {/* ── LEFT: Item Requests (flex:1) ── */}
+      <div style={{ ...panelStyle, flex: 1 }}>
+        <div style={panelHeaderStyle}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)' }}>
+            🎯 Item Requests
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <select className="form-select" style={{ width: 'auto', fontSize: 11 }} value={reqFilter} onChange={e => setReqFilter(e.target.value)}>
+              <option value="pending">Pending</option>
+              <option value="obtained">Obtained</option>
+              <option value="all">All</option>
+            </select>
+            {canWrite
+              ? <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => setShowAddReq(true)}>+ Add</button>
+              : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>🔒</span>
+            }
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 10, color: 'var(--text-dim)' }}>
+          <span style={{ color: 'var(--green-bright)' }}>🟢 Ready</span>
+          <span style={{ color: 'var(--orange)' }}>🟠 Close</span>
+          <span style={{ color: 'var(--red-bright)' }}>🔴 Missing reqs</span>
+        </div>
+
+        {filteredRequests.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ fontSize: 12 }}>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Boss</th>
+                  <th>Player</th>
+                  <th>Added</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRequests.map(r => (
+                  <RequestRow key={r.id} req={r} players={players} onToggle={toggleRequest} onDelete={deleteRequest} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="empty-state" style={{ padding: '20px 0' }}>
+            <div className="icon" style={{ fontSize: 28 }}>🎯</div>
+            <p style={{ fontSize: 12 }}>{reqFilter === 'pending' ? 'No pending requests.' : 'Nothing here yet.'}</p>
+            {canWrite && <button className="btn btn-primary btn-sm mt-12" onClick={() => setShowAddReq(true)}>+ Add Request</button>}
+          </div>
+        )}
       </div>
 
-      {/* ── ITEM REQUESTS ── */}
-      {activeSection === 'requests' && (
-        <div>
-          <div className="flex align-center justify-between mb-16" style={{ flexWrap: 'wrap', gap: 8 }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>
-              🎯 Item Requests
-              <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 12, color: 'var(--text-dim)' }}>
-                &nbsp;— hover a boss name for requirement details
-              </span>
-            </div>
-            <div className="flex gap-8 align-center">
-              <select className="form-select" style={{ width: 'auto' }} value={reqFilter} onChange={e => setReqFilter(e.target.value)}>
-                <option value="pending">Pending</option>
-                <option value="obtained">Obtained</option>
-                <option value="all">All</option>
-              </select>
-              {canWrite
-                ? <button className="btn btn-primary btn-sm" onClick={() => setShowAddReq(true)}>+ Add Request</button>
-                : <span style={{fontSize:12,color:'var(--text-dim)'}}>🔒 Claim group to add</span>}
-            </div>
+      {/* ── MIDDLE: Drop Log (flex:1) ── */}
+      <div style={{ ...panelStyle, flex: 1 }}>
+        <div style={panelHeaderStyle}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)' }}>
+            💎 Drop Log <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-dim)' }}>({drops.length})</span>
           </div>
-
-          {/* Legend */}
-          <div className="flex gap-12 mb-16 text-xs text-dim align-center" style={{ flexWrap: 'wrap' }}>
-            <span>Boss colour key:</span>
-            <span style={{ color: 'var(--green-bright)' }}>🟢 Can kill now</span>
-            <span style={{ color: 'var(--orange)' }}>🟠 Close / meets entry but not recommended levels</span>
-            <span style={{ color: 'var(--red-bright)' }}>🔴 Missing requirements</span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <select className="form-select" style={{ width: 'auto', fontSize: 11 }} value={dropFilter} onChange={e => setDropFilter(e.target.value)}>
+              <option value="all">All</option>
+              {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
+            </select>
+            {canWrite && <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => setShowAddDrop(true)}>+ Log</button>}
           </div>
-
-          {filteredRequests.length > 0 ? (
-            <div className="panel">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Boss</th>
-                    <th>Player</th>
-                    <th>Added</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRequests.map(r => (
-                    <RequestRow key={r.id} req={r} players={players}
-                      onToggle={toggleRequest} onDelete={deleteRequest} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="icon">🎯</div>
-              <p>{reqFilter === 'pending' ? 'No pending requests.' : 'Nothing here yet.'}</p>
-              {canWrite && <button className="btn btn-primary mt-12" onClick={() => setShowAddReq(true)}>+ Add Request</button>}
-            </div>
-          )}
         </div>
-      )}
 
-      {/* ── DROP LOG ── */}
-      {activeSection === 'drops' && (
-        <div>
-          <div className="flex align-center justify-between mb-8" style={{ flexWrap: 'wrap', gap: 8 }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>💎 Drop Log ({drops.length})</div>
-            <div className="flex gap-8 align-center">
-              <select className="form-select" style={{ width: 'auto' }} value={dropFilter} onChange={e => setDropFilter(e.target.value)}>
-                <option value="all">All Players</option>
-                {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
-              </select>
-              {canWrite && <button className="btn btn-primary btn-sm" onClick={() => setShowAddDrop(true)}>+ Log Drop</button>}
-            </div>
+        {filteredDrops.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table" style={{ fontSize: 12 }}>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Item</th>
+                  <th>Boss</th>
+                  <th>Value</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDrops.map(d => (
+                  <DropRow key={d.id} drop={d} players={players} onDelete={deleteDrop} />
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          <div style={{
-            display: 'flex', alignItems: 'flex-start', gap: 8,
-            padding: '8px 12px', marginBottom: 16,
-            background: 'rgba(200,168,75,0.06)', border: '1px solid rgba(200,168,75,0.2)',
-            borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--text-dim)',
-          }}>
-            <span style={{ flexShrink: 0, marginTop: 1 }}>💡</span>
-            <span>
-              Log notable drops that aren't automatically captured by the activity feed — boss gear, rare items, and anything worth tracking.
-              Every entry here shows up in the <strong style={{ color: 'var(--gold)' }}>Vault</strong> tab as part of the group's collection.
-              Activity feed drops (e.g. <em>"I found a Dragon chainbody."</em>) are auto-logged on sync.
-            </span>
+        ) : (
+          <div className="empty-state" style={{ padding: '20px 0' }}>
+            <div className="icon" style={{ fontSize: 28 }}>💎</div>
+            <p style={{ fontSize: 12 }}>No drops logged yet.</p>
+            {canWrite && <button className="btn btn-primary btn-sm mt-12" onClick={() => setShowAddDrop(true)}>+ Log Drop</button>}
           </div>
+        )}
+      </div>
 
-          {filteredDrops.length > 0 ? (
-            <div className="panel">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Player</th>
-                    <th>Item</th>
-                    <th>Boss</th>
-                    <th>Value</th>
-                    <th>Date</th>
-                    <th>Notes</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDrops.map(d => (
-                    <DropRow key={d.id} drop={d} players={players} onDelete={deleteDrop} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="icon">💎</div>
-              <p>No drops logged yet. Track your notable loots here!</p>
-              {canWrite && <button className="btn btn-primary mt-12" onClick={() => setShowAddDrop(true)}>+ Log First Drop</button>}
-            </div>
-          )}
+      {/* ── RIGHT: Boss Overview (20%) ── */}
+      <div style={{ ...panelStyle, flex: '0 0 20%', minWidth: 180 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)', flexShrink: 0 }}>
+          🗡️ Boss Overview
         </div>
-      )}
+        <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>
+          Bosses with pending requests
+        </div>
 
-      {/* ── BOSS OVERVIEW ── */}
-      {activeSection === 'bosses' && (
-        <div>
-          <div className="section-title mb-16">🗡️ Bosses with Pending Requests</div>
+        {bossSummary.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-dim)', fontSize: 12 }}>
+            No pending requests
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {bossSummary.map(b => {
+              const bossData = BOSSES[b.boss];
+              const { eligible, closest, shortfall } = getBossStatus(b.boss, players);
+              const statusColors = {
+                green:   { bg: 'rgba(90,154,80,0.08)',  border: 'rgba(90,154,80,0.35)' },
+                orange:  { bg: 'rgba(200,120,48,0.08)', border: 'rgba(200,120,48,0.35)' },
+                red:     { bg: 'rgba(192,64,64,0.08)',  border: 'rgba(192,64,64,0.35)' },
+                unknown: { bg: 'var(--bg-root)',        border: 'var(--border)' },
+              };
+              const sc = statusColors[b.status];
 
-          {bossSummary.length === 0 ? (
-            <div className="empty-state">
-              <div className="icon">🗡️</div>
-              <p>No pending requests. Add some item requests to see the boss overview.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {bossSummary.map(b => {
-                const bossData = BOSSES[b.boss];
-                const { eligible, closest, shortfall } = getBossStatus(b.boss, players);
-                const statusColors = {
-                  green:   { bg: 'rgba(90,154,80,0.08)',  border: 'rgba(90,154,80,0.4)' },
-                  orange:  { bg: 'rgba(200,120,48,0.08)', border: 'rgba(200,120,48,0.4)' },
-                  red:     { bg: 'rgba(192,64,64,0.08)',  border: 'rgba(192,64,64,0.4)' },
-                  unknown: { bg: 'var(--bg-panel-alt)',   border: 'var(--border)' },
-                };
-                const sc = statusColors[b.status];
+              return (
+                <div key={b.boss} style={{
+                  background: sc.bg, border: `1px solid ${sc.border}`,
+                  borderRadius: 'var(--radius)', padding: '9px 10px',
+                  display: 'flex', flexDirection: 'column', gap: 5,
+                }}>
+                  <BossChip bossName={b.boss} players={players} />
 
-                return (
-                  <div key={b.boss} style={{
-                    background: sc.bg, border: `1px solid ${sc.border}`,
-                    borderRadius: 'var(--radius-lg)', padding: '14px 16px',
-                  }}>
-                    <div className="flex align-center justify-between" style={{ flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                      <div className="flex align-center gap-12">
-                        <BossChip bossName={b.boss} players={players} />
-                        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                          {bossData?.location ?? ''}
-                          {bossData?.tier ? ` · ${TIER_LABELS[bossData.tier]}` : ''}
-                        </span>
-                      </div>
-                      <div className="flex gap-8 text-xs" style={{ flexWrap: 'wrap' }}>
-                        {b.requesters.map(r => (
-                          <span key={r} className="tag">{r} needs items</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Requested items */}
-                    <div className="flex gap-6" style={{ flexWrap: 'wrap', marginBottom: 10 }}>
-                      {[...new Set(b.items)].map(item => (
-                        <span key={item} className="tag" style={{ color: 'var(--text-bright)' }}>💎 {item}</span>
-                      ))}
-                    </div>
-
-                    {/* Who can / who is close */}
-                    <div style={{ fontSize: 12 }}>
-                      {eligible.length > 0 && (
-                        <span style={{ color: 'var(--green-bright)', marginRight: 16 }}>
-                          ✓ Can attempt: {eligible.join(', ')}
-                        </span>
-                      )}
-                      {eligible.length === 0 && closest && (
-                        <span style={{ color: 'var(--orange)' }}>
-                          Closest: {closest} ({Math.ceil(shortfall)} level{shortfall !== 1 ? 's' : ''} away)
-                        </span>
-                      )}
-                      {/* Hard requirements */}
-                      {Object.entries(bossData?.requirements ?? {}).length > 0 && (
-                        <span style={{ color: 'var(--text-dim)', marginLeft: eligible.length > 0 ? 16 : 0 }}>
-                          Requires: {Object.entries(bossData.requirements).map(([s, l]) => `${s} ${l}`).join(', ')}
-                        </span>
-                      )}
-                    </div>
-
-                    {bossData?.note && (
-                      <div style={{ fontSize: 11, color: 'var(--text-dim)', fontStyle: 'italic', marginTop: 6 }}>
-                        ℹ {bossData.note}
-                      </div>
-                    )}
+                  {/* Requested items — compact tags */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    {[...new Set(b.items)].map(item => (
+                      <span key={item} style={{
+                        fontSize: 9, padding: '1px 5px',
+                        background: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.3)',
+                        borderRadius: 4, color: 'var(--text-bright)',
+                      }}>💎 {item}</span>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
-      {showAddDrop && (
-        <AddDropModal players={players} onClose={() => setShowAddDrop(false)}
-          onSaved={load} onToast={onToast} />
-      )}
-      {showAddReq && (
-        <AddRequestModal players={players} onClose={() => setShowAddReq(false)}
-          onSaved={load} onToast={onToast} />
-      )}
+                  {/* Who wants it */}
+                  <div style={{ fontSize: 9, color: 'var(--text-dim)' }}>
+                    {b.requesters.join(', ')} needs items
+                  </div>
+
+                  {/* Eligibility */}
+                  {eligible.length > 0 && (
+                    <div style={{ fontSize: 9, color: 'var(--green-bright)' }}>✓ {eligible.join(', ')}</div>
+                  )}
+                  {eligible.length === 0 && closest && (
+                    <div style={{ fontSize: 9, color: 'var(--orange)' }}>{closest}: {Math.ceil(shortfall)} lvls away</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showAddDrop && <AddDropModal players={players} onClose={() => setShowAddDrop(false)} onSaved={load} onToast={onToast} />}
+      {showAddReq  && <AddRequestModal players={players} onClose={() => setShowAddReq(false)} onSaved={load} onToast={onToast} />}
     </div>
   );
 }

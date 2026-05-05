@@ -11,9 +11,9 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
 
   const TABS = [
     { id: 'overview',      label: '📊 Overview' },
-    { id: 'drops',         label: '💎 Items & Drops' },
     { id: 'vault',         label: '🏆 Group Vault' },
-    { id: 'tips',          label: '💡 Tips and Milestones' },
+    { id: 'drops',         label: '💎 Items & Drops' },
+    { id: 'tips',          label: '💡 Tips & Milestones' },
     { id: 'achievements',  label: '📋 Achievement Diaries' },
     { id: 'leaderboards',  label: '🏅 Leaderboards' },
   ];
