@@ -660,28 +660,31 @@ const TRACKED_BOSSES = [
 ];
 
 function BossKills({ players, colorMap }) {
-  const [sortBoss, setSortBoss] = useState(null);
+  const [bossFilter, setBossFilter] = useState('All');
 
   // Build per-player boss kill map from stats_json.bossKills
-  const rows = useMemo(() => players.map(p => {
+  const playerData = useMemo(() => players.map(p => {
     const stats = parseStats(p.stats_json);
     return { ...p, bk: stats?.bossKills ?? {} };
   }), [players]);
 
   // Which bosses have any data?
   const activeBosses = useMemo(() =>
-    TRACKED_BOSSES.filter(b => rows.some(r => (r.bk[b] ?? 0) > 0)),
-  [rows]);
+    TRACKED_BOSSES.filter(b => playerData.some(r => (r.bk[b] ?? 0) > 0)),
+  [playerData]);
 
-  // Sort rows by chosen boss or by total kills
-  const sortedRows = useMemo(() => {
-    return [...rows].sort((a, b) => {
-      if (sortBoss) return (b.bk[sortBoss] ?? 0) - (a.bk[sortBoss] ?? 0);
-      const totA = activeBosses.reduce((s, k) => s + (a.bk[k] ?? 0), 0);
-      const totB = activeBosses.reduce((s, k) => s + (b.bk[k] ?? 0), 0);
-      return totB - totA;
-    });
-  }, [rows, sortBoss, activeBosses]);
+  // Filtered boss list for display
+  const displayBosses = bossFilter === 'All'
+    ? activeBosses
+    : activeBosses.filter(b => b === bossFilter);
+
+  // Total kills per player (across all active bosses)
+  const playerTotals = useMemo(() =>
+    Object.fromEntries(playerData.map(p => [
+      p.id,
+      activeBosses.reduce((s, b) => s + (p.bk[b] ?? 0), 0),
+    ])),
+  [playerData, activeBosses]);
 
   const noData = activeBosses.length === 0;
 
@@ -698,52 +701,77 @@ function BossKills({ players, colorMap }) {
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
-        <thead>
-          <tr style={{ color: 'var(--text-dim)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-            <th align="left" style={{ padding: '4px 8px 8px 4px', fontWeight: 600 }}>Player</th>
-            {activeBosses.map(b => (
-              <th key={b} align="center"
-                style={{ padding: '4px 6px 8px', fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer',
-                  color: sortBoss === b ? 'var(--gold)' : undefined }}
-                title={`Sort by ${b}`}
-                onClick={() => setSortBoss(sortBoss === b ? null : b)}>
-                {b.length > 14 ? b.slice(0, 13) + '…' : b}
-                {sortBoss === b ? ' ▼' : ''}
+    <div>
+      {/* Boss filter dropdown */}
+      <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <label style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>Filter boss:</label>
+        <select
+          value={bossFilter}
+          onChange={e => setBossFilter(e.target.value)}
+          style={{
+            background: 'var(--bg-panel-alt)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)', color: 'var(--text)', fontSize: 12,
+            padding: '4px 8px', cursor: 'pointer', minWidth: 200,
+          }}>
+          <option value="All">All bosses ({activeBosses.length})</option>
+          {activeBosses.map(b => <option key={b} value={b}>{b}</option>)}
+        </select>
+      </div>
+
+      {/* Table: boss rows × player columns */}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              <th align="left" style={{ padding: '4px 12px 8px 4px', fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>
+                Boss
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedRows.map((p, ri) => {
-            const total = activeBosses.reduce((s, k) => s + (p.bk[k] ?? 0), 0);
-            return (
-              <tr key={p.id} style={{ borderTop: '1px solid var(--border)', background: ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent' }}>
-                <td style={{ padding: '6px 8px 6px 4px', fontWeight: 700, color: colorMap[p.id], whiteSpace: 'nowrap' }}>
+              {playerData.map(p => (
+                <th key={p.id} align="center" style={{
+                  padding: '4px 12px 8px', fontSize: 12, fontWeight: 700,
+                  color: colorMap[p.id], whiteSpace: 'nowrap',
+                }}>
                   {p.rsn}
-                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-dim)', marginLeft: 6 }}>({total.toLocaleString()})</span>
-                </td>
-                {activeBosses.map(b => {
-                  const val = p.bk[b] ?? 0;
-                  const maxVal = Math.max(...rows.map(r => r.bk[b] ?? 0));
-                  const isTop = val > 0 && val === maxVal;
-                  return (
-                    <td key={b} align="center" style={{
-                      padding: '6px 6px',
-                      background: isTop ? 'rgba(200,168,75,0.18)' : undefined,
-                      fontWeight: isTop ? 700 : 400,
-                      color: isTop ? 'var(--gold)' : val > 0 ? 'var(--text)' : 'var(--text-dim)',
-                    }}>
-                      {val > 0 ? val.toLocaleString() : '—'}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  <div style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>
+                    {playerTotals[p.id].toLocaleString()} total
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayBosses.map((boss, bi) => {
+              const values = playerData.map(p => p.bk[boss] ?? 0);
+              const maxVal = Math.max(...values);
+              return (
+                <tr key={boss} style={{
+                  borderTop: '1px solid var(--border)',
+                  background: bi % 2 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                }}>
+                  <td style={{ padding: '7px 12px 7px 4px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-bright)' }}>
+                    {boss}
+                  </td>
+                  {playerData.map((p, pi) => {
+                    const val = values[pi];
+                    const isTop = val > 0 && val === maxVal;
+                    return (
+                      <td key={p.id} align="center" style={{
+                        padding: '7px 12px',
+                        borderLeft: '1px solid var(--border)',
+                        background: isTop ? 'rgba(200,168,75,0.18)' : undefined,
+                        fontWeight: isTop ? 700 : 400,
+                        color: isTop ? 'var(--gold)' : val > 0 ? 'var(--text)' : 'var(--text-dim)',
+                      }}>
+                        {val > 0 ? val.toLocaleString() : '—'}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -821,7 +849,7 @@ function ClueScrolls({ players, colorMap }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function LeaderboardsTab({ players }) {
-  const [section, setSection] = useState('firsts');
+  const [section, setSection] = useState('bosses');
   const colorMap = Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]]));
 
   const SECTIONS = [

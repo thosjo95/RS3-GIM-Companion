@@ -467,7 +467,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
 }
 
 // Group search modal
-function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
+function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, onToast, onRemove, onFavorite, favoriteGroupIds }) {
   const [query, setQuery] = useState('');
   const [gimType, setGimType] = useState('regular');
   const [gimSize, setGimSize] = useState(5);
@@ -494,14 +494,14 @@ function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
   }
 
   const alreadyInDb = rs3Result?.found
-    ? groups.find(g => g.name.toLowerCase() === rs3Result.groupName?.toLowerCase())
+    ? (allDbGroups ?? groups).find(g => g.name.toLowerCase() === rs3Result.groupName?.toLowerCase())
     : null;
 
   return (
     <div className="modal-backdrop">
       <div className="modal" style={{maxWidth:500}}>
         <div className="modal-header">
-          <span className="modal-title">🔍 Find Group</span>
+          <span className="modal-title">👥 Find or Manage Groups</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body" style={{paddingTop:0}}>
@@ -518,27 +518,59 @@ function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
               <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.5px'}}>
                 {query.trim() ? 'Matching groups' : 'Your groups'}
               </div>
-              {localMatches.map(g => (
-                <div key={g.id} onClick={() => { onSelect(g.id); onClose(); }}
-                  style={{
-                    display:'flex',alignItems:'center',gap:10,
-                    padding:'9px 12px',marginBottom:4,
-                    background:'var(--bg-panel-alt)',border:'1px solid var(--border)',
-                    borderRadius:'var(--radius)',cursor:'pointer',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor='var(--gold-dark)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}>
-                  <span>🏰</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:600,color:'var(--text-bright)'}}>{g.name}</div>
-                    <div style={{fontSize:11,color:'var(--text-dim)'}}>
-                      {g.member_count} member{g.member_count !== 1 ? 's' : ''}
-                      {g.gim_type ? ` · ${g.gim_type}` : ''}
+              {localMatches.map(g => {
+                const isFav = favoriteGroupIds?.includes(g.id);
+                return (
+                  <div key={g.id}
+                    style={{
+                      display:'flex',alignItems:'center',gap:10,
+                      padding:'9px 12px',marginBottom:4,
+                      background:'var(--bg-panel-alt)',border:'1px solid var(--border)',
+                      borderRadius:'var(--radius)',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor='var(--gold-dark)'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}>
+                    <span>👥</span>
+                    {/* Group info — clickable to switch */}
+                    <div style={{flex:1,cursor:'pointer'}} onClick={() => { onSelect(g.id); onClose(); }}>
+                      <div style={{fontWeight:600,color:'var(--text-bright)'}}>{g.name}</div>
+                      <div style={{fontSize:11,color:'var(--text-dim)'}}>
+                        {g.member_count} member{g.member_count !== 1 ? 's' : ''}
+                        {g.gim_type ? ` · ${g.gim_type}` : ''}
+                      </div>
                     </div>
+                    {/* Switch button */}
+                    <span style={{fontSize:11,color:'var(--gold)',cursor:'pointer',flexShrink:0}}
+                      onClick={() => { onSelect(g.id); onClose(); }}>Switch →</span>
+                    {/* Favorite toggle */}
+                    <button
+                      onClick={() => onFavorite(g.id)}
+                      title={isFav ? 'Unpin from top' : 'Pin to top of sidebar'}
+                      style={{
+                        background:'none', border:'1px solid var(--border)',
+                        borderRadius:'var(--radius)', cursor:'pointer',
+                        padding:'3px 7px', fontSize:13, lineHeight:1,
+                        color: isFav ? 'var(--gold)' : 'var(--text-dim)',
+                        flexShrink:0,
+                      }}>
+                      {isFav ? '★' : '☆'}
+                    </button>
+                    {/* Remove button */}
+                    <button
+                      onClick={() => { onRemove(g.id); }}
+                      title="Remove from sidebar"
+                      style={{
+                        background:'none', border:'1px solid var(--border)',
+                        borderRadius:'var(--radius)', cursor:'pointer',
+                        padding:'3px 7px', fontSize:12, lineHeight:1,
+                        color:'var(--text-dim)',
+                        flexShrink:0,
+                      }}>
+                      ✕
+                    </button>
                   </div>
-                  <span style={{fontSize:11,color:'var(--gold)'}}>Switch →</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -627,67 +659,33 @@ function SearchGroupModal({ groups, onSelect, onAddNew, onClose, onToast }) {
 }
 
 // Group switcher — shown in sidebar when multiple groups exist
-function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, onRemove, onFavorite, favoriteGroupIds }) {
-  const [hoveredId, setHoveredId] = React.useState(null);
-
+function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, favoriteGroupIds }) {
   return (
     <nav className="sidebar">
       <div className="nav-group">
         <div className="nav-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <span>Groups</span>
-          <button className="btn btn-ghost btn-sm btn-icon" onClick={onSearch} title="Find or import a group" style={{fontSize:13}}>🔍</button>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onSearch} title="Find or manage groups" style={{fontSize:13}}>🔍</button>
         </div>
         {groups.map(g => {
           const isFav = favoriteGroupIds?.includes(g.id);
-          const isHovered = hoveredId === g.id;
           return (
             <div
               key={g.id}
               className={`nav-item${g.id === activeGroupId ? ' active' : ''}`}
-              style={{position:'relative', paddingRight: isHovered ? 52 : undefined}}
-              onClick={() => onSelect(g.id)}
-              onMouseEnter={() => setHoveredId(g.id)}
-              onMouseLeave={() => setHoveredId(null)}>
-              <span className="icon">🏰</span>
+              onClick={() => onSelect(g.id)}>
+              <span className="icon">👥</span>
               <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{g.name}</span>
-              {/* Favorite star — always visible if favorited, else shown on hover */}
-              {(isFav || isHovered) && (
-                <button
-                  onClick={e => { e.stopPropagation(); onFavorite(g.id); }}
-                  title={isFav ? 'Unpin from top' : 'Pin to top'}
-                  style={{
-                    background:'none', border:'none', cursor:'pointer', padding:'0 2px',
-                    fontSize:13, lineHeight:1,
-                    color: isFav ? 'var(--gold)' : 'var(--text-dim)',
-                    flexShrink: 0,
-                  }}>
-                  {isFav ? '★' : '☆'}
-                </button>
-              )}
-              {/* Remove button — shown on hover */}
-              {isHovered && (
-                <button
-                  onClick={e => { e.stopPropagation(); onRemove(g.id); }}
-                  title="Remove from sidebar"
-                  style={{
-                    background:'none', border:'none', cursor:'pointer', padding:'0 2px',
-                    fontSize:13, lineHeight:1,
-                    color:'var(--text-dim)',
-                    flexShrink: 0,
-                  }}>
-                  ✕
-                </button>
-              )}
-              {/* Member count tag — only when not hovered */}
-              {!isHovered && g.member_count != null && (
-                <span className="tag" style={{marginLeft:'auto',fontSize:10,flexShrink:0}}>{g.member_count}</span>
+              {isFav && <span style={{color:'var(--gold)',fontSize:11,flexShrink:0,marginLeft:2}}>★</span>}
+              {g.member_count != null && (
+                <span className="tag" style={{marginLeft: isFav ? 4 : 'auto',fontSize:10,flexShrink:0}}>{g.member_count}</span>
               )}
             </div>
           );
         })}
         <div className="nav-item" onClick={onSearch} style={{marginTop:4}}>
-          <span className="icon">🔍</span>
-          <span>Find / Add Group</span>
+          <span className="icon">⚙️</span>
+          <span>Find or Manage Groups</span>
         </div>
       </div>
     </nav>
@@ -943,8 +941,6 @@ export default function App() {
           onSelect={selectGroup}
           onNewGroup={() => setCreatingGroup(true)}
           onSearch={() => setShowSearchModal(true)}
-          onRemove={removeFromSidebar}
-          onFavorite={toggleFavorite}
           favoriteGroupIds={favoriteGroupIds}
         />
         <main className="content">
@@ -1015,11 +1011,15 @@ export default function App() {
       )}
       {showSearchModal && (
         <SearchGroupModal
-          groups={allGroups}
+          groups={groups}
+          allDbGroups={allGroups}
           onSelect={selectGroup}
           onAddNew={handleSearchAddNew}
           onClose={() => setShowSearchModal(false)}
           onToast={pushToast}
+          onRemove={removeFromSidebar}
+          onFavorite={toggleFavorite}
+          favoriteGroupIds={favoriteGroupIds}
         />
       )}
       <ToastArea toasts={toasts} />
