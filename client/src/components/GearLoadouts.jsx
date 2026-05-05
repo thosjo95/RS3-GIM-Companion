@@ -7,16 +7,23 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Build { SkillName: level } from player.skills (array or object). */
+/** Build { SkillName: level } from player.skills.
+ *  The DB returns rows as { skill_name, level, xp, rank } — note skill_name (underscore).
+ *  We also handle legacy { name, level } objects and plain { SkillName: level } maps. */
 function buildSkillLevels(player) {
   if (!player?.skills) return {};
   const skills = player.skills;
   if (Array.isArray(skills)) {
     const map = {};
-    for (const s of skills) { if (s?.name) map[s.name] = s.level ?? 1; }
+    for (const s of skills) {
+      // skill_name is the canonical DB column name; fall back to name for any legacy format
+      const key = s?.skill_name ?? s?.name;
+      if (key) map[key] = Number(s.level ?? 1);
+    }
     return map;
   }
-  return typeof skills === 'object' ? { ...skills } : {};
+  if (typeof skills === 'object') return { ...skills };
+  return {};
 }
 
 // Slot entry shape: { name: string, confirmed: boolean }
@@ -607,6 +614,28 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
     }
   }
 
+  async function handleClearAll() {
+    const slotsWithItems = EQUIPMENT_SLOTS.filter(s => loadout[s.slot]);
+    if (!slotsWithItems.length) {
+      onToast?.('No gear to clear.', 'info');
+      return;
+    }
+    // Optimistic clear
+    setLoadout({});
+    setActiveSlot(null);
+    // Persist each cleared slot
+    let failed = 0;
+    for (const slotDef of slotsWithItems) {
+      try {
+        await api.saveEquipmentSlot(selectedPlayerId, style, slotDef.slot, '', false);
+      } catch {
+        failed++;
+      }
+    }
+    if (failed) onToast?.(`${failed} slot(s) failed to clear.`, 'error');
+    else onToast?.(`Cleared ${slotsWithItems.length} slot(s) for ${selectedPlayer?.rsn} — ${style}`, 'success');
+  }
+
   async function handleQuickFill() {
     const updates = {};
     for (const slotDef of EQUIPMENT_SLOTS) {
@@ -670,13 +699,29 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
           ))}
         </div>
 
-        <span style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-          <span style={{ color: '#4caf50', fontWeight: 600 }}>{confirmedCount} owned</span>
-          {' · '}
-          <span style={{ color: '#f7c97e' }}>{filledCount - confirmedCount} planning</span>
-          {' · '}
-          {EQUIPMENT_SLOTS.length - filledCount} empty
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+            <span style={{ color: '#4caf50', fontWeight: 600 }}>{confirmedCount} owned</span>
+            {' · '}
+            <span style={{ color: '#f7c97e' }}>{filledCount - confirmedCount} planning</span>
+            {' · '}
+            {EQUIPMENT_SLOTS.length - filledCount} empty
+          </span>
+          {canWrite && filledCount > 0 && (
+            <button
+              onClick={handleClearAll}
+              title={`Clear all ${style} gear for ${selectedPlayer?.rsn}`}
+              style={{
+                padding: '3px 8px', fontSize: 11,
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--text-dim)', cursor: 'pointer',
+              }}>
+              🗑 Clear gear
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
