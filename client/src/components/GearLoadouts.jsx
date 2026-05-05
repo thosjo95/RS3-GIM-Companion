@@ -4,6 +4,24 @@ import { STYLES, EQUIPMENT_SLOTS, GEAR_SUGGESTIONS } from '../data/gearSuggestio
 
 // ── Equipment grid slot button ────────────────────────────────────────────────
 
+function SlotIcon({ slotDef }) {
+  const [imgFailed, setImgFailed] = React.useState(false);
+  const src = `https://runescape.wiki/images/${slotDef.wikiImg}`;
+
+  if (imgFailed || !slotDef.wikiImg) {
+    return <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{slotDef.icon}</span>;
+  }
+  return (
+    <img
+      src={src}
+      alt={slotDef.label}
+      width={26} height={26}
+      onError={() => setImgFailed(true)}
+      style={{ flexShrink: 0, imageRendering: 'crisp-edges' }}
+    />
+  );
+}
+
 function SlotButton({ slotDef, item, active, canWrite, onClick, styleColor, styleBg }) {
   const filled = !!item;
   return (
@@ -16,7 +34,7 @@ function SlotButton({ slotDef, item, active, canWrite, onClick, styleColor, styl
         width: 82, height: 82,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        gap: 4,
+        gap: 3,
         padding: '6px 4px',
         background: active ? styleBg : filled ? 'rgba(255,255,255,0.04)' : 'var(--bg-root)',
         border: `2px solid ${active ? styleColor : filled ? styleColor + '88' : 'var(--border)'}`,
@@ -25,12 +43,11 @@ function SlotButton({ slotDef, item, active, canWrite, onClick, styleColor, styl
         transition: 'all 0.15s',
         textAlign: 'center',
         overflow: 'hidden',
-        position: 'relative',
       }}>
-      {/* Slot icon */}
-      <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{slotDef.icon}</span>
+      {/* Slot icon — RS3 wiki image with emoji fallback */}
+      <SlotIcon slotDef={slotDef} />
 
-      {/* Item name or "Empty" */}
+      {/* Item name or slot label */}
       <span style={{
         fontSize: 9,
         fontWeight: filled ? 600 : 400,
@@ -288,7 +305,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast }) {
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 82px)',
-            gridTemplateRows: 'repeat(6, 82px)',
+            gridTemplateRows: 'repeat(5, 82px)',
             gap: 4,
             flexShrink: 0,
           }}>

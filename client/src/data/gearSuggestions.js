@@ -11,20 +11,21 @@ export const STYLES = [
   { key: 'hybrid',     label: 'Hybrid',     icon: '🌀',  color: '#f7c97e',  bg: 'rgba(247,201,126,0.12)' },
 ];
 
-// Slot definitions + their position on the RS3 equipment grid (3 cols × 6 rows)
+// Slot definitions + their position on the RS3 equipment grid (3 cols × 5 rows)
+// wikiImg: filename on runescape.wiki/images/ — used as primary icon with emoji fallback
 export const EQUIPMENT_SLOTS = [
-  { slot: 'head',    label: 'Head',     icon: '⛑️',  gridCol: 2, gridRow: 1 },
-  { slot: 'cape',    label: 'Cape',     icon: '🧣',  gridCol: 1, gridRow: 2 },
-  { slot: 'neck',    label: 'Amulet',   icon: '📿',  gridCol: 2, gridRow: 2 },
-  { slot: 'ammo',    label: 'Ammo',     icon: '🎯',  gridCol: 3, gridRow: 2 },
-  { slot: 'weapon',  label: 'Weapon',   icon: '⚔️',  gridCol: 1, gridRow: 3 },
-  { slot: 'body',    label: 'Body',     icon: '🛡️',  gridCol: 2, gridRow: 3 },
-  { slot: 'offhand', label: 'Off-hand', icon: '🗡️',  gridCol: 3, gridRow: 3 },
-  { slot: 'legs',    label: 'Legs',     icon: '🩱',  gridCol: 2, gridRow: 4 },
-  { slot: 'gloves',  label: 'Gloves',   icon: '🧤',  gridCol: 1, gridRow: 5 },
-  { slot: 'boots',   label: 'Boots',    icon: '👢',  gridCol: 2, gridRow: 5 },
-  { slot: 'ring',    label: 'Ring',     icon: '💍',  gridCol: 3, gridRow: 5 },
-  { slot: 'pocket',  label: 'Pocket',   icon: '📖',  gridCol: 2, gridRow: 6 },
+  { slot: 'head',    label: 'Head',     icon: '⛑️',  wikiImg: 'Head_slot.png',        gridCol: 2, gridRow: 1 },
+  { slot: 'pocket',  label: 'Pocket',   icon: '📖',  wikiImg: 'Pocket_slot.png',      gridCol: 3, gridRow: 1 },
+  { slot: 'cape',    label: 'Cape',     icon: '🧣',  wikiImg: 'Cape_slot.png',        gridCol: 1, gridRow: 2 },
+  { slot: 'neck',    label: 'Amulet',   icon: '📿',  wikiImg: 'Neck_slot.png',        gridCol: 2, gridRow: 2 },
+  { slot: 'ammo',    label: 'Ammo',     icon: '🎯',  wikiImg: 'Ammunition_slot.png',  gridCol: 3, gridRow: 2 },
+  { slot: 'weapon',  label: 'Weapon',   icon: '⚔️',  wikiImg: 'Weapon_slot.png',      gridCol: 1, gridRow: 3 },
+  { slot: 'body',    label: 'Body',     icon: '🧥',  wikiImg: 'Body_slot.png',        gridCol: 2, gridRow: 3 },
+  { slot: 'offhand', label: 'Off-hand', icon: '🗡️',  wikiImg: 'Off-hand_slot.png',    gridCol: 3, gridRow: 3 },
+  { slot: 'legs',    label: 'Legs',     icon: '👖',  wikiImg: 'Legs_slot.png',        gridCol: 2, gridRow: 4 },
+  { slot: 'gloves',  label: 'Gloves',   icon: '🧤',  wikiImg: 'Gloves_slot.png',      gridCol: 1, gridRow: 5 },
+  { slot: 'boots',   label: 'Boots',    icon: '👢',  wikiImg: 'Boots_slot.png',       gridCol: 2, gridRow: 5 },
+  { slot: 'ring',    label: 'Ring',     icon: '💍',  wikiImg: 'Ring_slot.png',        gridCol: 3, gridRow: 5 },
 ];
 
 export const GEAR_SUGGESTIONS = {
