@@ -37,20 +37,33 @@ function SetRsnModal({ group, myRsn, onConfirm, onCancel }) {
         </div>
         <div className="modal-body">
           <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
-            Select your character in <strong style={{ color: 'var(--text-bright)' }}>{group?.name}</strong>.
+            Enter your character name in <strong style={{ color: 'var(--text-bright)' }}>{group?.name}</strong>.
             This is saved to this browser only.
           </p>
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Your character</label>
-            <select className="form-select" value={rsn} onChange={e => setRsn(e.target.value)}>
-              <option value="">— Select —</option>
-              {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
-            </select>
+            <label className="form-label">Your RuneScape name</label>
+            <input
+              className="form-input"
+              list="rsn-suggestions"
+              value={rsn}
+              onChange={e => setRsn(e.target.value)}
+              placeholder="Type or select your RSN…"
+              autoFocus
+              autoComplete="off"
+            />
+            <datalist id="rsn-suggestions">
+              {players.map(p => <option key={p.id} value={p.rsn} />)}
+            </datalist>
+            {players.length > 0 && (
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6 }}>
+                Group members: {players.map(p => p.rsn).join(', ')}
+              </div>
+            )}
           </div>
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={() => onConfirm(rsn)} disabled={!rsn}>
+          <button className="btn btn-primary" onClick={() => onConfirm(rsn.trim())} disabled={!rsn.trim()}>
             ✓ Save
           </button>
         </div>
@@ -100,11 +113,18 @@ function UnlockModal({ group, onConfirm, onCancel }) {
             </div>
             {players.length > 0 && (
               <div className="form-group" style={{marginBottom:0}}>
-                <label className="form-label">Who are you?</label>
-                <select className="form-input" value={rsn} onChange={e => setRsn(e.target.value)}>
-                  <option value="">— Select your character —</option>
-                  {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
-                </select>
+                <label className="form-label">Who are you? (optional)</label>
+                <input
+                  className="form-input"
+                  list="unlock-rsn-suggestions"
+                  value={rsn}
+                  onChange={e => setRsn(e.target.value)}
+                  placeholder="Type or select your RSN…"
+                  autoComplete="off"
+                />
+                <datalist id="unlock-rsn-suggestions">
+                  {players.map(p => <option key={p.id} value={p.rsn} />)}
+                </datalist>
               </div>
             )}
             {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
