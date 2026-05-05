@@ -54,6 +54,20 @@ router.put('/:playerId/:style/:slot', (req, res) => {
         confirmed  = excluded.confirmed,
         updated_at = excluded.updated_at
     `).run(playerId, style, slot, item_name.trim(), confirmed ? 1 : 0);
+
+    // When an item is confirmed as owned, ensure it appears in the Group Vault.
+    // This means clearing it from gear later won't remove it from the vault —
+    // it'll show as available (no WORN badge) instead of disappearing.
+    if (confirmed) {
+      const existing = db.prepare(
+        'SELECT id FROM drops WHERE player_id = ? AND item_name = ?'
+      ).get(playerId, item_name.trim());
+      if (!existing) {
+        db.prepare(
+          "INSERT INTO drops (player_id, item_name, notes) VALUES (?, ?, 'Added via gear loadout confirmation')"
+        ).run(playerId, item_name.trim());
+      }
+    }
   } else {
     // Empty string / null = clear the slot
     db.prepare(
