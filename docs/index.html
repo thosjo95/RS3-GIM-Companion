@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Documentation v1.1</title>
+  <title>RS3 GIM Companion — Documentation v1.2</title>
   <style>
     :root {
       --bg:        #0d0b14;
@@ -188,7 +188,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.1 documentation</div>
+        <div class="sidebar-version">v1.2 documentation</div>
       </div>
     </div>
 
@@ -212,6 +212,7 @@
       <a href="#tech">Tech Stack</a>
       <a href="#database">Database</a>
       <a href="#selfhost">Self-Hosting</a>
+      <a href="#faq">🛠️ Admin FAQ</a>
       <a href="#changelog">Changelog</a>
     </nav>
 
@@ -231,7 +232,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, drops, gear loadouts, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.1.0</span>
+          <span class="badge badge-green">v1.2.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -261,7 +262,7 @@
     <p>After unlocking, click the <strong>👤 Set your name</strong> button in the header and pick your RSN. This tells the app which gear loadout belongs to you — you can only edit your own character's equipment.</p>
 
     <h3>4. Sync Data</h3>
-    <p>Click <strong>↻ Sync All</strong> to pull the latest hiscores and activity feed for all members. The app also auto-syncs every 5 minutes and takes XP snapshots at midnight.</p>
+    <p>Click <strong>↻ Sync All</strong> to pull the latest hiscores for all members. The activity feed (RuneMetrics) is updated automatically every 2 hours in the background — it is intentionally kept separate from Sync All to avoid rate-limiting the Jagex API. XP snapshots are taken daily at midnight.</p>
 
     <!-- Access Control -->
     <h2 id="access">Access Control</h2>
@@ -294,7 +295,7 @@
     </ul>
 
     <h3>Goals &amp; Activity</h3>
-    <p>Side-by-side panels (or stacked on mobile). Goals support four types: <strong>Level</strong> (with XP-to-go tracking), <strong>Item</strong>, <strong>Quest</strong>, and <strong>Custom</strong>. The activity feed shows the live RuneMetrics history for the selected player.</p>
+    <p>Side-by-side panels (or stacked on mobile). Goals support four types: <strong>Level</strong> (with XP-to-go tracking), <strong>Item</strong>, <strong>Quest</strong>, and <strong>Custom</strong>. The activity feed shows the RuneMetrics history for the selected player — entries are stored permanently in the database and auto-refreshed every 2 hours.</p>
 
     <hr />
 
@@ -430,7 +431,7 @@
 
     <!-- Tab: Achievement Diaries -->
     <h2 id="tab-diaries">📋 Achievement Diaries</h2>
-    <p>Tracks diary completion across all 13 RS3 regions × 3 tiers (Easy / Medium / Hard).</p>
+    <p>Tracks diary completion across all 13 RS3 regions × 4 tiers (Easy / Medium / Hard / Elite).</p>
 
     <h3>Grid View <em>(default)</em></h3>
     <p>Regions as rows, tiers as columns. Each cell shows coloured player dots — one per player, filled if they've completed that diary tier.</p>
@@ -530,6 +531,7 @@
         <tr><td><code>boss_kill_log</code></td><td>Deduplication log — prevents double-counting on re-sync</td></tr>
         <tr><td><code>equipment_loadouts</code></td><td>Gear slots: player × combat style × slot, item name, confirmed flag</td></tr>
         <tr><td><code>group_notes</code></td><td>Shared pinboard content per group</td></tr>
+        <tr><td><code>player_activities</code></td><td>Persistent RuneMetrics activity log (deduplicated by player + date + text); rebuilt into <code>activities_json</code> cache on every fetch</td></tr>
       </tbody>
     </table>
 
@@ -556,10 +558,87 @@ npm run dev           # API on :3001, Vite dev server on :5173</code></pre>
 bash /root/deploy.sh
 # Script: git pull → npm run build → pm2 restart app</code></pre>
 
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚡</span>
+      <p><strong>Backend-only change?</strong> Skip the Vite rebuild: <code>git pull &amp;&amp; pm2 restart rs3-gim</code><br>
+      Use <code>deploy.sh</code> whenever any file under <code>client/</code> changes. When in doubt, run the full script — it's always safe.</p>
+    </div>
+
+    <hr />
+
+    <!-- Admin FAQ -->
+    <h2 id="faq">🛠️ Admin FAQ</h2>
+    <p>Common issues encountered when running the server or managing groups.</p>
+
+    <h3>Group shows 0 members / members not loading</h3>
+    <p><strong>Symptom:</strong> A group was added and claimed, but the member list is empty — even though another unclaimed group with the same name has all the players.</p>
+    <p><strong>Cause:</strong> Players were added to the group before claiming. Claiming created a new database entry with a different <code>id</code>, leaving players attached to the old unclaimed record.</p>
+    <p><strong>Step 1 — diagnose:</strong> Find both groups and note their IDs.</p>
+    <pre><code>ssh root@YOUR_SERVER_IP
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const groups = db.prepare(\`
+  SELECT id, name, password_hash,
+    (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS player_count
+  FROM groups g WHERE name LIKE '%YOUR_GROUP_NAME%'
+\`).all();
+console.log(JSON.stringify(groups, null, 2));
+"</code></pre>
+    <p>You'll see two rows: one with <code>player_count &gt; 0</code> and no <code>password_hash</code> (OLD), and one with a hash but 0 players (NEW/claimed). Note both <code>id</code> values.</p>
+    <p><strong>Step 2 — fix:</strong> Move players to the claimed group and delete the orphan.</p>
+    <pre><code>node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const moved = db.prepare('UPDATE players SET group_id = NEW_ID WHERE group_id = OLD_ID').run();
+const del   = db.prepare('DELETE FROM groups WHERE id = OLD_ID').run();
+console.log('Moved:', moved.changes, 'players. Deleted:', del.changes, 'group(s).');
+"</code></pre>
+    <p>Replace <code>OLD_ID</code> and <code>NEW_ID</code> with the values you found. Refresh the app — all members appear immediately.</p>
+
+    <h3>Activity feed is empty</h3>
+    <p><strong>Cause:</strong> The activity feed is populated by a 2-hour background cron (RuneMetrics API). <strong>↻ Sync All</strong> only updates hiscores — it does not touch RuneMetrics. If the cron hasn't run yet since the server started, the feed will be empty.</p>
+    <p>Check the last cron run:</p>
+    <pre><code>pm2 logs rs3-gim --lines 50</code></pre>
+    <p>To trigger immediately without waiting (no UI button — server-side only):</p>
+    <pre><code># Replace 5 with your group's numeric ID
+curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m json.tool</code></pre>
+    <p>This fetches RuneMetrics for every player with a 1-second delay between requests and writes new activities to the database straight away.</p>
+
+    <h3>RuneMetrics returns 502 / 503 errors</h3>
+    <p><strong>Cause:</strong> Jagex's RuneMetrics endpoint is temporarily down or overloaded — this is a server-side problem at Jagex, not a rate-limit issue and not a bug in the app.</p>
+    <p><strong>Solution:</strong> Wait and retry. The 2-hour cron will pick it up automatically. You can also re-run the manual curl once Jagex recovers. No code changes are needed.</p>
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <p><strong>502</strong> = Jagex server error (just wait). <strong>429</strong> = rate limited (reduce sync frequency). In practice, at 1 req/sec with a 2-hour window the app is well within safe limits for thousands of players.</p>
+    </div>
+
+    <h3>When to use <code>deploy.sh</code> vs <code>pm2 restart</code></h3>
+    <table>
+      <thead><tr><th>Change type</th><th>Command</th></tr></thead>
+      <tbody>
+        <tr><td>Any file under <code>client/</code> (React, CSS, JS)</td><td><code>bash /root/deploy.sh</code></td></tr>
+        <tr><td>Server-only files (<code>server/**</code>, <code>database.js</code>, <code>index.js</code>)</td><td><code>git pull &amp;&amp; pm2 restart rs3-gim</code></td></tr>
+        <tr><td>Not sure</td><td><code>bash /root/deploy.sh</code> (always safe)</td></tr>
+      </tbody>
+    </table>
+
+    <hr />
+
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.1.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.2.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li>🗃️ <strong>Persistent activity feed</strong> — RuneMetrics entries stored permanently in <code>player_activities</code> table; new activity detected once, never duplicated on re-sync</li>
+      <li>⏱️ <strong>2-hour activity cron</strong> — RuneMetrics fetched every 2 h in background (1 s/player delay); <strong>↻ Sync All</strong> now only updates hiscores</li>
+      <li>🛠️ <strong>Manual activity sync endpoint</strong> — <code>POST /api/players/sync-activities/:groupId</code> for on-demand pulls (server-side curl, no UI button)</li>
+      <li>🏆 <strong>Elite Achievement Diary tier</strong> — 4th tier with purple colour coding; auto-detected from activity feed</li>
+      <li>🎯 <strong>Add Goal from Gear Loadouts fixed</strong> — "+ Goal" now correctly sets title, type, and target value</li>
+      <li>🖼️ <strong>Goal modal icons fixed</strong> — skill picker uses RS3 wiki icons instead of emoji</li>
+      <li>🐛 <strong>Group Vault blank screen fix</strong> — <code>playerId</code> prop correctly threaded through all sub-components</li>
+      <li>📖 <strong>Admin FAQ</strong> — duplicate-group fix, manual activity sync, 502 error handling, deploy process guide</li>
+    </ul>
+
+    <h3>v1.1.0 — May 2026</h3>
     <ul>
       <li>🔔 <strong>Discord Notifications</strong> — webhook integration with configurable events: level 99/120, diary completions, boss first kills, goal completions, drops; rich embeds; test button</li>
       <li>🐛 <strong>Last sync timezone fix</strong> — hiscores sync time now displays correctly in all timezones</li>
@@ -588,7 +667,7 @@ bash /root/deploy.sh
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.1.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.2.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 

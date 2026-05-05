@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.1.0-4caf50?style=flat-square" alt="v1.1.0"/>
+    <img src="https://img.shields.io/badge/version-1.2.0-4caf50?style=flat-square" alt="v1.2.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -27,7 +27,7 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - Stat summary: Members · Total XP · Total Levels · Active This Week
 - **Group Stats** — XP progress bars, full Skills matrix (all 29 RS3 skills × all players, gold-highlight for group best), Combat breakdown with RS3 icons (includes Necromancy & Summoning)
 - **Goals panel** — level / item / quest / custom goals with live XP-to-go tracking
-- **Activity feed** — live RuneMetrics feed showing recent drops, quests, milestones
+- **Activity feed** — RuneMetrics feed showing recent drops, quests, milestones; entries are persisted permanently in the database and auto-refreshed every 2 hours in the background
 
 ### 🏆 Group Vault & Gear Loadouts
 - **Group Vault** — every logged drop displayed as an item card; shows WORN badge + "Worn by [player] · slot · date" when an item is confirmed in someone's gear; DUPE badge for items multiple players have obtained
@@ -48,7 +48,7 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - Custom milestones — add your own with type / priority / description; saved locally per group
 
 ### 📋 Achievement Diaries
-- 13 regions × 3 tiers (Easy / Medium / Hard) — same structure as RS3
+- 13 regions × 4 tiers (Easy / Medium / Hard / Elite) — same structure as RS3
 - **Grid view** — coloured player dots per cell showing who has completed each diary
 - **Player view** — per-player completion with toggle and dates
 - Auto-detected from RuneMetrics activity feed on each sync; manual override available
@@ -159,6 +159,16 @@ bash /root/deploy.sh
 
 The script runs: `git pull` → `npm run build` (Vite) → `pm2 restart app`.
 
+### Backend-only changes (no frontend rebuild needed)
+
+If you only changed server-side files (routes, services, `database.js`, `index.js`), you can skip the Vite build step entirely:
+
+```bash
+git pull && pm2 restart rs3-gim
+```
+
+Use the full `deploy.sh` whenever any file under `client/` changes.
+
 ---
 
 ## Project Structure
@@ -225,10 +235,104 @@ RS3-GIM-Companion/
 | `boss_kill_log` | Dedup log — one row per processed activity, prevents double-counting |
 | `equipment_loadouts` | Gear slot entries (player × combat style × slot, item name, confirmed flag) |
 | `group_notes` | Shared pinboard content per group |
+| `player_activities` | Persistent RuneMetrics activity entries (deduplicated); rebuilt into `activities_json` cache on every fetch |
+
+---
+
+## Admin FAQ
+
+Common issues encountered when running the server or managing groups.
+
+---
+
+### Group shows 0 members / "Members not loading"
+
+**Symptom:** A group was added and claimed, but the member list is empty even though another unclaimed group with the same name has all the players.
+
+**Cause:** The group was looked up and players were added before claiming. When claiming creates a new entry in the database it gets a different `id`, leaving the players attached to the old unclaimed record.
+
+**Diagnosis:**
+
+```bash
+ssh root@YOUR_SERVER_IP
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const groups = db.prepare(\"SELECT id, name, password_hash, (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS player_count FROM groups g WHERE name LIKE '%YOUR_GROUP_NAME%'\").all();
+console.log(groups);
+"
+```
+
+Look for two rows with the same name — one with `player_count > 0` and no `password_hash`, and one with a `password_hash` and `player_count = 0`. Note both IDs.
+
+**Fix:** Move the players from the old ID to the claimed ID, then remove the orphan group.
+
+```bash
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+// Replace OLD_ID and NEW_ID with the IDs you found above
+const moved = db.prepare('UPDATE players SET group_id = NEW_ID WHERE group_id = OLD_ID').run();
+const del   = db.prepare('DELETE FROM groups WHERE id = OLD_ID').run();
+console.log('Moved:', moved.changes, 'players. Deleted group:', del.changes);
+"
+```
+
+Refresh the app — all members should appear immediately.
+
+---
+
+### Activity feed is empty
+
+**Cause:** The activity feed is populated by the 2-hour background cron (RuneMetrics API), not by **↻ Sync All**. Sync All only updates hiscores. If the cron hasn't run yet, or if RuneMetrics returned errors on the last attempt, the feed will be empty.
+
+**Wait for the cron:** The cron runs every 2 hours at `:00`. Check the PM2 logs to see the last run:
+
+```bash
+pm2 logs rs3-gim --lines 50
+```
+
+**Trigger manually (no UI button — server-side only):**
+
+```bash
+# Replace GROUP_ID with your group's numeric ID
+curl -s -X POST http://localhost:3001/api/players/sync-activities/GROUP_ID | python3 -m json.tool
+```
+
+This fetches RuneMetrics for every player in the group (1 second delay between players to stay within rate limits) and saves new activities to the database immediately.
+
+---
+
+### RuneMetrics returns 502 / 503 errors
+
+**Cause:** Jagex's RuneMetrics servers are temporarily down or overloaded. This is not a rate-limit issue — it's a Jagex-side problem.
+
+**Solution:** Wait and retry. The 2-hour cron will pick it back up automatically. You can also run the manual curl above once Jagex recovers. No code changes are needed.
+
+Note: **429 Too Many Requests** would indicate rate limiting (throttle your sync frequency). A **502 Bad Gateway** means the Jagex endpoint itself is unreachable.
+
+---
+
+### When to use `deploy.sh` vs `pm2 restart`
+
+| Change type | Command |
+|---|---|
+| Any file under `client/` (React components, CSS, JS) | `bash /root/deploy.sh` (full Vite rebuild required) |
+| Server-only files (`server/**`, `database.js`, `index.js`) | `git pull && pm2 restart rs3-gim` |
+
+If you're unsure, always run the full `deploy.sh` — it's safe to run for any change.
 
 ---
 
 ## Changelog
+
+### v1.2.0 — May 2026
+- 🗃️ **Persistent activity feed** — RuneMetrics entries are now stored permanently in `player_activities` table; new activity is detected once and never duplicated on re-sync
+- ⏱️ **2-hour activity cron** — RuneMetrics is fetched every 2 hours in the background (1 s per-player delay); **↻ Sync All** now only updates hiscores (no rate-limit risk)
+- 🛠️ **Manual activity sync endpoint** — `POST /api/players/sync-activities/:groupId` (server-side curl command) for on-demand RuneMetrics pulls without a UI button
+- 🏆 **Elite Achievement Diary tier** — added 4th tier (Easy / Medium / Hard / **Elite**) with distinct purple colour coding; auto-detected from activity feed
+- 🎯 **Add Goal from Gear Loadouts fixed** — "+ Goal" button now correctly sends `title`, `type`, and `target_value`; no longer throws "Title is required"
+- 🖼️ **Goal modal icons fixed** — skill picker now uses RS3 wiki icons instead of emoji placeholders
+- 🐛 **Group Vault blank screen fix** — `playerId` prop correctly threaded through `RecommendationsPanel` and `ItemPicker` so the vault tab always renders
+- 📖 **Admin FAQ** — documented duplicate-group fix, manual activity sync, 502 error handling, and deploy process distinction
 
 ### v1.1.0 — May 2026
 - 🔔 **Discord Notifications** — connect any Discord channel via webhook; configurable per event type (level 99/120, diary completions, boss first kills, goal completions, drops); rich embeds with player name, timestamp, and group footer; test button
