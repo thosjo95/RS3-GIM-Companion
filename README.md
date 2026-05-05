@@ -345,17 +345,13 @@ If it prints `Updated rows: 1` you're done. Tell the group to refresh the app â€
 
 **Use case:** Removing a test group, a duplicate, or a group that explicitly asked to be removed.
 
-Some tables store `group_id` directly without a cascade rule, so delete child records first then the group itself:
+The `players` table references `groups` without a cascade rule, so delete the players first. Everything else (skills, drops, achievements, loadouts, etc.) cascades automatically from the player delete, and `group_notes` cascades from the group delete.
 
 ```bash
 node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
 const id = GROUP_ID;
 db.prepare('DELETE FROM players WHERE group_id = ?').run(id);
-db.prepare('DELETE FROM goals WHERE group_id = ?').run(id);
-db.prepare('DELETE FROM drops WHERE group_id = ?').run(id);
-db.prepare('DELETE FROM item_requests WHERE group_id = ?').run(id);
-db.prepare('DELETE FROM group_notes WHERE group_id = ?').run(id);
 const result = db.prepare('DELETE FROM groups WHERE id = ?').run(id);
 console.log('Deleted groups:', result.changes);
 "
