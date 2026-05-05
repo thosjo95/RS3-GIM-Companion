@@ -688,7 +688,27 @@ function ActivityFeed({ players, filteredPlayerId }) {
   }, [players, filteredPlayerId]);
 
   if (feed.length === 0) {
-    return <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>No recent activity. Sync players to load their feed.</div>;
+    return (
+      <div style={{
+        display: 'flex', gap: 10, alignItems: 'flex-start',
+        background: 'rgba(220,60,60,0.08)', border: '1px solid rgba(220,60,60,0.25)',
+        borderRadius: 8, padding: '12px 14px', margin: '4px 0',
+      }}>
+        <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+        <div>
+          <div style={{ color: '#e07070', fontWeight: 600, fontSize: 12, marginBottom: 3 }}>
+            Activity feed unavailable
+          </div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 12, lineHeight: 1.5 }}>
+            No activity data has been loaded yet. This is usually because the RuneMetrics API (Jagex) is
+            temporarily down or unreachable. The feed refreshes automatically every 2 hours — check back later.
+            Also make sure each player's RuneMetrics profile is set to{' '}
+            <strong style={{ color: 'var(--text)' }}>Public</strong> in-game under{' '}
+            <em>Settings → Social → RuneMetrics</em>.
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
