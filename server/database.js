@@ -162,6 +162,24 @@ db.exec(`
   );
 `);
 
+// Persistent activity feed — accumulates RuneMetrics entries forever.
+// Deduplicated by (player_id, date_str, text) via UNIQUE constraint.
+// activities_json on the players table is a cache rebuilt from this table.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS player_activities (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id  INTEGER NOT NULL,
+    date_str   TEXT    NOT NULL,
+    ts         DATETIME,
+    text       TEXT    NOT NULL,
+    details    TEXT,
+    saved_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(player_id, date_str, text),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_player_activities_ts ON player_activities(player_id, ts DESC);
+`);
+
 // Migrations — safe to run on existing DBs
 try { db.exec('ALTER TABLE goals ADD COLUMN details_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}

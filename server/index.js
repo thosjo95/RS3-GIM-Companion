@@ -20,32 +20,37 @@ app.use('/api/equipment',    require('./routes/equipment'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// ── 6-hour activity sync ───────────────────────────────────────────────────────
-// Fetches the last 20 RuneMetrics activities for every tracked player.
-// Runs every 6 hours with a 1.5s delay per player to stay well under Jagex
-// rate limits even when hundreds of players are tracked across many groups.
-// Manual "Sync All" uses hiscores only — this cron is the sole RuneMetrics caller.
-cron.schedule('0 */6 * * *', async () => {
+// ── 2-hour activity sync ───────────────────────────────────────────────────────
+// Fetches the last 20 RuneMetrics activities for every tracked player and
+// persists NEW entries to the player_activities table (INSERT OR IGNORE —
+// re-fetching never duplicates). Detectors (drops, diaries, boss kills,
+// milestones) only fire on newly inserted rows so notifications never repeat.
+// 1s delay between players ≈ 1 req/sec peak — safe at any realistic player count.
+cron.schedule('0 */2 * * *', async () => {
   const { fetchRuneMetrics } = require('./services/runescape');
-  const { autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
+  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players WHERE group_id IS NOT NULL').all();
-  console.log(`[6h cron] Syncing RuneMetrics activities for ${players.length} player(s)…`);
+  console.log(`[2h cron] Syncing RuneMetrics activities for ${players.length} player(s)…`);
 
   for (const player of players) {
     try {
       const rm = await fetchRuneMetrics(player.rsn, 20);
-      db.prepare('UPDATE players SET activities_json = ? WHERE id = ?')
-        .run(JSON.stringify(rm.activities), player.id);
-      autoLogDrops(player.id, rm.activities);
-      autoDetectDiaries(player.id, rm.activities);
-      autoCountBossKills(player.id, rm.activities);
-      autoDetectLevelMilestones(player.id, rm.activities);
+      // Save to DB — returns only activities not seen before
+      const newActivities = saveActivities(player.id, rm.activities);
+      // Only run detectors on genuinely new entries
+      if (newActivities.length > 0) {
+        autoLogDrops(player.id, newActivities);
+        autoDetectDiaries(player.id, newActivities);
+        autoCountBossKills(player.id, newActivities);
+        autoDetectLevelMilestones(player.id, newActivities);
+      }
     } catch (err) {
-      console.error(`[6h cron] ${player.rsn}: ${err.message}`);
+      console.error(`[2h cron] ${player.rsn}: ${err.message}`);
     }
-    // Delay between players — 1.5s keeps us well under Jagex's rate limit
-    await new Promise(r => setTimeout(r, 1500));
+    // 1s delay → ~1 req/sec peak. At 2h interval this handles 7,000+ players
+    // comfortably within the window before the next cron fires.
+    await new Promise(r => setTimeout(r, 1000));
   }
 });
 
@@ -53,7 +58,7 @@ cron.schedule('0 */6 * * *', async () => {
 // Runs at midnight every day — syncs hiscores (skills, boss kills, clue scrolls).
 cron.schedule('0 0 * * *', async () => {
   const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('./services/runescape');
-  const { autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
+  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players').all();
   const today   = new Date().toISOString().slice(0, 10);
@@ -98,10 +103,13 @@ cron.schedule('0 0 * * *', async () => {
       `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
       if (rm?.activities) {
-        autoLogDrops(player.id, rm.activities);
-        autoDetectDiaries(player.id, rm.activities);
-        autoCountBossKills(player.id, rm.activities);
-        autoDetectLevelMilestones(player.id, rm.activities);
+        const newActivities = saveActivities(player.id, rm.activities);
+        if (newActivities.length > 0) {
+          autoLogDrops(player.id, newActivities);
+          autoDetectDiaries(player.id, newActivities);
+          autoCountBossKills(player.id, newActivities);
+          autoDetectLevelMilestones(player.id, newActivities);
+        }
       }
 
       console.log(`[daily cron] Snapshotted ${player.rsn}`);

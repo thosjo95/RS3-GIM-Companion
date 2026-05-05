@@ -1,4 +1,4 @@
-// Shared activity-sync helpers used by both the 5-minute cron and the manual sync routes.
+// Shared activity-sync helpers used by the 2-hour cron and the daily cron.
 const db = require('../database');
 const discord = require('./discord');
 
@@ -237,4 +237,47 @@ function autoDetectLevelMilestones(playerId, activities) {
   }
 }
 
-module.exports = { autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };
+/**
+ * Persist a batch of RuneMetrics activities to the player_activities table.
+ * Uses INSERT OR IGNORE so re-fetching the same activities never duplicates them.
+ * Returns only the activities that were newly inserted — callers should run
+ * detectors (drops, diaries, boss kills, milestones) on this subset only,
+ * so notifications never fire twice for the same event.
+ *
+ * Also refreshes the activities_json cache on the players row with the
+ * latest 50 entries from the DB (properly sorted by parsed timestamp).
+ */
+function saveActivities(playerId, activities) {
+  if (!activities?.length) return [];
+
+  const ins = db.prepare(`
+    INSERT OR IGNORE INTO player_activities (player_id, date_str, ts, text, details)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  const newActivities = [];
+  db.runTransaction(() => {
+    for (const a of activities) {
+      if (!a.text) continue;
+      const dateStr = a.date ?? '';
+      const ts      = parseActivityDate(dateStr);
+      const result  = ins.run(playerId, dateStr, ts, a.text, a.details ?? null);
+      if (result.changes > 0) newActivities.push(a);
+    }
+  });
+
+  // Rebuild the activities_json cache from the persistent table (last 50, sorted)
+  const cached = db.prepare(`
+    SELECT date_str AS date, text, details
+    FROM player_activities
+    WHERE player_id = ?
+    ORDER BY ts DESC
+    LIMIT 50
+  `).all(playerId);
+  db.prepare('UPDATE players SET activities_json = ? WHERE id = ?')
+    .run(JSON.stringify(cached), playerId);
+
+  return newActivities;
+}
+
+module.exports = { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };
