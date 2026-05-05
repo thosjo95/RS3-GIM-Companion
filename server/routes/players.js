@@ -206,8 +206,13 @@ router.post('/sync-all/:groupId', async (req, res) => {
 
       results.push({ rsn: player.rsn, success: true });
     } catch (err) {
-      console.error(`[sync-all] Failed ${player.rsn}: ${err.message}`);
-      results.push({ rsn: player.rsn, success: false, error: err.message });
+      // 404 = player not yet ranked on hiscores (too low level) — not a real failure
+      if (err.message.includes('not found on hiscores')) {
+        results.push({ rsn: player.rsn, success: true, warning: 'Not yet ranked on hiscores' });
+      } else {
+        console.error(`[sync-all] Failed ${player.rsn}: ${err.message}`);
+        results.push({ rsn: player.rsn, success: false, error: err.message });
+      }
     }
   }
 
