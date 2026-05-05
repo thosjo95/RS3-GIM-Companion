@@ -638,6 +638,23 @@ const result = db.prepare('DELETE FROM groups WHERE id = ?').run(id);
 console.log('Deleted groups:', result.changes);
 "</code></pre>
 
+    <h3>Player shows "Not synced" / hiscores lookup fails</h3>
+    <p><strong>Symptom:</strong> One player always shows "Not synced" and syncing returns <code>Player "Name" not found on hiscores</code>.</p>
+    <p><strong>Cause:</strong> The RSN was entered with a <strong>non-breaking space</strong> (<code> </code>) instead of a regular space — common when copy-pasting from Discord, the RS website, or a mobile keyboard. The hiscores API doesn't recognise it.</p>
+    <p><strong>Diagnosis:</strong> Check the exact bytes stored (non-breaking space appears as <code> </code> in JSON output):</p>
+    <pre><code>node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const p = db.prepare('SELECT id, rsn FROM players WHERE group_id = ?').all(GROUP_ID);
+p.forEach(x => console.log(x.id, JSON.stringify(x.rsn)));
+"</code></pre>
+    <p><strong>Fix:</strong> Overwrite the RSN with a clean version, then re-sync:</p>
+    <pre><code>node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run('Correct Name Here', PLAYER_ID);
+console.log('Done');
+"
+curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m json.tool</code></pre>
+
     <h3>When to use <code>deploy.sh</code> vs <code>pm2 restart</code></h3>
     <table>
       <thead><tr><th>Change type</th><th>Command</th></tr></thead>

@@ -361,6 +361,42 @@ Replace `GROUP_ID` with the target ID.
 
 ---
 
+### Player shows "Not synced" / hiscores lookup fails
+
+**Symptom:** One player in a group always shows "Not synced" and syncing returns `Player "Name" not found on hiscores`.
+
+**Cause:** The RSN was entered with a **non-breaking space** (` `) instead of a regular space — common when copy-pasting from Discord, the RS website, or a mobile keyboard. The hiscores API doesn't recognise it and returns a 404.
+
+**Diagnosis:** Check the exact bytes stored:
+
+```bash
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const p = db.prepare('SELECT id, rsn FROM players WHERE group_id = ?').all(GROUP_ID);
+p.forEach(x => console.log(x.id, JSON.stringify(x.rsn)));
+"
+```
+
+A non-breaking space shows as ` ` in the JSON output instead of a plain space.
+
+**Fix:** Overwrite the RSN with a clean version (replace `256` and the name as needed):
+
+```bash
+node -e "
+const db = require('/var/www/RS3-GIM-Companion/server/database');
+const result = db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run('Actual Faen', 256);
+console.log('Updated:', result.changes);
+"
+```
+
+Then trigger a sync to confirm it works:
+
+```bash
+curl -s -X POST http://localhost:3001/api/players/256/sync | python3 -m json.tool
+```
+
+---
+
 ### When to use `deploy.sh` vs `pm2 restart`
 
 | Change type | Command |
