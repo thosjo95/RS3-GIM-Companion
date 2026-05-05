@@ -97,11 +97,10 @@ router.delete('/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// POST /api/players/:id/sync - pull hiscores and update
+// POST /api/players/:id/sync - pull hiscores and update (no auth — RS3 data is public)
 router.post('/:id/sync', async (req, res) => {
   const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
   if (!player) return res.status(404).json({ error: 'Player not found' });
-  if (!checkGroupAuth(req, res, player.group_id || req.headers['x-group-id'])) return;
 
   try {
     const [data, runeMetrics] = await Promise.all([
@@ -156,9 +155,8 @@ router.post('/:id/sync', async (req, res) => {
   }
 });
 
-// POST /api/players/sync-all - sync all players in a group
+// POST /api/players/sync-all - sync all players in a group (no auth — RS3 data is public)
 router.post('/sync-all/:groupId', async (req, res) => {
-  if (!checkGroupAuth(req, res, req.params.groupId)) return;
 
   const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(req.params.groupId);
   const results = [];
