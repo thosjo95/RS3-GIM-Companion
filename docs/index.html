@@ -605,6 +605,7 @@ curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m
 
     <h3>RuneMetrics returns 502 / 503 errors</h3>
     <p><strong>Cause:</strong> Jagex's RuneMetrics endpoint is temporarily down or overloaded — this is a server-side problem at Jagex, not a rate-limit issue and not a bug in the app.</p>
+    <p><strong>Also check:</strong> Each player must have their RuneMetrics profile set to <strong>Public</strong> in-game. Go to <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em> and ensure the profile is not private. A private profile also returns 502.</p>
     <p><strong>Solution:</strong> Wait and retry. The 2-hour cron will pick it up automatically. You can also re-run the manual curl once Jagex recovers. No code changes are needed.</p>
     <div class="callout callout-info">
       <span class="callout-icon">ℹ️</span>

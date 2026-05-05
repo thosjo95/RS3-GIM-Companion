@@ -704,7 +704,7 @@ function ActivityFeed({ players, filteredPlayerId }) {
             temporarily down or unreachable. The feed refreshes automatically every 2 hours — check back later.
             Also make sure each player's RuneMetrics profile is set to{' '}
             <strong style={{ color: 'var(--text)' }}>Public</strong> in-game under{' '}
-            <em>Settings → Social → RuneMetrics</em>.
+            <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em>.
           </div>
         </div>
       </div>
