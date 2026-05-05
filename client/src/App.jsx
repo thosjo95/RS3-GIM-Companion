@@ -293,7 +293,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   if (step === 'setting-up') {
     return (
       <div className="setup-screen">
-        <div style={{fontSize:56,marginBottom:12}}>⚔️</div>
+        <img src="/logo.svg" alt="RS3 GIM Companion" style={{height:84,width:'auto',marginBottom:8}} />
         <h1>RS3 GIM Companion</h1>
         <div className="panel" style={cardStyle}>
           <div className="panel-body" style={{textAlign:'center',padding:'32px 24px'}}>
@@ -311,7 +311,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   if (step === 'preview' && lookupResult) {
     return (
       <div className="setup-screen">
-        <div style={{fontSize:56,marginBottom:12}}>⚔️</div>
+        <img src="/logo.svg" alt="RS3 GIM Companion" style={{height:84,width:'auto',marginBottom:8}} />
         <h1>RS3 GIM Companion</h1>
         <div className="panel" style={cardStyle}>
           <div className="panel-header">
@@ -358,7 +358,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   if (step === 'manual') {
     return (
       <div className="setup-screen">
-        <div style={{fontSize:56,marginBottom:12}}>⚔️</div>
+        <img src="/logo.svg" alt="RS3 GIM Companion" style={{height:84,width:'auto',marginBottom:8}} />
         <h1>RS3 GIM Companion</h1>
         <div className="panel" style={cardStyle}>
           <div className="panel-header">

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RS3 GIM Companion — Documentation v1.0</title>
+  <style>
+    :root {
+      --bg:        #0d0b14;
+      --bg-panel:  #15121f;
+      --bg-alt:    #1c1826;
+      --border:    #2e2840;
+      --gold:      #c8a84b;
+      --gold-dim:  #8a7230;
+      --text:      #e2ddf0;
+      --text-dim:  #8a80a0;
+      --green:     #4caf50;
+      --blue:      #5865f2;
+      --radius:    8px;
+      --sidebar:   260px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      font-size: 14px; line-height: 1.7;
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar); flex-shrink: 0;
+      position: sticky; top: 0; height: 100vh;
+      overflow-y: auto; scrollbar-width: thin;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .sidebar-logo img { height: 40px; width: auto; }
+    .sidebar-logo span { font-weight: 700; font-size: 13px; color: var(--gold); line-height: 1.3; }
+    .sidebar-version { font-size: 10px; color: var(--text-dim); font-weight: 400; }
+    .sidebar nav a {
+      display: block; padding: 6px 20px;
+      color: var(--text-dim); text-decoration: none;
+      font-size: 13px; transition: color 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .sidebar nav a:hover { color: var(--text); }
+    .sidebar nav a.active { color: var(--gold); border-left-color: var(--gold); }
+    .sidebar-section {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-dim);
+      padding: 14px 20px 4px;
+    }
+    .sidebar-discord {
+      margin: 16px 20px 0;
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 12px; border-radius: var(--radius);
+      background: rgba(88,101,242,0.12);
+      border: 1px solid rgba(88,101,242,0.35);
+      color: #8b9afc; font-size: 12px; font-weight: 600;
+      text-decoration: none; transition: background 0.15s;
+    }
+    .sidebar-discord:hover { background: rgba(88,101,242,0.22); }
+
+    /* ── Main content ── */
+    .content {
+      flex: 1; min-width: 0;
+      padding: 48px 64px;
+      max-width: 860px;
+    }
+    @media (max-width: 800px) {
+      .sidebar { display: none; }
+      .content { padding: 24px 20px; }
+    }
+
+    /* ── Typography ── */
+    h1 { font-size: 32px; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
+    h2 { font-size: 22px; font-weight: 700; color: var(--text); margin: 48px 0 14px;
+         padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 16px; font-weight: 700; color: var(--gold); margin: 28px 0 8px; }
+    h4 { font-size: 13px; font-weight: 700; color: var(--text); margin: 18px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    p  { color: var(--text-dim); margin-bottom: 12px; }
+    strong { color: var(--text); }
+    a  { color: var(--gold); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Hero ── */
+    .hero {
+      display: flex; align-items: center; gap: 24px;
+      padding: 32px; margin-bottom: 40px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .hero img { height: 90px; width: auto; flex-shrink: 0; }
+    .hero-text h1 { margin-bottom: 4px; }
+    .hero-text p { margin: 0; font-size: 15px; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .badge-gold   { background: rgba(200,168,75,0.15); border: 1px solid var(--gold-dim); color: var(--gold); }
+    .badge-green  { background: rgba(76,175,80,0.15);  border: 1px solid #4caf5066;       color: var(--green); }
+    .badge-discord{ background: rgba(88,101,242,0.15); border: 1px solid rgba(88,101,242,0.4); color: #8b9afc; }
+
+    /* ── Feature cards ── */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+    .feature-card {
+      padding: 14px 16px;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .feature-card h4 { margin: 0 0 4px; color: var(--gold); font-size: 13px; }
+    .feature-card p  { margin: 0; font-size: 12px; }
+
+    /* ── Info/tip boxes ── */
+    .callout {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 14px 16px; border-radius: var(--radius);
+      margin: 16px 0; font-size: 13px;
+    }
+    .callout-info  { background: rgba(200,168,75,0.08); border: 1px solid rgba(200,168,75,0.25); }
+    .callout-tip   { background: rgba(76,175,80,0.08);  border: 1px solid rgba(76,175,80,0.25); }
+    .callout-icon  { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+    .callout p     { margin: 0; color: var(--text-dim); }
+
+    /* ── Code blocks ── */
+    pre, code {
+      font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+      font-size: 12.5px;
+    }
+    pre {
+      background: #0a0812; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 18px;
+      overflow-x: auto; margin: 12px 0;
+      color: #cfc8e8; line-height: 1.6;
+    }
+    code {
+      background: rgba(200,168,75,0.1); border: 1px solid rgba(200,168,75,0.2);
+      border-radius: 4px; padding: 1px 5px; color: var(--gold); font-size: 12px;
+    }
+    pre code { background: none; border: none; padding: 0; color: inherit; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; background: var(--bg-alt); color: var(--gold); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+    tr:last-child td { border-bottom: none; }
+    td strong { color: var(--text); }
+    td code   { font-size: 11px; }
+
+    /* ── Bullet lists ── */
+    ul, ol { padding-left: 20px; color: var(--text-dim); margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+    li strong { color: var(--text); }
+
+    /* ── Status badges (inline) ── */
+    .tag-green  { display:inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight:700; background:rgba(76,175,80,0.15); border:1px solid #4caf5066; color:var(--green); }
+    .tag-gold   { display:inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight:700; background:rgba(200,168,75,0.15); border:1px solid var(--gold-dim); color:var(--gold); }
+    .tag-dim    { display:inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight:700; background:rgba(100,100,120,0.2); border:1px solid var(--border); color:var(--text-dim); }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+    /* ── Footer ── */
+    footer { padding: 32px 64px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 12px; }
+    @media (max-width:800px) { footer { padding: 20px; } }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ───────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="../client/public/logo.svg" alt="logo" />
+      <div>
+        <span>RS3 GIM<br>Companion</span>
+        <div class="sidebar-version">v1.0 documentation</div>
+      </div>
+    </div>
+
+    <nav>
+      <div class="sidebar-section">Getting Started</div>
+      <a href="#overview">What is this?</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="#access">Access Control</a>
+
+      <div class="sidebar-section">Features</div>
+      <a href="#tab-overview">📊 Overview</a>
+      <a href="#tab-vault">🏆 Group Vault</a>
+      <a href="#tab-gear">⚔️ Gear Loadouts</a>
+      <a href="#tab-drops">💎 Items &amp; Drops</a>
+      <a href="#tab-tips">💡 Tips &amp; Milestones</a>
+      <a href="#tab-diaries">📋 Achievement Diaries</a>
+      <a href="#tab-leaderboards">🏅 Leaderboards</a>
+
+      <div class="sidebar-section">Reference</div>
+      <a href="#tech">Tech Stack</a>
+      <a href="#database">Database</a>
+      <a href="#selfhost">Self-Hosting</a>
+      <a href="#changelog">Changelog</a>
+    </nav>
+
+    <a class="sidebar-discord" href="https://discord.gg/INVITE_CODE" target="_blank" rel="noopener">
+      <svg width="16" height="12" viewBox="0 0 24 18" fill="currentColor"><path d="M20.317 1.492a19.84 19.84 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 1.492a.07.07 0 0 0-.032.027C.533 6.093-.32 10.555.099 14.961a.08.08 0 0 0 .031.055 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+      Join Discord
+    </a>
+  </aside>
+
+  <!-- ── Main content ───────────────────────────────────── -->
+  <main class="content">
+
+    <!-- Hero -->
+    <section class="hero" id="overview">
+      <img src="../client/public/logo.svg" alt="RS3 GIM Companion logo" />
+      <div class="hero-text">
+        <h1>RS3 GIM Companion</h1>
+        <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, drops, gear loadouts, and achievements — all in one place.</p>
+        <div class="badges">
+          <span class="badge badge-green">v1.0.0</span>
+          <span class="badge badge-gold">RS3 · Not OSRS</span>
+          <a class="badge badge-discord" href="https://discord.gg/INVITE_CODE" target="_blank" rel="noopener">Discord Support</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <p>RS3 GIM Companion is live at <a href="https://groupiron.com" target="_blank"><strong>groupiron.com</strong></a> and can also be self-hosted on any Node.js server. All data stays on your own infrastructure.</p>
+    </div>
+
+    <!-- Quick Start -->
+    <h2 id="quickstart">Quick Start</h2>
+
+    <h3>1. Find Your Group</h3>
+    <p>Open the app and click <strong>👥 Find or Manage Groups</strong> in the sidebar. Search for your GIM group name — the app looks it up against the RS3 hiscores API and auto-populates all members.</p>
+
+    <h3>2. Claim Your Group</h3>
+    <p>A newly added group is unclaimed (read-only for everyone). Click <strong>🔒 Claim group</strong> in the header. A secret code is generated once — copy it and share it with your team on Discord. Any browser that enters this secret can edit; everyone else gets read-only access.</p>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">✅</span>
+      <p>You can't recover a lost secret. If you lose it, the group must be unclaimed and re-claimed. Keep it somewhere safe (e.g. a private Discord channel).</p>
+    </div>
+
+    <h3>3. Set Your Character Name</h3>
+    <p>After unlocking, click the <strong>👤 Set your name</strong> button in the header and pick your RSN. This tells the app which gear loadout belongs to you — you can only edit your own character's equipment.</p>
+
+    <h3>4. Sync Data</h3>
+    <p>Click <strong>↻ Sync All</strong> to pull the latest hiscores and activity feed for all members. The app also auto-syncs every 5 minutes and takes XP snapshots at midnight.</p>
+
+    <!-- Access Control -->
+    <h2 id="access">Access Control</h2>
+
+    <table>
+      <thead><tr><th>State</th><th>Who can view</th><th>Who can edit</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag-dim">Unclaimed</span></td><td>Everyone</td><td>Everyone (no password set)</td></tr>
+        <tr><td><span class="tag-gold">Claimed, locked</span></td><td>Everyone</td><td>Nobody (until unlocked)</td></tr>
+        <tr><td><span class="tag-green">Claimed, unlocked</span></td><td>Everyone</td><td>Any browser with the group secret</td></tr>
+      </tbody>
+    </table>
+
+    <p>Gear loadouts have an additional permission layer: even when a group is unlocked, you can only edit <strong>your own character's</strong> gear. Other players' slots are view-only.</p>
+
+    <hr />
+
+    <!-- Tab: Overview -->
+    <h2 id="tab-overview">📊 Overview Tab</h2>
+    <p>The landing page for your group. Defaults to this tab on load.</p>
+
+    <h3>Member Cards</h3>
+    <p>One card per player showing RS3 avatar, combat level, total level, and total XP. The <strong>YOU</strong> badge highlights your character. Click any card to focus — the Goals and Activity panels filter to that player.</p>
+
+    <h3>Group Stats</h3>
+    <ul>
+      <li><strong>XP bars</strong> — progress toward group XP milestones</li>
+      <li><strong>Skills matrix</strong> — all 29 RS3 skills across all players; highest level per skill is gold-highlighted; includes Necromancy and Summoning</li>
+      <li><strong>Combat tab</strong> — shows Combat level with RS3 skill icons</li>
+    </ul>
+
+    <h3>Goals &amp; Activity</h3>
+    <p>Side-by-side panels (or stacked on mobile). Goals support four types: <strong>Level</strong> (with XP-to-go tracking), <strong>Item</strong>, <strong>Quest</strong>, and <strong>Custom</strong>. The activity feed shows the live RuneMetrics history for the selected player.</p>
+
+    <hr />
+
+    <!-- Tab: Group Vault -->
+    <h2 id="tab-vault">🏆 Group Vault</h2>
+    <p>The vault shows every item the group has logged — from the drop log and the automatic RuneMetrics activity feed. It also tracks confirmed worn gear so the group always knows who has what.</p>
+
+    <h3>Drop Cards</h3>
+    <p>Each unique item gets a card showing who dropped it, the boss source, value, and date. Cards are sorted by most recent by default. Additional sort/filter options: Dupes · Value · A–Z · filter by player or boss.</p>
+
+    <ul>
+      <li><span class="tag-gold">WORN</span> — someone in the group has confirmed they wear this item</li>
+      <li><span class="tag-gold">DUPE</span> — two or more players have obtained this item</li>
+    </ul>
+
+    <p>When a drop card matches a confirmed gear entry, it shows a green row: <em>"✅ Worn by PlayerName · slot · claimed date"</em></p>
+
+    <h3>Confirmed Gear section</h3>
+    <p>Below the drop list, every confirmed gear entry is listed — even items never logged as drops. This is how gear set in the Gear Loadouts panel immediately shows in the Vault without needing a corresponding drop entry.</p>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚡</span>
+      <p>Confirming an item in Gear Loadouts updates the Vault in real time — no refresh needed.</p>
+    </div>
+
+    <h3>Group Notes</h3>
+    <p>Click <strong>📝 Group Notes</strong> (top right of the vault) to open a slide-in overlay — a shared pinboard for strategies, loot distribution rules, or session plans. Auto-saves with a 1.5 s debounce. Close with <kbd>Escape</kbd> or clicking the backdrop.</p>
+
+    <hr />
+
+    <!-- Tab: Gear Loadouts -->
+    <h2 id="tab-gear">⚔️ Gear Loadouts</h2>
+    <p>Sits side-by-side with the Group Vault in the same tab. Tracks each player's equipment across five combat styles.</p>
+
+    <h3>Combat Styles</h3>
+    <p>Melee · Ranged · Magic · Necromancy · Hybrid — each has its own 12-slot grid (head, cape, neck, ammo, weapon, body, offhand, legs, gloves, boots, ring, pocket).</p>
+
+    <h3>Slot States</h3>
+    <table>
+      <thead><tr><th>Border colour</th><th>Dot</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td style="color:#4caf50">Green</td><td>✅</td><td>Confirmed — player owns / wears this item</td></tr>
+        <tr><td style="color:#f7c97e">Gold / amber</td><td>📋</td><td>Planning — goal, not yet obtained</td></tr>
+        <tr><td>Default</td><td>—</td><td>Empty slot</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Item Requirements</h3>
+    <p>Every suggested item has wiki-verified equip requirements. Items you can't use show a 🔒 lock with the missing skill levels (e.g. <em>Defence 80/90</em>). Missing requirements can be added as Goals directly from the picker with one click.</p>
+
+    <p>Quest-locked items cascade correctly — e.g. Salve amulet (e) requires <em>Lair of Tarn Razorlor</em>, which itself requires completing <em>Haunted Mine</em> (Agility 15, Crafting 35) and having Slayer 40.</p>
+
+    <h3>Permissions</h3>
+    <p>Only your own character is editable (the one you set with <strong>👤 Set your name</strong>). When viewing a teammate's gear the panel shows: <em>"🔒 View only — switch to your character to edit gear"</em>.</p>
+
+    <h3>Quick-fill &amp; Clear</h3>
+    <ul>
+      <li><strong>⚡ Quick-fill</strong> — fills all empty slots with the best item you can currently equip, marked as Planning</li>
+      <li><strong>🗑 Clear gear</strong> — removes all items for the current style in one click</li>
+    </ul>
+
+    <hr />
+
+    <!-- Tab: Items & Drops -->
+    <h2 id="tab-drops">💎 Items &amp; Drops</h2>
+    <p>Single page showing three panels simultaneously — no sub-tabs to switch between.</p>
+
+    <h3>Item Requests <em>(left panel)</em></h3>
+    <p>Your group's wish-list. Each request has: item name, boss/activity, requesting player, priority (🔴 High / 🟡 Medium / 🟢 Low), quantity, and optional notes.</p>
+    <p>Boss names show a colour-coded readiness chip: <span class="tag-green">🟢 Can kill now</span> / 🟠 Close / 🔴 Missing requirements. Hover the chip to see a detailed popup with exact skill requirements and which players are eligible.</p>
+    <p>Mark requests as ✓ Obtained to archive them; filter between Pending / Obtained / All.</p>
+
+    <h3>Drop Log <em>(middle panel)</em></h3>
+    <p>Manual drop logging plus auto-detected entries from the RuneMetrics activity feed (e.g. <em>"I found a Dragon chainbody"</em> lines are parsed on every sync). Filter by player.</p>
+
+    <h3>Boss Overview <em>(right sidebar, 20%)</em></h3>
+    <p>A compact sidebar showing every boss that has pending requests. For each boss:</p>
+    <ul>
+      <li>Colour-coded readiness chip</li>
+      <li>Items being requested (tags)</li>
+      <li>Who needs them</li>
+      <li>Who can attempt the boss (or how many levels away the closest player is)</li>
+    </ul>
+
+    <hr />
+
+    <!-- Tab: Tips & Milestones -->
+    <h2 id="tab-tips">💡 Tips &amp; Milestones</h2>
+    <p>A curated guide of the most impactful RS3 GIM targets, filterable by category and priority.</p>
+
+    <h3>Key Quests</h3>
+    <table>
+      <thead><tr><th>Priority</th><th>Quest</th><th>Unlock</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag-gold">High</span></td><td>While Guthix Sleeps</td><td>Ancient Curses (Soulsplit, Turmoil)</td></tr>
+        <tr><td><span class="tag-gold">High</span></td><td>Plague's End</td><td>Seren prayers, Enhanced Excalibur, Prifddinas</td></tr>
+        <tr><td><span class="tag-gold">High</span></td><td>Recipe for Disaster</td><td>Culinaromancer's gloves (best hand slot)</td></tr>
+        <tr><td><span class="tag-gold">High</span></td><td>Desert Treasure</td><td>Ancient Magicks spellbook</td></tr>
+        <tr><td><span class="tag-gold">High</span></td><td>The Elder Kiln</td><td>TokHaar-Kal-Ket / Xil / Mej (T90 capes)</td></tr>
+        <tr><td><span class="tag-gold">High</span></td><td>Smoking Kills</td><td>Double Slayer points, full reward shop</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Milestone Capes (RS3)</h3>
+    <table>
+      <thead><tr><th>Cape</th><th>Tier</th><th>How to get</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Fire Cape</strong></td><td>T60 Melee</td><td>Solo TzTok-Jad in the Fight Cave</td></tr>
+        <tr><td><strong>TokHaar-Kal-Ket</strong></td><td>T90 Melee</td><td>Fight Kiln (requires The Elder Kiln quest)</td></tr>
+        <tr><td><strong>TokHaar-Kal-Xil</strong></td><td>T90 Ranged</td><td>Fight Kiln</td></tr>
+        <tr><td><strong>TokHaar-Kal-Mej</strong></td><td>T90 Magic</td><td>Fight Kiln</td></tr>
+        <tr><td><strong>Igneous Kal-Ket</strong></td><td>T95 Melee</td><td>Upgrade TokHaar-Kal-Ket with igneous stone (Hardmode TzKal-Zuk)</td></tr>
+        <tr><td><strong>Igneous Kal-Xil</strong></td><td>T95 Ranged</td><td>Upgrade TokHaar-Kal-Xil with igneous stone</td></tr>
+        <tr><td><strong>Igneous Kal-Mej</strong></td><td>T95 Magic</td><td>Upgrade TokHaar-Kal-Mej with igneous stone</td></tr>
+        <tr><td><strong>Igneous Kal-Mor</strong></td><td>T95 Necromancy</td><td>Complete TzKal-Zuk Necromancy challenge</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Key Skill Milestones</h3>
+    <ul>
+      <li><strong>Prayer 43</strong> — Protection prayers</li>
+      <li><strong>Prayer 70</strong> — Piety-equivalent curses</li>
+      <li><strong>Prayer 95</strong> — Soulsplit + Turmoil / Anguish / Torment (after While Guthix Sleeps)</li>
+      <li><strong>Herblore 96</strong> — Overloads (mandatory for serious PvM)</li>
+      <li><strong>Herblore 106</strong> — Elder overload salve with prayer restore</li>
+      <li><strong>Dungeoneering 85</strong> — Chaotic weaponry</li>
+      <li><strong>Necromancy 70 / 99 / 120</strong> — Conjure army / Death Guard T80 / Soulbound Lantern T95</li>
+      <li><strong>Invention 27</strong> — Augment weapons and armour</li>
+      <li><strong>Slayer 85</strong> — Abyssal demons, Nechryael</li>
+    </ul>
+
+    <hr />
+
+    <!-- Tab: Achievement Diaries -->
+    <h2 id="tab-diaries">📋 Achievement Diaries</h2>
+    <p>Tracks diary completion across all 13 RS3 regions × 3 tiers (Easy / Medium / Hard).</p>
+
+    <h3>Grid View <em>(default)</em></h3>
+    <p>Regions as rows, tiers as columns. Each cell shows coloured player dots — one per player, filled if they've completed that diary tier.</p>
+
+    <h3>Player View</h3>
+    <p>Per-player breakdown with tier buttons and completion dates. Completion percentage bar per player.</p>
+
+    <h3>Auto-detection</h3>
+    <p>Diary completions are detected from the RuneMetrics activity feed on every sync (e.g. <em>"I completed the Easy Varrock diary"</em>). Any cell can also be toggled manually if the feed entry was missed.</p>
+
+    <hr />
+
+    <!-- Tab: Leaderboards -->
+    <h2 id="tab-leaderboards">🏅 Leaderboards</h2>
+
+    <h3>Boss Kills</h3>
+    <p>Accumulated boss kill counts from the RuneMetrics activity feed. Boss × player matrix with a boss filter dropdown. Auto-updates on every sync.</p>
+
+    <h3>Firsts</h3>
+    <p>~40 milestone cards showing who achieved each one first in the group — quests, bosses, skill 99s, rare drops. Unachieved cards are dimmed as <em>"Not yet"</em>.</p>
+
+    <h3>Milestones Feed</h3>
+    <p>Full chronological feed of 99s, 120s, quest completions, and notable boss kills.</p>
+
+    <h3>Skill Mastery</h3>
+    <p>99 and 120 breakdown per player with RS3 wiki skill icons.</p>
+
+    <h3>Clue Scrolls</h3>
+    <p>Hiscores leaderboard across all 5 tiers (Easy / Medium / Hard / Elite / Master).</p>
+
+    <hr />
+
+    <!-- Tech Stack -->
+    <h2 id="tech">Tech Stack</h2>
+    <table>
+      <thead><tr><th>Layer</th><th>Technology</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Frontend</strong></td><td>React 18 + Vite</td></tr>
+        <tr><td><strong>Backend</strong></td><td>Node.js 22 + Express</td></tr>
+        <tr><td><strong>Database</strong></td><td>SQLite via <code>node:sqlite</code> built-in (zero extra deps)</td></tr>
+        <tr><td><strong>Data</strong></td><td>RS3 Hiscores CSV API + RuneMetrics JSON API</td></tr>
+        <tr><td><strong>Hosting</strong></td><td>Hetzner VPS — Ubuntu 22.04</td></tr>
+        <tr><td><strong>Web server</strong></td><td>Nginx (reverse proxy + SSL termination)</td></tr>
+        <tr><td><strong>SSL</strong></td><td>Cloudflare Origin Certificate</td></tr>
+        <tr><td><strong>DNS / CDN</strong></td><td>Cloudflare</td></tr>
+        <tr><td><strong>Process manager</strong></td><td>PM2</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Database -->
+    <h2 id="database">Database Tables</h2>
+    <table>
+      <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>groups</code></td><td>Group name, type, size, password hash, last activity</td></tr>
+        <tr><td><code>players</code></td><td>RSN, combat level, hiscores JSON, RuneMetrics JSON</td></tr>
+        <tr><td><code>skills</code></td><td>Per-player skill levels, XP, hiscores rank</td></tr>
+        <tr><td><code>snapshots</code></td><td>Daily XP snapshots for weekly gain calculation</td></tr>
+        <tr><td><code>goals</code></td><td>Goal type, status, current/target values, details JSON</td></tr>
+        <tr><td><code>goal_contributors</code></td><td>Many-to-many: goals ↔ players</td></tr>
+        <tr><td><code>drops</code></td><td>Drop log (auto-detected + manually added)</td></tr>
+        <tr><td><code>item_requests</code></td><td>Item wish-list per player with priority and boss</td></tr>
+        <tr><td><code>achievements</code></td><td>Diary completion per player (region + tier key, timestamp)</td></tr>
+        <tr><td><code>boss_kills</code></td><td>Accumulated kill counts per player from activity feed</td></tr>
+        <tr><td><code>boss_kill_log</code></td><td>Deduplication log — prevents double-counting on re-sync</td></tr>
+        <tr><td><code>equipment_loadouts</code></td><td>Gear slots: player × combat style × slot, item name, confirmed flag</td></tr>
+        <tr><td><code>group_notes</code></td><td>Shared pinboard content per group</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Self-Hosting -->
+    <h2 id="selfhost">Self-Hosting</h2>
+
+    <h3>Requirements</h3>
+    <ul>
+      <li>Node.js 22+</li>
+      <li>Any Linux VPS (Ubuntu 22.04 recommended)</li>
+      <li>Nginx for reverse proxy + SSL</li>
+      <li>PM2 for process management</li>
+    </ul>
+
+    <h3>Local Development</h3>
+    <pre><code>git clone https://github.com/thosjo95/RS3-GIM-Companion.git
+cd RS3-GIM-Companion
+npm run install:all   # installs root + server + client deps
+npm run dev           # API on :3001, Vite dev server on :5173</code></pre>
+    <p>Open <strong>http://localhost:5173</strong> — <code>/api</code> requests are proxied to the backend automatically by Vite.</p>
+
+    <h3>Production Deploy</h3>
+    <pre><code>ssh root@YOUR_SERVER_IP
+bash /root/deploy.sh
+# Script: git pull → npm run build → pm2 restart app</code></pre>
+
+    <!-- Changelog -->
+    <h2 id="changelog">Changelog</h2>
+
+    <h3>v1.0.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li>⚔️ <strong>Gear Loadouts</strong> — per-player equipment grids for all 5 combat styles with wiki-verified requirements and quest-chained prereqs</li>
+      <li>💎 <strong>Group Vault</strong> redesign — confirmed gear shows real-time "Worn by" status on matching vault drops; live updates on gear change</li>
+      <li>🛡️ <strong>Permission model</strong> — only your own character is editable; teammates' gear is view-only</li>
+      <li>📝 <strong>Group Notes</strong> — floating slide-in overlay with auto-save, accessible from the vault tab</li>
+      <li>🗡️ <strong>Items &amp; Drops</strong> redesigned as single-page three-panel layout (Item Requests | Drop Log | Boss Overview)</li>
+      <li>🔥 <strong>Tips &amp; Milestones</strong> — all RS3 cape names corrected (Fire Cape → TokHaar-Kal-Ket/Xil/Mej → Igneous Kal variants)</li>
+      <li>🐛 <strong>Gear requirement fixes</strong> — corrected Defence-only requirements for RS3 armour (Bandos T70, Armadyl T70, Pernix/Virtus T80 Def+Con, etc.)</li>
+      <li>🖼️ <strong>New logo</strong> — custom SVG shield + iron helm replacing the emoji icon</li>
+      <li>🎮 <strong>Discord integration</strong> — Discord link in the app header</li>
+      <li>📐 <strong>Layout polish</strong> — 50/50 vault/gear panels with card backgrounds; Group Vault moved next to Overview in the tab bar</li>
+    </ul>
+
+    <hr />
+
+  </main>
+</div>
+
+<footer>
+  <p>RS3 GIM Companion · v1.0.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/INVITE_CODE">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
+</footer>
+
+</body>
+</html>
