@@ -83,7 +83,7 @@ router.get('/search', (req, res) => {
     LEFT JOIN players p ON p.group_id = g.id
     WHERE g.name LIKE ? OR g.group_rsn LIKE ?
     GROUP BY g.id
-    ORDER BY g.last_activity DESC, g.created_at DESC
+    ORDER BY member_count DESC, g.last_activity DESC, g.created_at DESC
     LIMIT 10
   `).all(`%${name.trim()}%`, `%${name.trim()}%`);
   res.json(groups);
