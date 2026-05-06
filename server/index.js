@@ -25,21 +25,26 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().t
 // persists NEW entries to the player_activities table (INSERT OR IGNORE —
 // re-fetching never duplicates). Detectors (drops, diaries, boss kills,
 // milestones) only fire on newly inserted rows so notifications never repeat.
-// 5s delay between players — RuneMetrics throttles at ~1 req/sec sustained;
-// 5s keeps well clear of the 429/IP-ban threshold per community reports.
+// Batched RuneMetrics fetching: 10 players per batch, 1s within batch, 60s between batches.
+// Looks more human-like than a steady drip and avoids sustained-rate throttling.
+// 306 players → ~31 batches → ~34 minutes total — well within the 2h window.
+const BATCH_SIZE        = 10;
+const WITHIN_BATCH_MS   = 1000;  // 1s between players inside a batch
+const BETWEEN_BATCH_MS  = 60000; // 60s pause between batches
+
 cron.schedule('0 */2 * * *', async () => {
   const { fetchRuneMetrics } = require('./services/runescape');
   const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players WHERE group_id IS NOT NULL').all();
-  console.log(`[2h cron] Syncing RuneMetrics activities for ${players.length} player(s)…`);
+  const batches = Math.ceil(players.length / BATCH_SIZE);
+  console.log(`[2h cron] Syncing RuneMetrics for ${players.length} player(s) in ${batches} batch(es)…`);
 
-  for (const player of players) {
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
     try {
       const rm = await fetchRuneMetrics(player.rsn, 20);
-      // Save to DB — returns only activities not seen before
       const newActivities = saveActivities(player.id, rm.activities);
-      // Only run detectors on genuinely new entries
       if (newActivities.length > 0) {
         autoLogDrops(player.id, newActivities);
         autoDetectDiaries(player.id, newActivities);
@@ -49,10 +54,21 @@ cron.schedule('0 */2 * * *', async () => {
     } catch (err) {
       console.error(`[2h cron] ${player.rsn}: ${err.message}`);
     }
-    // 5s delay → 0.2 req/sec — well within RuneMetrics limits per community reports.
-    // At 2h interval this handles ~1,400 players per window.
-    await new Promise(r => setTimeout(r, 5000));
+
+    const isLastInBatch  = (i + 1) % BATCH_SIZE === 0;
+    const isLastPlayer   = i + 1 === players.length;
+
+    if (!isLastPlayer) {
+      if (isLastInBatch) {
+        console.log(`[2h cron] Batch ${Math.floor(i / BATCH_SIZE) + 1}/${batches} done — pausing 60s…`);
+        await new Promise(r => setTimeout(r, BETWEEN_BATCH_MS));
+      } else {
+        await new Promise(r => setTimeout(r, WITHIN_BATCH_MS));
+      }
+    }
   }
+
+  console.log(`[2h cron] Done.`);
 });
 
 // ── Daily snapshot cron ────────────────────────────────────────────────────────

@@ -247,13 +247,18 @@ router.post('/sync-all/:groupId', async (req, res) => {
 });
 
 // POST /api/players/sync-activities/:groupId - fetch RuneMetrics for all group members
-// Runs the same logic as the 2h cron but on demand for a single group.
-// No auth — RS3 activity data is public. Rate-limited by 1s delay between players.
+// Runs the same batched logic as the 2h cron but on demand for a single group.
+// Batches of 10, 1s within batch, 60s between batches.
+const BATCH_SIZE       = 10;
+const WITHIN_BATCH_MS  = 1000;
+const BETWEEN_BATCH_MS = 60000;
+
 router.post('/sync-activities/:groupId', async (req, res) => {
   const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(req.params.groupId);
   const results = [];
 
-  for (const player of players) {
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
     try {
       const rm = await fetchRuneMetrics(player.rsn, 20);
       const newActivities = saveActivities(player.id, rm.activities);
@@ -268,7 +273,12 @@ router.post('/sync-activities/:groupId', async (req, res) => {
       console.error(`[sync-activities] Failed ${player.rsn}: ${err.message}`);
       results.push({ rsn: player.rsn, success: false, error: err.message });
     }
-    await new Promise(r => setTimeout(r, 5000));
+
+    const isLastInBatch = (i + 1) % BATCH_SIZE === 0;
+    const isLastPlayer  = i + 1 === players.length;
+    if (!isLastPlayer) {
+      await new Promise(r => setTimeout(r, isLastInBatch ? BETWEEN_BATCH_MS : WITHIN_BATCH_MS));
+    }
   }
 
   res.json(results);
