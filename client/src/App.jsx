@@ -280,14 +280,10 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
         setLookupResult(result);
         setStep('preview');
       } else {
-        onToast(result.error || 'Group not found — enter members manually', 'error');
-        setManualRsns(Array(gimSize).fill(''));
-        setStep('manual');
+        onToast(result.error || 'Group not found on RS3 hiscores. Check the exact group name and settings.', 'error');
       }
     } catch (err) {
       onToast(err.message, 'error');
-      setManualRsns(Array(gimSize).fill(''));
-      setStep('manual');
     } finally {
       setSearching(false);
     }
@@ -364,9 +360,6 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
             <div style={{display:'flex',gap:8,flexDirection:'column'}}>
               <button className="btn btn-primary" onClick={() => handleConfirm(lookupResult.members.map(m => m.rsn))}>
                 ✓ Confirm & Start Tracking
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => { setManualRsns(lookupResult.members.map(m => m.rsn)); setStep('manual'); }}>
-                Edit members manually instead
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setStep('search')}>← Back</button>
               {onCancel && <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>}
@@ -477,10 +470,6 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                 ? <><span className="spinner" style={{width:12,height:12}}/> Searching RS3 hiscores…</>
                 : '🔍 Search & Import Group'}
             </button>
-            <button type="button" className="btn btn-ghost btn-sm"
-              onClick={() => { setManualRsns(Array(gimSize).fill('')); setStep('manual'); }}>
-              Enter members manually instead
-            </button>
             {onCancel && <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>}
           </div>
         </form>
@@ -527,10 +516,10 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
           <span className="modal-title">👥 Find or Manage Groups</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
         </div>
-        <div className="modal-body" style={{paddingTop:0}}>
+        <div className="modal-body" style={{paddingTop:8}}>
 
           {/* Search input */}
-          <div className="form-group" style={{marginBottom:12}}>
+          <div className="form-group" style={{marginBottom:12,marginTop:0}}>
             <input className="form-input" value={query} onChange={e => { setQuery(e.target.value); setRs3Result(null); }}
               placeholder="Type group name…" autoFocus />
           </div>
@@ -631,7 +620,7 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
 
           {/* RS3 result */}
           {rs3Result && (
-            <div style={{marginTop:12,padding:'12px 14px',background:'var(--bg-panel-alt)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+            <div style={{marginTop:12,padding:'12px 14px',background:'var(--bg-panel-alt)',border:`1px solid ${rs3Result.found ? 'var(--border)' : 'rgba(192,64,64,0.4)'}`,borderRadius:'var(--radius-lg)'}}>
               {rs3Result.found ? (
                 <>
                   <div style={{fontWeight:700,color:'var(--gold)',marginBottom:6}}>{rs3Result.groupName}</div>
@@ -667,14 +656,34 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
                   )}
                 </>
               ) : (
-                <div style={{color:'var(--text-dim)',fontSize:13}}>{rs3Result.error || 'Group not found on RS3 hiscores'}</div>
+                <div>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:5}}>
+                    <span style={{fontSize:13,fontWeight:700,color:'var(--text-bright)'}}>Group not found</span>
+                    {rs3Result.error && (
+                      <span
+                        title={rs3Result.error}
+                        style={{
+                          cursor: 'help', flexShrink: 0,
+                          fontSize: 10, fontWeight: 700, color: 'var(--text-dim)',
+                          background: 'var(--bg-input)',
+                          border: '1px solid var(--border)', borderRadius: '50%',
+                          width: 16, height: 16, display: 'inline-flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          userSelect: 'none', lineHeight: 1,
+                        }}>i</span>
+                    )}
+                  </div>
+                  <div style={{fontSize:12,color:'var(--text-dim)',fontStyle:'italic',lineHeight:1.5}}>
+                    Make sure the name is spelled exactly as it appears in-game, and that the correct type and member count are selected
+                    {' '}(e.g. <em>4 members · Competitive</em>).
+                  </div>
+                </div>
               )}
             </div>
           )}
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
-          <button className="btn btn-ghost" onClick={() => { onClose(); onAddNew(null); }}>➕ Create new group</button>
         </div>
       </div>
     </div>

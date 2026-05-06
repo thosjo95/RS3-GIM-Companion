@@ -47,16 +47,43 @@ router.get('/', (req, res) => {
 
 // POST /api/goals
 router.post('/', (req, res) => {
-  const { type, owner_id, title, description, category, skill, target_value, priority, contributor_ids, details_json } = req.body;
+  const { type, owner_id, title, description, category, skill, target_value, priority, status, contributor_ids, details_json } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
 
   const groupId = req.headers['x-group-id']
     || (owner_id && db.prepare('SELECT group_id FROM players WHERE id = ?').get(owner_id)?.group_id);
   if (!checkGroupAuth(req, res, groupId)) return;
 
+  // ── Duplicate prevention ──────────────────────────────────────────────────
+  if (owner_id) {
+    if (category === 'skill' && skill && target_value != null) {
+      const dup = db.prepare(
+        `SELECT id FROM goals WHERE owner_id = ? AND category = 'skill' AND skill = ? AND CAST(target_value AS INTEGER) = ? AND status != 'complete'`
+      ).get(owner_id, skill, Number(target_value));
+      if (dup) {
+        return res.status(409).json({
+          error: `An active goal for ${skill} level ${target_value} already exists for this player.`,
+        });
+      }
+    }
+
+    if (category === 'quest' && details_json?.questName) {
+      const dup = db.prepare(
+        `SELECT id FROM goals WHERE owner_id = ? AND category = 'quest' AND json_extract(details_json, '$.questName') = ? AND status != 'complete'`
+      ).get(owner_id, details_json.questName);
+      if (dup) {
+        return res.status(409).json({
+          error: `An active goal for the quest "${details_json.questName}" already exists for this player.`,
+        });
+      }
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const VALID_STATUSES = ['not_started', 'in_progress', 'blocked', 'complete'];
   const result = db.prepare(`
-    INSERT INTO goals (type, owner_id, title, description, category, skill, target_value, priority, details_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO goals (type, owner_id, title, description, category, skill, target_value, priority, status, details_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     type || 'personal',
     owner_id || null,
@@ -66,6 +93,7 @@ router.post('/', (req, res) => {
     skill || null,
     target_value || null,
     priority || 'medium',
+    VALID_STATUSES.includes(status) ? status : 'not_started',
     details_json ? JSON.stringify(details_json) : null
   );
 

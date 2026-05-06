@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.2.0-4caf50?style=flat-square" alt="v1.2.0"/>
+    <img src="https://img.shields.io/badge/version-1.3.0-4caf50?style=flat-square" alt="v1.3.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -85,10 +85,11 @@ Once unlocked, set your character name (👤 button in the header) so the app kn
 ## Group Management
 
 Click **👥 Find or Manage Groups** in the sidebar to:
-- Search by group name and add any group to your sidebar
-- Create a new group
+- Search by exact group name and import from RS3 hiscores
 - ★ Favourite groups (pins to top of sidebar)
 - ✕ Remove groups you no longer want in your sidebar
+
+Groups are found exclusively via the **RS3 GIM hiscores** — the app validates that the group name, type (Regular / Competitive), and member count all match before importing. If a group can't be found, the search shows a styled "Group not found" message with a hint to check the exact name and settings.
 
 ---
 
@@ -361,6 +362,21 @@ Replace `GROUP_ID` with the target ID.
 
 ---
 
+### Player card shows a ⚠ badge
+
+**Symptom:** A member card has a red border and a ⚠ warning badge in the top-right corner.
+
+**Cause:** The last sync attempt for that player failed. The badge tooltip (and the modal that opens when you click ✎) shows the exact error message stored in `sync_error`.
+
+**Common causes:**
+- RSN contains a non-breaking space or other hidden Unicode character (see below)
+- Player is not yet ranked on the RS3 hiscores (total level too low)
+- Jagex hiscores returned a temporary 5xx error
+
+**Fix:** Click the ✎ button on the card, correct the RSN if needed, then click **Save & Sync**. On success the badge disappears immediately.
+
+---
+
 ### Player shows "Not synced" / hiscores lookup fails
 
 **Symptom:** One player in a group always shows "Not synced" and syncing returns `Player "Name" not found on hiscores`.
@@ -409,6 +425,18 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.3.0 — May 2026
+- ✅ **RSN validation on add** — adding a player now checks the RS3 hiscores first; unranked or mistyped names are rejected with an inline error before being saved
+- 🔤 **Canonical RSN resolution** — on add and on every sync the app fetches the display name from RuneMetrics and stores the definitive capitalisation/spacing (fixes names copied with hidden Unicode characters)
+- 🔠 **Non-breaking space auto-heal** — RSNs containing ` ` or other invisible Unicode characters are sanitised automatically during sync; duplicate records created by encoding drift are detected and merged
+- ⚠️ **Sync error badge** — if a player fails to sync, their member card gets a red border + ⚠ badge; clicking it opens an **Edit RSN** modal so you can correct the name and re-sync without leaving the page
+- 🗺️ **Quest goals auto-blocked** — when adding a quest goal the app checks skill requirements and quest prerequisites; if any are unmet the goal is automatically set to **Blocked** so it surfaces at the top of the list
+- 📖 **Wiki button on quest goals** — every quest goal row now has an inline **📖** button that opens the RS Wiki page for that quest directly
+- 🔍 **Hiscores-only group setup** — the group search flow has been simplified: groups are imported exclusively via RS3 hiscores; the "Enter members manually" and "Create new group" paths have been removed to prevent invalid data
+- 💬 **"Group not found" error redesign** — not-found result now shows a bold centred heading, an italic hint, and a hoverable **i** badge with the raw API error (instead of displaying it inline)
+- 🎯 **Goal owner default** — opening **Add Goal** pre-selects the logged-in player's character as the owner so you don't have to pick yourself every time
+- 🚫 **Duplicate goal prevention** — creating a skill goal or quest goal that already exists (same player + skill + target, or same quest) returns a 409 and is silently skipped in batch-add flows
 
 ### v1.2.0 — May 2026
 - 🗃️ **Persistent activity feed** — RuneMetrics entries are now stored permanently in `player_activities` table; new activity is detected once and never duplicated on re-sync

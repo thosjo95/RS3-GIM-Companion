@@ -194,6 +194,9 @@ try { db.exec('ALTER TABLE equipment_loadouts ADD COLUMN confirmed INTEGER DEFAU
 // Discord webhook settings per group
 try { db.exec('ALTER TABLE groups ADD COLUMN discord_webhook_url TEXT'); } catch {}
 try { db.exec("ALTER TABLE groups ADD COLUMN webhook_events TEXT DEFAULT '[\"level_milestones\",\"diary_completions\",\"boss_first_kills\",\"goal_completions\"]'"); } catch {}
+// Per-player sync error tracking — set on failure, cleared on success
+try { db.exec('ALTER TABLE players ADD COLUMN sync_error TEXT'); } catch {}
+try { db.exec('ALTER TABLE players ADD COLUMN sync_error_at DATETIME'); } catch {}
 
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {

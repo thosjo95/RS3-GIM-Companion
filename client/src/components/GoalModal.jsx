@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { api } from '../api/client';
-import { QUESTS, QUEST_NAMES } from '../data/quests';
+import { QUESTS, QUEST_NAMES, DIFF_COLOUR } from '../data/quests';
 import { RECIPES, RECIPE_NAMES, expandRecipe } from '../data/itemRecipes';
 
 const SKILL_LIST = [
@@ -198,11 +198,135 @@ function LevelGoalForm({ players, form, set }) {
   );
 }
 
+// ── Searchable quest picker ───────────────────────────────────────────────────
+
+function QuestSelect({ value, onChange }) {
+  const [search, setSearch]   = useState('');
+  const [open, setOpen]       = useState(false);
+  const ref                   = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return QUEST_NAMES;
+    const q = search.toLowerCase();
+    return QUEST_NAMES.filter(n => n.toLowerCase().includes(q));
+  }, [search]);
+
+  const questData = value ? QUESTS[value] : null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      {/* Trigger */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '7px 10px', borderRadius: 'var(--radius)',
+          background: 'var(--bg-input)', border: '1px solid var(--border)',
+          cursor: 'pointer', userSelect: 'none',
+        }}
+      >
+        {value
+          ? <span style={{ flex: 1, color: 'var(--text-bright)', fontSize: 13 }}>{value}</span>
+          : <span style={{ flex: 1, color: 'var(--text-dim)', fontSize: 13 }}>— Search quests… —</span>}
+        {questData && (
+          <span style={{
+            fontSize: 10, padding: '2px 6px', borderRadius: 3, flexShrink: 0,
+            background: (DIFF_COLOUR[questData.difficulty] ?? '#888') + '33',
+            color: DIFF_COLOUR[questData.difficulty] ?? '#888',
+          }}>{questData.difficulty}</span>
+        )}
+        <span style={{ fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>▼</span>
+      </div>
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300,
+          background: 'var(--bg-panel)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', boxShadow: '0 6px 24px rgba(0,0,0,0.55)',
+          marginTop: 2,
+        }}>
+          {/* Search box */}
+          <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Type any part of the quest name…"
+              style={{
+                width: '100%', padding: '5px 8px', fontSize: 12,
+                background: 'var(--bg-input)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)', color: 'var(--text)', boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+            {filtered.length === 0
+              ? <div style={{ padding: '10px 12px', color: 'var(--text-dim)', fontSize: 12 }}>No quests match "{search}"</div>
+              : filtered.map(q => {
+                  const qd = QUESTS[q];
+                  const dc = DIFF_COLOUR[qd?.difficulty] ?? '#888';
+                  return (
+                    <button key={q} type="button"
+                      onClick={() => { onChange(q); setOpen(false); setSearch(''); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center',
+                        justifyContent: 'space-between', padding: '6px 10px',
+                        background: q === value ? 'rgba(200,168,75,0.15)' : 'transparent',
+                        border: 'none', borderBottom: '1px solid var(--border)',
+                        color: q === value ? 'var(--gold)' : 'var(--text)',
+                        cursor: 'pointer', fontSize: 12, textAlign: 'left', gap: 6,
+                      }}
+                      onMouseEnter={e => { if (q !== value) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                      onMouseLeave={e => { if (q !== value) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ flex: 1 }}>
+                        {q}
+                        {qd?.series && <span style={{ marginLeft: 5, fontSize: 10, color: 'var(--text-dim)' }}>({qd.series})</span>}
+                      </span>
+                      <span style={{
+                        fontSize: 10, padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+                        background: dc + '33', color: dc,
+                      }}>{qd?.difficulty}</span>
+                    </button>
+                  );
+                })
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Quest Goal Form ───────────────────────────────────────────────────────────
 
-function QuestGoalForm({ players, form, set }) {
+function QuestGoalForm({ players, form, set, onSaved, onToast }) {
   const owner = players.find(p => p.id === Number(form.owner_id));
   const quest = QUESTS[form.details?.questName];
+
+  // Which prerequisite quests the player has already ticked off as done
+  const [donePrereqs, setDonePrereqs] = useState(new Set());
+  const [addingPrereqs, setAddingPrereqs] = useState(false);
+  const [addingSkills, setAddingSkills] = useState(false);
+
+  // Reset tick-boxes when quest changes
+  useEffect(() => { setDonePrereqs(new Set()); }, [form.details?.questName]);
+
+  function togglePrereq(q) {
+    setDonePrereqs(prev => {
+      const next = new Set(prev);
+      next.has(q) ? next.delete(q) : next.add(q);
+      return next;
+    });
+  }
 
   const reqStatus = useMemo(() => {
     if (!quest || !owner) return null;
@@ -214,9 +338,88 @@ function QuestGoalForm({ players, form, set }) {
     return results;
   }, [quest, owner, form.owner_id]);
 
-  const allSkillsMet = reqStatus ? Object.values(reqStatus).every(r => r.met) : false;
-  const metCount = reqStatus ? Object.values(reqStatus).filter(r => r.met).length : 0;
-  const totalReqs = reqStatus ? Object.keys(reqStatus).length : 0;
+  const allSkillsMet = reqStatus ? Object.values(reqStatus).every(r => r.met) : true;
+  const metCount     = reqStatus ? Object.values(reqStatus).filter(r => r.met).length : 0;
+  const totalReqs    = reqStatus ? Object.keys(reqStatus).length : 0;
+
+  const prereqs     = quest?.requirements.quests ?? [];
+  const missingPrereqs = prereqs.filter(q => !donePrereqs.has(q));
+  const missingSkills  = Object.entries(quest?.requirements.skills ?? {})
+    .filter(([skill, needed]) => (reqStatus?.[skill]?.have ?? 1) < needed);
+
+  async function handleAddMissingPrereqs() {
+    if (!missingPrereqs.length) return;
+    setAddingPrereqs(true);
+    let added = 0;
+    try {
+      for (const questName of missingPrereqs) {
+        const prereqData = QUESTS[questName];
+        try {
+          await api.createGoal({
+            type: 'personal',
+            owner_id: Number(form.owner_id),
+            title: `${owner?.rsn ?? 'Player'}: ${questName}`,
+            category: 'quest',
+            priority: 'medium',
+            details_json: {
+              goalType: 'quest',
+              questName,
+              requirements: prereqData?.requirements ?? {},
+              unlocks: prereqData?.unlocks ?? [],
+            },
+          });
+          added++;
+        } catch (err) {
+          if (!err.message.includes('already exists')) throw err; // skip duplicates silently
+        }
+      }
+      if (added > 0) {
+        onToast?.(`Added ${added} prerequisite quest goal${added !== 1 ? 's' : ''}`, 'success');
+        onSaved?.();
+      } else {
+        onToast?.('All prerequisite quest goals already exist', 'info');
+      }
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    } finally {
+      setAddingPrereqs(false);
+    }
+  }
+
+  async function handleAddMissingSkillGoals() {
+    if (!missingSkills.length) return;
+    setAddingSkills(true);
+    let added = 0;
+    try {
+      for (const [skill, needed] of missingSkills) {
+        try {
+          await api.createGoal({
+            type: 'personal',
+            owner_id: Number(form.owner_id),
+            title: `${owner?.rsn ?? 'Player'}: ${skill} ${needed}`,
+            category: 'skill',
+            skill,
+            target_value: needed,
+            priority: 'medium',
+            details_json: { goalType: 'level' },
+          });
+          added++;
+        } catch (err) {
+          if (!err.message.includes('already exists')) throw err; // skip duplicates silently
+        }
+      }
+      if (added > 0) {
+        onToast?.(`Added ${added} skill goal${added !== 1 ? 's' : ''}`, 'success');
+        onSaved?.();
+      } else {
+        onToast?.('All skill goals already exist', 'info');
+      }
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    } finally {
+      setAddingSkills(false);
+    }
+  }
 
   return (
     <>
@@ -229,46 +432,105 @@ function QuestGoalForm({ players, form, set }) {
 
       <div className="form-group">
         <label className="form-label">Quest</label>
-        <select className="form-select" value={form.details?.questName ?? ''}
-          onChange={e => set('details', { ...form.details, questName: e.target.value })}>
-          <option value="">— Select quest —</option>
-          {QUEST_NAMES.map(q => {
-            const qd = QUESTS[q];
-            return <option key={q} value={q}>{q} ({qd.difficulty})</option>;
-          })}
-        </select>
+        <QuestSelect
+          value={form.details?.questName ?? ''}
+          onChange={v => set('details', { ...form.details, questName: v })}
+        />
       </div>
 
       {quest && (
         <div style={{
           padding: '12px 14px', background: 'var(--bg-panel-alt)',
           border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-          fontSize: 12,
+          fontSize: 12, display: 'flex', flexDirection: 'column', gap: 10,
         }}>
-          <div className="flex align-center justify-between mb-10">
-            <span style={{ fontWeight: 700, color: 'var(--text-bright)' }}>{form.details?.questName}</span>
-            <span className="tag">{quest.difficulty}</span>
+          {/* Header */}
+          <div className="flex align-center justify-between">
+            <span style={{ fontWeight: 700, color: 'var(--text-bright)', fontSize: 13 }}>{form.details?.questName}</span>
+            <span style={{
+              fontSize: 11, padding: '2px 8px', borderRadius: 3,
+              background: (DIFF_COLOUR[quest.difficulty] ?? '#888') + '33',
+              color: DIFF_COLOUR[quest.difficulty] ?? '#888',
+            }}>{quest.difficulty}</span>
           </div>
 
-          {/* Quest prereqs */}
-          {quest.requirements.quests.length > 0 && (
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ color: 'var(--text-dim)', fontWeight: 600, marginBottom: 4 }}>Quest prerequisites</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {quest.requirements.quests.map(q => (
-                  <span key={q} className="tag" style={{ fontSize: 11 }}>📜 {q}</span>
-                ))}
+          {/* Quest prerequisites — with checkboxes */}
+          {prereqs.length > 0 && (
+            <div>
+              <div style={{ color: 'var(--text-dim)', fontWeight: 600, marginBottom: 6 }}>
+                Quest prerequisites
+                {missingPrereqs.length > 0 && (
+                  <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--text-dim)' }}>
+                    — tick any you've already completed
+                  </span>
+                )}
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {prereqs.map(q => {
+                  const done = donePrereqs.has(q);
+                  const inData = !!QUESTS[q];
+                  return (
+                    <label key={q} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                      padding: '5px 8px', borderRadius: 'var(--radius)',
+                      background: done ? 'rgba(90,154,80,0.1)' : 'rgba(192,64,64,0.08)',
+                      border: `1px solid ${done ? 'var(--green)' : 'var(--border)'}`,
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={done}
+                        onChange={() => togglePrereq(q)}
+                        style={{ accentColor: 'var(--green)', cursor: 'pointer', flexShrink: 0 }}
+                      />
+                      <span style={{ color: done ? 'var(--green-bright)' : 'var(--text)', flex: 1 }}>
+                        📜 {q}
+                        {QUESTS[q]?.difficulty && (
+                          <span style={{ marginLeft: 6, fontSize: 10, color: DIFF_COLOUR[QUESTS[q].difficulty] }}>
+                            {QUESTS[q].difficulty}
+                          </span>
+                        )}
+                      </span>
+                      {done
+                        ? <span style={{ color: 'var(--green-bright)', fontSize: 11 }}>✓ Done</span>
+                        : <span style={{ color: 'var(--red-bright)', fontSize: 11 }}>✗ Needed</span>
+                      }
+                    </label>
+                  );
+                })}
+              </div>
+              {/* Add missing prereqs button */}
+              {missingPrereqs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleAddMissingPrereqs}
+                  disabled={addingPrereqs}
+                  style={{
+                    marginTop: 8, width: '100%', padding: '7px 10px',
+                    background: 'rgba(74,136,184,0.12)', border: '1px solid rgba(74,136,184,0.4)',
+                    borderRadius: 'var(--radius)', color: '#6ab0e0', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 600,
+                  }}
+                >
+                  {addingPrereqs
+                    ? '⏳ Adding…'
+                    : `➕ Add ${missingPrereqs.length} uncompleted prerequisite quest goal${missingPrereqs.length !== 1 ? 's' : ''}`}
+                </button>
+              )}
             </div>
           )}
 
           {/* QP requirement */}
           {quest.requirements.qp > 0 && (
-            <div style={{ marginBottom: 10, color: 'var(--text-dim)' }}>
+            <div style={{ color: 'var(--text-dim)' }}>
               Quest points needed: <strong style={{ color: 'var(--gold)' }}>{quest.requirements.qp} QP</strong>
               {owner && (
-                <span style={{ color: owner.quest_points >= quest.requirements.qp ? 'var(--green-bright)' : 'var(--red-bright)', marginLeft: 8 }}>
-                  ({owner.quest_points >= quest.requirements.qp ? `✓ ${owner.rsn} has ${owner.quest_points}` : `✗ ${owner.rsn} has ${owner.quest_points}`})
+                <span style={{
+                  color: owner.quest_points >= quest.requirements.qp ? 'var(--green-bright)' : 'var(--red-bright)',
+                  marginLeft: 8,
+                }}>
+                  ({owner.quest_points >= quest.requirements.qp
+                    ? `✓ ${owner.rsn} has ${owner.quest_points}`
+                    : `✗ ${owner.rsn} has ${owner.quest_points}`})
                 </span>
               )}
             </div>
@@ -276,16 +538,20 @@ function QuestGoalForm({ players, form, set }) {
 
           {/* Skill requirements */}
           {totalReqs > 0 ? (
-            <>
+            <div>
               <div style={{ color: 'var(--text-dim)', fontWeight: 600, marginBottom: 6 }}>
                 Skill requirements
-                {owner && <span style={{ marginLeft: 8, fontWeight: 400 }}>— {metCount}/{totalReqs} met by {owner.rsn}</span>}
+                {owner && (
+                  <span style={{ marginLeft: 8, fontWeight: 400 }}>
+                    — {metCount}/{totalReqs} met by {owner.rsn}
+                  </span>
+                )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 4 }}>
                 {Object.entries(quest.requirements.skills).map(([skill, needed]) => {
-                  const r = reqStatus?.[skill];
+                  const r   = reqStatus?.[skill];
                   const have = r?.have ?? '?';
-                  const met = r?.met ?? false;
+                  const met  = r?.met  ?? false;
                   const shortfall = needed - (r?.have ?? 0);
                   return (
                     <div key={skill} style={{
@@ -300,35 +566,61 @@ function QuestGoalForm({ players, form, set }) {
                       </span>
                       <span style={{ fontWeight: 700, color: met ? 'var(--green-bright)' : 'var(--red-bright)' }}>
                         {met ? `✓ ${have}` : `${have}/${needed}`}
-                        {!met && shortfall > 0 && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 3 }}>(-{shortfall})</span>}
+                        {!met && shortfall > 0 && (
+                          <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 3 }}>(-{shortfall})</span>
+                        )}
                       </span>
                     </div>
                   );
                 })}
               </div>
-            </>
+              {/* Add missing skill goals button */}
+              {owner && missingSkills.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleAddMissingSkillGoals}
+                  disabled={addingSkills}
+                  style={{
+                    marginTop: 8, width: '100%', padding: '7px 10px',
+                    background: 'rgba(200,120,48,0.1)', border: '1px solid rgba(200,120,48,0.4)',
+                    borderRadius: 'var(--radius)', color: '#e09060', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 600,
+                  }}
+                >
+                  {addingSkills
+                    ? '⏳ Adding…'
+                    : `➕ Add ${missingSkills.length} missing skill goal${missingSkills.length !== 1 ? 's' : ''} for ${owner.rsn}`}
+                </button>
+              )}
+            </div>
           ) : (
-            <div style={{ color: 'var(--green-bright)' }}>✓ No skill requirements</div>
+            <div style={{ color: 'var(--green-bright)' }}>✓ No direct skill requirements</div>
           )}
 
           {/* Unlocks */}
           {quest.unlocks?.length > 0 && (
-            <div style={{ marginTop: 10, color: 'var(--text-dim)' }}>
-              Unlocks: {quest.unlocks.join(' · ')}
+            <div style={{ color: 'var(--text-dim)', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+              <span style={{ fontWeight: 600, marginRight: 4 }}>Unlocks:</span>
+              {quest.unlocks.join(' · ')}
             </div>
           )}
 
-          {/* Overall readiness */}
-          {owner && totalReqs > 0 && (
+          {/* Overall readiness banner */}
+          {owner && (
             <div style={{
-              marginTop: 10, padding: '6px 10px', borderRadius: 'var(--radius)',
-              background: allSkillsMet ? 'rgba(90,154,80,0.15)' : 'rgba(200,120,48,0.1)',
-              border: `1px solid ${allSkillsMet ? 'var(--green)' : 'var(--orange)'}`,
-              color: allSkillsMet ? 'var(--green-bright)' : 'var(--orange)',
+              padding: '6px 10px', borderRadius: 'var(--radius)',
+              background: (allSkillsMet && missingPrereqs.length === 0)
+                ? 'rgba(90,154,80,0.15)' : 'rgba(200,120,48,0.1)',
+              border: `1px solid ${(allSkillsMet && missingPrereqs.length === 0) ? 'var(--green)' : 'var(--orange)'}`,
+              color: (allSkillsMet && missingPrereqs.length === 0) ? 'var(--green-bright)' : 'var(--orange)',
             }}>
-              {allSkillsMet
-                ? `✓ ${owner.rsn} meets all skill requirements!`
-                : `${owner.rsn} needs ${totalReqs - metCount} more skill${totalReqs - metCount !== 1 ? 's' : ''}`}
+              {(allSkillsMet && missingPrereqs.length === 0)
+                ? `✓ ${owner.rsn} appears ready for this quest!`
+                : [
+                    !allSkillsMet && `${totalReqs - metCount} skill${totalReqs - metCount !== 1 ? 's' : ''} needed`,
+                    missingPrereqs.length > 0 && `${missingPrereqs.length} prerequisite quest${missingPrereqs.length !== 1 ? 's' : ''} to complete`,
+                  ].filter(Boolean).join(' · ')
+              }
             </div>
           )}
         </div>
@@ -490,6 +782,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
         unlocks: quest?.unlocks ?? [],
       };
     } else if (goalType === 'item') {
+
       category = 'item';
       const recipe = RECIPES[form.details?.itemName];
       details_json = {
@@ -501,6 +794,24 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
         skill: recipe?.skill ?? null,
         skillLevel: recipe?.skillLevel ?? null,
       };
+    }
+
+    // Auto-determine initial status for quest goals:
+    // If the owner doesn't meet skill requirements OR the quest has prerequisite quests,
+    // start as 'blocked' so it's clear work is needed first.
+    let initialStatus = undefined; // undefined = server default ('not_started')
+    if (goalType === 'quest' && form.details?.questName && form.type === 'personal') {
+      const quest = QUESTS[form.details.questName];
+      const owner = players.find(p => p.id === Number(form.owner_id));
+      if (quest && owner) {
+        const skillReqs = quest.requirements?.skills ?? {};
+        const prereqs   = quest.requirements?.quests ?? [];
+        const hasUnmetSkills = Object.entries(skillReqs).some(([skill, needed]) => {
+          const have = owner.skills?.find(s => s.skill_name === skill)?.level ?? 1;
+          return have < needed;
+        });
+        if (hasUnmetSkills || prereqs.length > 0) initialStatus = 'blocked';
+      }
     }
 
     setSaving(true);
@@ -515,6 +826,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
         target_value: goalType === 'level' ? Number(form.target_value) || null : (goalType === 'item' ? Number(form.details?.quantity) || null : null),
         priority: form.priority,
         details_json,
+        ...(initialStatus ? { status: initialStatus } : {}),
         contributor_ids: form.type === 'group' ? form.contributor_ids : [],
       });
       onSaved();
@@ -593,7 +905,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
 
             {/* Type-specific form */}
             {goalType === 'level' && <LevelGoalForm players={players} form={form} set={set} />}
-            {goalType === 'quest' && <QuestGoalForm players={players} form={form} set={set} />}
+            {goalType === 'quest' && <QuestGoalForm players={players} form={form} set={set} onSaved={onSaved} onToast={onToast} />}
             {goalType === 'item'  && <ItemGoalForm players={players} form={form} set={set} />}
 
             {goalType === 'custom' && (

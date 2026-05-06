@@ -76,14 +76,33 @@ const BOSS_KILLS = [
 const HISCORES_URL = 'https://secure.runescape.com/m=hiscore/index_lite.ws';
 const RUNEMETRICS_URL = 'https://apps.runescape.com/runemetrics/profile/profile';
 
+/**
+ * Sanitize an RSN before sending it to Jagex APIs.
+ * RS3 names only allow letters, digits, spaces and hyphens.
+ * Replace any non-breaking spaces, Unicode replacement chars, or other
+ * non-printable/non-ASCII characters with a regular space, then trim.
+ */
+function sanitizeRSN(rsn) {
+  return rsn
+    .replace(/ /g, ' ')        // non-breaking space (common copy-paste artifact)
+    .replace(/�/g, ' ')        // Unicode replacement character
+    .replace(/[^\x20-\x7E]/g, ' ')  // any other non-printable or non-ASCII
+    .replace(/\s+/g, ' ')           // collapse multiple spaces
+    .trim();
+}
+
 async function fetchHiscores(rsn) {
-  const url = `${HISCORES_URL}?player=${encodeURIComponent(rsn)}`;
+  const cleanRSN = sanitizeRSN(rsn);
+  // RS3 hiscores runs on old Jagex infrastructure that expects application/x-www-form-urlencoded
+  // query strings — i.e. spaces must be '+', not '%20'.  Using URLSearchParams gives us that
+  // automatically and is the correct encoding for query parameters on this endpoint.
+  const url = `${HISCORES_URL}?${new URLSearchParams({ player: cleanRSN })}`;
   const response = await fetch(url, {
     headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
     signal: AbortSignal.timeout(10000),
   });
 
-  if (response.status === 404) throw new Error(`Player "${rsn}" not found on hiscores`);
+  if (response.status === 404) throw new Error(`Player "${cleanRSN}" not found on hiscores`);
   if (!response.ok) throw new Error(`Hiscores API returned ${response.status}`);
 
   const text = await response.text();
@@ -135,7 +154,9 @@ function parseHiscores(csv) {
 }
 
 async function fetchRuneMetrics(rsn, activityCount = 20) {
-  const url = `${RUNEMETRICS_URL}?user=${encodeURIComponent(rsn)}&activities=${activityCount}`;
+  const cleanRSN = sanitizeRSN(rsn);
+  // Same + encoding requirement as the hiscores endpoint.
+  const url = `${RUNEMETRICS_URL}?${new URLSearchParams({ user: cleanRSN, activities: activityCount })}`;
   const response = await fetch(url, {
     headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
     signal: AbortSignal.timeout(8000),
@@ -146,6 +167,8 @@ async function fetchRuneMetrics(rsn, activityCount = 20) {
   if (data.error) throw new Error(data.error);
 
   return {
+    // 'name' is the canonical RS3 display name — useful for normalising stored RSNs
+    name: typeof data.name === 'string' ? data.name.trim() : null,
     questsComplete: data.questscomplete ?? 0,
     questsStarted: data.questsstarted ?? 0,
     activities: (data.activities || []).map(a => ({
@@ -248,4 +271,4 @@ function generateSuggestedGoals(players) {
   return suggestions;
 }
 
-module.exports = { fetchHiscores, fetchRuneMetrics, calcCombatLevel, generateSuggestedGoals, SKILLS, BOSS_KILLS };
+module.exports = { fetchHiscores, fetchRuneMetrics, calcCombatLevel, generateSuggestedGoals, sanitizeRSN, SKILLS, BOSS_KILLS };

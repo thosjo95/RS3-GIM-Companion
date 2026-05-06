@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
-const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('../services/runescape');
+const { fetchHiscores, fetchRuneMetrics, calcCombatLevel, sanitizeRSN } = require('../services/runescape');
 const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 const { notifyGoalCompleted } = require('../services/discord');
@@ -88,19 +88,51 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/players - add player to group
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { rsn, group_id } = req.body;
   if (!rsn?.trim()) return res.status(400).json({ error: 'RSN is required' });
   if (!checkGroupAuth(req, res, group_id || req.headers['x-group-id'])) return;
 
+  const cleanRSN = sanitizeRSN(rsn.trim());
+  if (!cleanRSN) return res.status(400).json({ error: 'RSN is required' });
+
+  // Step 1 — Confirm the player exists on hiscores (definitive 404 blocks the add;
+  // other network errors are non-fatal so the user isn't locked out when Jagex is slow).
+  try {
+    await fetchHiscores(cleanRSN);
+  } catch (err) {
+    if (err.message.includes('not found on hiscores')) {
+      return res.status(400).json({
+        error: `"${cleanRSN}" was not found on the RS3 hiscores. Check the exact in-game name (player must be ranked).`,
+      });
+    }
+    console.warn(`[add-player] Hiscores check failed for "${cleanRSN}": ${err.message} — proceeding anyway`);
+  }
+
+  // Step 2 — Resolve the canonical display name from RuneMetrics.
+  // RS3 normalises names (capitalisation, spaces) and RuneMetrics returns the definitive
+  // form in its 'name' field.  Storing the canonical name avoids future encoding mismatches.
+  let canonicalRSN = cleanRSN;
+  try {
+    const rm = await fetchRuneMetrics(cleanRSN, 0);
+    if (rm.name && rm.name.length > 0) {
+      canonicalRSN = rm.name;
+      if (canonicalRSN !== cleanRSN) {
+        console.log(`[add-player] Canonical RSN resolved: "${cleanRSN}" → "${canonicalRSN}"`);
+      }
+    }
+  } catch {
+    // RuneMetrics unavailable or profile is private — fall back to the sanitised name
+  }
+
   try {
     const result = db.prepare(
       'INSERT INTO players (rsn, group_id) VALUES (?, ?)'
-    ).run(rsn.trim(), group_id || null);
-    res.status(201).json({ id: result.lastInsertRowid, rsn: rsn.trim(), group_id });
+    ).run(canonicalRSN, group_id || null);
+    res.status(201).json({ id: result.lastInsertRowid, rsn: canonicalRSN, group_id });
   } catch (err) {
     if (err.message.includes('UNIQUE')) {
-      return res.status(409).json({ error: `Player "${rsn}" already exists` });
+      return res.status(409).json({ error: `Player "${cleanRSN}" is already in this group` });
     }
     throw err;
   }
@@ -113,10 +145,11 @@ router.put('/:id', (req, res) => {
   if (!checkGroupAuth(req, res, player.group_id || req.headers['x-group-id'])) return;
 
   const { rsn, quest_points, group_id } = req.body;
+  const newRSN = rsn != null ? sanitizeRSN(rsn) : player.rsn;
   db.prepare(
     'UPDATE players SET rsn = ?, quest_points = ?, group_id = ? WHERE id = ?'
   ).run(
-    rsn ?? player.rsn,
+    newRSN,
     quest_points ?? player.quest_points,
     group_id ?? player.group_id,
     req.params.id
@@ -140,11 +173,43 @@ router.post('/:id/sync', async (req, res) => {
   if (!player) return res.status(404).json({ error: 'Player not found' });
 
   try {
+    // Auto-heal any dirty RSN (non-breaking space, replacement char, etc.)
+    const cleanRSN = sanitizeRSN(player.rsn);
+    if (cleanRSN !== player.rsn) {
+      db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run(cleanRSN, player.id);
+      console.log(`[sync] Fixed RSN for player ${player.id}: ${JSON.stringify(player.rsn)} → ${JSON.stringify(cleanRSN)}`);
+      player.rsn = cleanRSN;
+    }
+
     const data = await fetchHiscores(player.rsn);
     const combat = calcCombatLevel(data.skills);
 
-    // Preserve existing RuneMetrics quest data — only hiscores activities updated here
-    const existing = player.stats_json ? JSON.parse(player.stats_json) : {};
+    // Preserve existing RuneMetrics quest data — only hiscores activities updated here.
+    // Also take the opportunity to resolve the canonical display name (fixes casing /
+    // encoding mismatches that slipped through sanitiseRSN).
+    let existing = {};
+    let canonicalRSN = player.rsn;
+    try {
+      const rm = await fetchRuneMetrics(player.rsn, 0);
+      if (rm.name && rm.name.length > 0 && rm.name !== player.rsn) {
+        // Only rename if no other player already has the canonical name
+        const conflict = db.prepare('SELECT id FROM players WHERE rsn = ? AND id != ?').get(rm.name, player.id);
+        if (conflict) {
+          // Duplicate record — delete this stale copy and abort sync; the clean record will sync fine
+          console.warn(`[sync] Duplicate player detected: "${player.rsn}" (id ${player.id}) conflicts with existing "${rm.name}" (id ${conflict.id}). Removing duplicate.`);
+          db.prepare('DELETE FROM players WHERE id = ?').run(player.id);
+          return res.json({ success: true, warning: 'Duplicate player removed — re-sync the group.' });
+        }
+        canonicalRSN = rm.name;
+        db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run(canonicalRSN, player.id);
+        console.log(`[sync] Canonical RSN: "${player.rsn}" → "${canonicalRSN}"`);
+        player.rsn = canonicalRSN;
+      }
+    } catch {
+      // RuneMetrics unavailable or private — no problem, hiscores data is still valid
+    }
+    // Defensive parse: corrupted stats_json from before the sanitize fix must not crash the sync.
+    try { existing = player.stats_json ? JSON.parse(player.stats_json) : {}; } catch {}
     const statsJson = JSON.stringify({
       activities:     data.activities,
       questsComplete: existing.questsComplete ?? null,
@@ -152,8 +217,9 @@ router.post('/:id/sync', async (req, res) => {
     });
 
     // activities_json (RuneMetrics feed) is NOT touched here — cron keeps it fresh
+    // Clear any previous sync_error on success
     db.prepare(
-      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ? WHERE id = ?'
+      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, sync_error = NULL, sync_error_at = NULL WHERE id = ?'
     ).run(combat, statsJson, player.id);
 
     const upsertSkill = db.prepare(`
@@ -182,6 +248,10 @@ router.post('/:id/sync', async (req, res) => {
 
     res.json({ success: true, totalXp: data.totalXp, totalLevel: data.totalLevel, combat });
   } catch (err) {
+    // Persist the error so the UI can flag this player
+    db.prepare(
+      'UPDATE players SET sync_error = ?, sync_error_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).run(err.message, player.id);
     res.status(502).json({ error: err.message });
   }
 });
@@ -194,11 +264,31 @@ router.post('/sync-all/:groupId', async (req, res) => {
 
   for (const player of players) {
     try {
+      // Auto-heal any dirty RSN
+      const cleanRSN = sanitizeRSN(player.rsn);
+      if (cleanRSN !== player.rsn) {
+        db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run(cleanRSN, player.id);
+        console.log(`[sync-all] Fixed RSN for player ${player.id}: ${JSON.stringify(player.rsn)} → ${JSON.stringify(cleanRSN)}`);
+        player.rsn = cleanRSN;
+      }
+
       const data = await fetchHiscores(player.rsn);
       const combat = calcCombatLevel(data.skills);
 
-      // Preserve existing RuneMetrics quest data
-      const existing = player.stats_json ? JSON.parse(player.stats_json) : {};
+      // Resolve canonical name + preserve RuneMetrics quest data.
+      let existing = {};
+      try {
+        const rm = await fetchRuneMetrics(player.rsn, 0);
+        if (rm.name && rm.name.length > 0 && rm.name !== player.rsn) {
+          db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run(rm.name, player.id);
+          console.log(`[sync-all] Canonical RSN: "${player.rsn}" → "${rm.name}"`);
+          player.rsn = rm.name;
+        }
+      } catch {
+        // RuneMetrics unavailable or private — no problem
+      }
+      // Defensive parse: corrupted stats_json must not crash the sync.
+      try { existing = player.stats_json ? JSON.parse(player.stats_json) : {}; } catch {}
       const statsJson = JSON.stringify({
         activities:     data.activities,
         questsComplete: existing.questsComplete ?? null,
@@ -206,8 +296,9 @@ router.post('/sync-all/:groupId', async (req, res) => {
       });
 
       // activities_json (RuneMetrics feed) NOT touched — cron keeps it fresh
+      // Clear any previous sync_error on success
       db.prepare(
-        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ? WHERE id = ?'
+        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, sync_error = NULL, sync_error_at = NULL WHERE id = ?'
       ).run(combat, statsJson, player.id);
 
       const upsertSkill = db.prepare(`
@@ -233,6 +324,11 @@ router.post('/sync-all/:groupId', async (req, res) => {
 
       results.push({ rsn: player.rsn, success: true });
     } catch (err) {
+      // Persist the error so the UI can flag this player
+      db.prepare(
+        'UPDATE players SET sync_error = ?, sync_error_at = CURRENT_TIMESTAMP WHERE id = ?'
+      ).run(err.message, player.id);
+
       // 404 = player not yet ranked on hiscores (too low level) — not a real failure
       if (err.message.includes('not found on hiscores')) {
         results.push({ rsn: player.rsn, success: true, warning: 'Not yet ranked on hiscores' });

@@ -119,26 +119,113 @@ function getPlayerSkill(players, ownerId, skillName) {
   return players.find(p => p.id === ownerId)?.skills?.find(s => s.skill_name === skillName);
 }
 
+// ── Edit RSN modal ────────────────────────────────────────────────────────────
+
+function EditRsnModal({ player, onClose, onSaved, onToast }) {
+  const [rsn, setRsn] = useState(player.rsn);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const trimmed = rsn.trim();
+    if (!trimmed || trimmed === player.rsn) { onClose(); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await api.updatePlayer(player.id, { rsn: trimmed });
+      // Re-sync immediately with the corrected name
+      try { await api.syncPlayer(player.id); } catch {}
+      onToast(`RSN updated to "${trimmed}"`, 'success');
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const lastError = player.sync_error;
+
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 360 }}>
+        <div className="modal-header">
+          <span className="modal-title">✎ Edit RSN — {player.rsn}</span>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            {lastError && (
+              <div style={{
+                marginBottom: 12, padding: '8px 12px', borderRadius: 'var(--radius)',
+                background: 'rgba(192,64,64,0.1)', border: '1px solid var(--red)',
+                fontSize: 12, color: 'var(--red-bright)',
+              }}>
+                ⚠ Last sync error: {lastError}
+              </div>
+            )}
+            <div className="form-group">
+              <label className="form-label">Correct RuneScape Name</label>
+              <input
+                className="form-input"
+                value={rsn}
+                onChange={e => { setRsn(e.target.value); setError(''); }}
+                placeholder="Exact in-game name"
+                autoFocus
+                required
+              />
+              {error
+                ? <div className="text-xs mt-8" style={{ color: 'var(--red-bright)' }}>{error}</div>
+                : <div className="text-xs text-dim mt-8">
+                    Must match the RS3 hiscores exactly. Stats will re-sync automatically.
+                  </div>}
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving || !rsn.trim()}>
+              {saving ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Saving…</> : '✓ Save & Sync'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Member card ───────────────────────────────────────────────────────────────
 
-function MemberCard({ player, active, color, onClick, isMe }) {
+function MemberCard({ player, active, color, onClick, isMe, onEditRsn, canWrite }) {
   const [avatarError, setAvatarError] = useState(false);
   const overall = player.skills?.find(s => s.skill_name === 'Overall');
-  const borderColor = active ? color : isMe ? 'var(--gold)' : 'var(--border)';
+  const hasSyncError = !!player.sync_error;
+  const borderColor = active ? color : hasSyncError ? 'var(--red-bright)' : isMe ? 'var(--gold)' : 'var(--border)';
   const avatarUrl = `https://secure.runescape.com/m=avatar-rs/${encodeURIComponent(player.rsn)}/chat.png`;
 
   return (
     <div onClick={onClick} style={{
-      cursor: 'pointer', width: 140,
+      cursor: 'pointer', width: 140, position: 'relative',
       padding: '14px 16px',
       background: active ? 'var(--bg-panel)' : 'var(--bg-panel-alt)',
       border: `2px solid ${borderColor}`,
       borderRadius: 'var(--radius-lg)',
-      boxShadow: isMe && !active ? `0 0 10px ${color}33` : undefined,
+      boxShadow: hasSyncError ? '0 0 8px rgba(192,64,64,0.3)' : isMe && !active ? `0 0 10px ${color}33` : undefined,
       transition: 'border-color 0.15s, background 0.15s',
       userSelect: 'none',
       flexShrink: 0,
     }}>
+      {/* Sync error badge */}
+      {hasSyncError && (
+        <div
+          title={`Sync error: ${player.sync_error}\nClick ✎ to correct the RSN`}
+          style={{
+            position: 'absolute', top: 6, right: 6,
+            fontSize: 12, lineHeight: 1,
+            color: 'var(--red-bright)',
+          }}>⚠</div>
+      )}
+
       <div style={{
         width: 40, height: 40, borderRadius: '50%', background: color,
         overflow: 'hidden', marginBottom: 10, flexShrink: 0,
@@ -162,7 +249,9 @@ function MemberCard({ player, active, color, onClick, isMe }) {
       </div>
       {overall
         ? <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Cmb {player.combat_level ?? '?'} · Lvl {overall.level}</div>
-        : <div style={{ fontSize: 11, color: 'var(--red-bright)' }}>Not synced</div>}
+        : <div style={{ fontSize: 11, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)' }}>
+            {hasSyncError ? 'Sync failed' : 'Not synced'}
+          </div>}
       {isMe && (
         <div style={{
           display: 'inline-block', marginTop: 5,
@@ -170,6 +259,20 @@ function MemberCard({ player, active, color, onClick, isMe }) {
           background: 'var(--gold)', color: '#111',
           borderRadius: 4, padding: '1px 5px',
         }}>YOU</div>
+      )}
+
+      {/* Edit RSN button — always visible when there's a sync error, otherwise on hover */}
+      {canWrite && onEditRsn && (hasSyncError || active) && (
+        <button
+          title="Edit RSN"
+          onClick={e => { e.stopPropagation(); onEditRsn(player); }}
+          style={{
+            position: 'absolute', bottom: 6, right: 6,
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 13, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)',
+            padding: '2px 4px', borderRadius: 4,
+            lineHeight: 1,
+          }}>✎</button>
       )}
     </div>
   );
@@ -499,6 +602,20 @@ function GoalItem({ goal, players, onCycle, onDelete, onUpdateCount, onVault, ca
               {expanded ? '▲' : '▼'}
             </button>
           )}
+          {/* Wiki icon — always visible for quest goals */}
+          {goalType === 'quest' && details?.questName && (
+            <a
+              href={`https://runescape.wiki/w/${details.questName.replace(/ /g, '_')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`${details.questName} on RS Wiki`}
+              onClick={e => e.stopPropagation()}
+              style={{
+                fontSize: 12, padding: '2px 5px', borderRadius: 6,
+                background: 'transparent', border: '1px solid var(--border)',
+                color: 'var(--text-dim)', textDecoration: 'none', lineHeight: 1.4,
+              }}>📖</a>
+          )}
           <button onClick={() => onCycle(goal)} style={{
             fontSize: 10, padding: '2px 7px', borderRadius: 10, cursor: 'pointer',
             background: 'transparent', border: `1px solid ${STATUS_COLORS[goal.status] || 'var(--border)'}`,
@@ -733,10 +850,15 @@ function ActivityFeed({ players, filteredPlayerId }) {
 
 // ── Right panel: Goals + Activity ─────────────────────────────────────────────
 
-function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onToast, canWrite }) {
+function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onToast, canWrite, myRsn }) {
   const [view, setView] = useState('both');
   const [showModal, setShowModal] = useState(false);
   const [prefill, setPrefill] = useState({});
+
+  // Resolve "me" — the player whose RSN matches what the user set as their character
+  const myPlayerId = myRsn
+    ? (players.find(p => p.rsn.toLowerCase() === myRsn.toLowerCase())?.id ?? null)
+    : null;
 
   const filtered = filteredPlayerId
     ? goals.filter(g => g.owner_id === filteredPlayerId || g.type === 'group')
@@ -795,7 +917,7 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
         </div>
         <div style={{ flex: 1 }} />
         {(view === 'goals' || view === 'both') && (canWrite
-          ? <button className="btn btn-primary btn-sm" onClick={() => { setPrefill({}); setShowModal(true); }}>+ Add Goal</button>
+          ? <button className="btn btn-primary btn-sm" onClick={() => { setPrefill(myPlayerId ? { owner_id: myPlayerId } : {}); setShowModal(true); }}>+ Add Goal</button>
           : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>🔒 Claim to add</span>
         )}
       </div>
@@ -849,6 +971,7 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
 export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn, pendingRequests = [], onGoToRequests }) {
   const [selectedId, setSelectedId] = useState(null);
   const [weeklyMode, setWeeklyMode] = useState(false);
+  const [editRsnPlayer, setEditRsnPlayer] = useState(null); // player being RSN-edited
   const selectedPlayer = players.find(p => p.id === selectedId) ?? null;
 
   const groupTotals = useMemo(() => {
@@ -913,6 +1036,8 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
               color={MEMBER_COLORS[i % MEMBER_COLORS.length]}
               onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
               isMe={!!myRsn && p.rsn.toLowerCase() === myRsn.toLowerCase()}
+              canWrite={canWrite}
+              onEditRsn={setEditRsnPlayer}
             />
           ))}
         </div>
@@ -999,6 +1124,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
               onRefresh={onRefresh}
               onToast={onToast}
               canWrite={canWrite}
+              myRsn={myRsn}
             />
           </div>
         </div>
@@ -1010,6 +1136,16 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
           <div className="panel-header"><span className="panel-title">Notes</span></div>
           <div className="panel-body text-dim" style={{ fontSize: 13 }}>{group.notes}</div>
         </div>
+      )}
+
+      {/* Edit RSN modal */}
+      {editRsnPlayer && (
+        <EditRsnModal
+          player={editRsnPlayer}
+          onClose={() => setEditRsnPlayer(null)}
+          onSaved={() => { setEditRsnPlayer(null); onRefresh(); }}
+          onToast={onToast}
+        />
       )}
     </div>
   );

@@ -4,14 +4,16 @@ import { api } from '../api/client';
 export default function AddPlayerModal({ groupId, onClose, onAdded, onToast }) {
   const [rsn, setRsn] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!rsn.trim()) return;
     setSaving(true);
+    setError('');
     try {
       const player = await api.addPlayer({ rsn: rsn.trim(), group_id: groupId });
-      // Immediately try to sync hiscores
+      // Immediately try to sync hiscores (data already validated, this just stores it)
       try {
         await api.syncPlayer(player.id);
       } catch {
@@ -21,7 +23,7 @@ export default function AddPlayerModal({ groupId, onClose, onAdded, onToast }) {
       onAdded();
       onClose();
     } catch (err) {
-      onToast(err.message, 'error');
+      setError(err.message);
     } finally {
       setSaving(false);
     }
@@ -41,20 +43,25 @@ export default function AddPlayerModal({ groupId, onClose, onAdded, onToast }) {
               <input
                 className="form-input"
                 value={rsn}
-                onChange={e => setRsn(e.target.value)}
+                onChange={e => { setRsn(e.target.value); setError(''); }}
                 placeholder="Exact in-game name"
                 autoFocus
                 required
               />
-              <div className="text-xs text-dim mt-8">
-                Must match the name on the RS3 hiscores exactly. Hiscores will be fetched automatically.
-              </div>
+              {error
+                ? <div className="text-xs mt-8" style={{ color: 'var(--red-bright)' }}>{error}</div>
+                : <div className="text-xs text-dim mt-8">
+                    Must match the name on the RS3 hiscores exactly. The name will be verified before adding.
+                  </div>
+              }
             </div>
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving || !rsn.trim()}>
-              {saving ? <><span className="spinner" style={{width:12,height:12}}/> Adding…</> : '➕ Add Player'}
+              {saving
+                ? <><span className="spinner" style={{width:12,height:12}}/> Verifying…</>
+                : '➕ Add Player'}
             </button>
           </div>
         </form>

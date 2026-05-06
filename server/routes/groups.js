@@ -220,7 +220,7 @@ router.get('/lookup', async (req, res) => {
 
     return res.json({
       found: false,
-      error: `Group not found on RS3 hiscores. Verify: name is exact, type is ${type}, size is ${size}. Run /api/groups/lookup-debug to inspect the raw response.`,
+      error: `No group data found in the RS3 hiscores page for "${name.trim()}" (${type}, ${size} members).`,
     });
   } catch (err) {
     res.json({ found: false, error: `Lookup failed: ${err.message}` });
