@@ -12,4 +12,6 @@ export default defineConfig({
       },
     },
   },
+  // Serve index.html for all routes (SPA) so /admin works on hard refresh
+  appType: 'spa',
 });

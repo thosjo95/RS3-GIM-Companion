@@ -1,9 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../api/client';
 import {
   STYLES, EQUIPMENT_SLOTS, GEAR_SUGGESTIONS,
   canWear, getMissingReqs, getBestAndNext, levelToXp,
 } from '../data/gearSuggestions';
+
+// ── Item icon hook — fetches /api/rs3/items once and builds name→icon_url map ──
+// Returns a Map<string, string> (item name → wiki icon URL).
+// Falls back gracefully: if an item has no DB record, the img just fails silently.
+function useItemIconMap() {
+  const [iconMap, setIconMap] = useState(new Map());
+  useEffect(() => {
+    api.getRs3Items().then(items => {
+      const m = new Map();
+      for (const it of items) if (it.icon_url) m.set(it.name, it.icon_url);
+      setIconMap(m);
+    }).catch(() => {});
+  }, []);
+  return iconMap;
+}
+
+// Small component: shows a 24×24 RS3 item icon from the wiki, falls back to nothing
+function ItemIcon({ name, iconMap, size = 24, style: extraStyle = {} }) {
+  const [failed, setFailed] = useState(false);
+  const src = iconMap?.get(name);
+  if (!src || failed) return null;
+  return (
+    <img
+      src={src}
+      alt={name}
+      width={size}
+      height={size}
+      onError={() => setFailed(true)}
+      style={{ imageRendering: 'crisp-edges', flexShrink: 0, ...extraStyle }}
+    />
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -127,22 +159,22 @@ function StyleTab({ styleDef, active, onClick }) {
 
 // ── Slot icon with RS3 wiki image + emoji fallback ────────────────────────────
 
-function SlotIcon({ slotDef, size = 26 }) {
+function SlotIcon({ slotDef, size = 26, style: extraStyle = {} }) {
   const [imgFailed, setImgFailed] = React.useState(false);
   const src = `https://runescape.wiki/images/${slotDef.wikiImg}`;
 
   if (imgFailed || !slotDef.wikiImg) {
-    return <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{slotDef.icon}</span>;
+    return <span style={{ fontSize: Math.round(size * 0.7), lineHeight: 1, flexShrink: 0, ...extraStyle }}>{slotDef.icon}</span>;
   }
   return (
     <img src={src} alt={slotDef.label} width={size} height={size}
       onError={() => setImgFailed(true)}
-      style={{ flexShrink: 0, imageRendering: 'crisp-edges' }} />
+      style={{ flexShrink: 0, imageRendering: 'crisp-edges', ...extraStyle }} />
   );
 }
 
 // slot entry: { name: string, confirmed: boolean } or ''
-function SlotButton({ slotDef, entry, active, canWrite, onClick, styleColor }) {
+function SlotButton({ slotDef, entry, active, canWrite, onClick, styleColor, iconMap }) {
   const name      = entry?.name ?? '';
   const confirmed = !!entry?.confirmed;
   const filled    = !!name;
@@ -178,7 +210,11 @@ function SlotButton({ slotDef, entry, active, canWrite, onClick, styleColor }) {
         textAlign: 'center', overflow: 'hidden',
         position: 'relative',
       }}>
-      <SlotIcon slotDef={slotDef} />
+      {/* Show item icon when filled, otherwise show slot placeholder icon */}
+      {filled && iconMap?.get(name)
+        ? <ItemIcon name={name} iconMap={iconMap} size={32} />
+        : <SlotIcon slotDef={slotDef} />
+      }
 
       <span style={{
         fontSize: 9, fontWeight: filled ? 600 : 400,
@@ -385,7 +421,7 @@ function LockedItemRow({ item, skillLevels, styleColor, addingGoal, onAddGoal })
 
 // ── Item picker panel ─────────────────────────────────────────────────────────
 
-function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, playerId, onToast }) {
+function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, playerId, onToast, iconMap }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -460,6 +496,8 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
             playerId={playerId}
             onToast={onToast}
             onSelect={() => onSelect(item.name)}
+            iconMap={iconMap}
+            slotDef={slotDef}
           />
         ))}
 
@@ -479,7 +517,7 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
   );
 }
 
-function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleColor, groupId, playerId, onToast, onSelect }) {
+function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleColor, groupId, playerId, onToast, onSelect, iconMap, slotDef }) {
   const [addingGoal, setAddingGoal] = useState(false);
   const wearable = canWear(item, skillLevels);
   const missing  = getMissingReqs(item, skillLevels);
@@ -517,9 +555,11 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
         transition: 'background 0.1s',
       }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 11, minWidth: 16 }}>
-          {wearable ? (isCurrent ? (currentConfirmed ? '✅' : '📋') : '✅') : '🔒'}
-        </span>
+        {/* Item icon from DB, fallback to the slot's generic placeholder icon */}
+        {iconMap?.get(item.name)
+          ? <ItemIcon name={item.name} iconMap={iconMap} size={20} style={{ opacity: wearable ? 1 : 0.4 }} />
+          : <SlotIcon slotDef={slotDef} size={16} style={{ opacity: wearable ? 0.55 : 0.3, flexShrink: 0 }} />
+        }
         <span style={{
           fontSize: 12, flex: 1,
           color: isCurrent ? styleColor : wearable ? 'var(--text-bright)' : 'var(--text-dim)',
@@ -528,6 +568,7 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
         }}>
           {item.name}
         </span>
+        {!wearable && <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>🔒</span>}
       </div>
 
       {!wearable && (
@@ -571,9 +612,21 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
 // ── Main GearLoadouts component ───────────────────────────────────────────────
 
 export default function GearLoadouts({ players, groupId, canWrite, onToast, myRsn, onEquipmentChanged }) {
-  // Default-select the logged-in player's character if available
-  const myPlayer = myRsn ? players.find(p => p.rsn === myRsn) : null;
+  // Item icon map loaded once from /api/rs3/items
+  const iconMap = useItemIconMap();
+
+  // Resolve logged-in player — normalise both sides so NBSP / case differences never break the lookup
+  const _normMyRsn = (myRsn || '').replace(/\s/g, ' ').trim().toLowerCase();
+  const myPlayer = _normMyRsn ? players.find(p => (p.rsn || '').replace(/\s/g, ' ').trim().toLowerCase() === _normMyRsn) : null;
   const [selectedPlayerId, setSelectedPlayerId] = useState(myPlayer?.id ?? players[0]?.id ?? null);
+
+  // When myRsn loads from localStorage (starts as '' then becomes e.g. 'degree C'), auto-switch to the right player
+  useEffect(() => {
+    if (myPlayer?.id && selectedPlayerId !== myPlayer.id) {
+      setSelectedPlayerId(myPlayer.id);
+    }
+  }, [myPlayer?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [style, setStyle]       = useState('melee');
   // loadout: { [slot]: { name: string, confirmed: boolean } }
   const [loadout, setLoadout]   = useState({});
@@ -587,9 +640,13 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
   const skillLevels    = buildSkillLevels(selectedPlayer);
 
-  // Only allow editing if: group is unlocked AND the selected player is the logged-in player
-  // If myRsn is null/undefined (not logged in), fall back to canWrite for all
-  const canEditCurrentPlayer = canWrite && (myRsn == null || selectedPlayer?.rsn === myRsn);
+  // Normalise an RSN string: collapse unicode whitespace (NBSP etc.) to regular space, then trim+lowercase.
+  const normRsn = s => (s || '').replace(/\s/g, ' ').trim().toLowerCase();
+
+  // Only allow editing if: group is unlocked AND the selected player is the logged-in player.
+  // normRsn() handles empty string, null/undefined, case differences, and NBSP/unicode-space variants.
+  const isMyPlayer = !normRsn(myRsn) || normRsn(selectedPlayer?.rsn) === normRsn(myRsn);
+  const canEditCurrentPlayer = canWrite && isMyPlayer;
 
   // Load loadout whenever player or style changes
   useEffect(() => {
@@ -706,14 +763,37 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
       )}
 
       {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <select
-          className="form-select"
-          value={selectedPlayerId ?? ''}
-          onChange={e => { setSelectedPlayerId(Number(e.target.value)); setActiveSlot(null); }}
-          style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', width: 'auto', minWidth: 140 }}>
-          {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
-        </select>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+
+        {/* Player chips — click to switch whose loadout you're viewing */}
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+          {players.map(p => {
+            const active = p.id === selectedPlayerId;
+            const isMe   = normRsn(p.rsn) === normRsn(myRsn);
+            return (
+              <button
+                key={p.id}
+                onClick={() => { setSelectedPlayerId(p.id); setActiveSlot(null); }}
+                title={isMe ? 'Your character' : `View ${p.rsn}'s loadout`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 11px', borderRadius: 'var(--radius-lg)',
+                  background: active ? 'rgba(200,168,75,0.18)' : 'var(--bg-panel-alt)',
+                  border: `1px solid ${active ? 'rgba(200,168,75,0.7)' : 'var(--border)'}`,
+                  color: active ? 'var(--gold)' : 'var(--text-dim)',
+                  cursor: active ? 'default' : 'pointer',
+                  fontSize: 12, fontWeight: active ? 700 : 400,
+                  transition: 'all 0.12s',
+                }}>
+                {/* Person icon — signals these are clickable "people" */}
+                <span style={{ fontSize: 11, opacity: active ? 1 : 0.6 }}>👤</span>
+                <span style={{ color: active ? 'var(--text-bright)' : 'var(--text)' }}>{p.rsn}</span>
+                {/* "you" badge on your own player */}
+                {isMe && <span style={{ fontSize: 9, color: active ? 'var(--gold)' : 'var(--text-dim)', opacity: 0.8 }}>you</span>}
+              </button>
+            );
+          })}
+        </div>
 
         <div className="flex gap-4 tab-bar-scroll" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
           {STYLES.map(s => (
@@ -750,7 +830,10 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /></div>
       ) : (
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <div style={{
+          display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start',
+          justifyContent: isMyPlayer ? 'flex-start' : 'center',
+        }}>
 
           {/* Equipment grid */}
           <div style={{
@@ -770,13 +853,14 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
                   canWrite={canEditCurrentPlayer}
                   onClick={() => setActiveSlot(activeSlot === slotDef.slot ? null : slotDef.slot)}
                   styleColor={activeStyle.color}
+                  iconMap={iconMap}
                 />
               );
             })}
           </div>
 
-          {/* Right panel: item picker or recommendations */}
-          {activeSlot ? (
+          {/* Right panel — only shown when viewing your own player */}
+          {isMyPlayer && (activeSlot ? (
             <ItemPicker
               slotDef={EQUIPMENT_SLOTS.find(s => s.slot === activeSlot)}
               currentEntry={loadout[activeSlot] ?? null}
@@ -789,6 +873,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
               groupId={groupId}
               playerId={selectedPlayerId}
               onToast={onToast}
+              iconMap={iconMap}
             />
           ) : (
             <RecommendationsPanel
@@ -805,20 +890,16 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
               playerId={selectedPlayerId}
               onToast={onToast}
             />
-          )}
+          ))}
         </div>
       )}
 
-      {!canEditCurrentPlayer && (
-        <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-dim)' }}>
-          {!canWrite
-            ? '🔒 Unlock the group to set gear — slots are visible to all members'
-            : myRsn && selectedPlayer?.rsn !== myRsn
-              ? `🔒 View only — switch to your character (${myRsn}) to edit gear`
-              : '🔒 Unlock the group to set gear'
-          }
+      {/* Bottom message — shown when group is locked (own player) or browsing another player */}
+      {(!canEditCurrentPlayer && canWrite === false) || !isMyPlayer ? (
+        <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-dim)', textAlign: isMyPlayer ? 'left' : 'center' }}>
+          🔒 Unlock the group to set gear — slots are visible to all members
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

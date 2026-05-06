@@ -779,9 +779,15 @@ export default function App() {
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
 
+  // Normalise an RSN: collapse any unicode whitespace (NBSP etc.) to regular space and trim
+  function normalizeRsn(rsn) {
+    return (rsn || '').replace(/\s/g, ' ').trim();
+  }
+
   function setMyRsn(rsn) {
-    setMyRsnState(rsn);
-    if (activeGroupId) localStorage.setItem(`myRsn_${activeGroupId}`, rsn || '');
+    const clean = normalizeRsn(rsn);
+    setMyRsnState(clean);
+    if (activeGroupId) localStorage.setItem(`myRsn_${activeGroupId}`, clean);
   }
 
   function pinGroup(id) {
@@ -884,7 +890,7 @@ export default function App() {
     if (activeGroupId) {
       localStorage.setItem('activeGroupId', activeGroupId);
       loadGroup(activeGroupId);
-      setMyRsnState(localStorage.getItem(`myRsn_${activeGroupId}`) || '');
+      setMyRsnState((localStorage.getItem(`myRsn_${activeGroupId}`) || '').replace(/\s/g, ' ').trim());
     }
   }, [activeGroupId]);
 

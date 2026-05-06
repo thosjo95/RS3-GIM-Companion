@@ -717,15 +717,18 @@ function ItemGoalForm({ players, form, set }) {
 // ── Main Modal ────────────────────────────────────────────────────────────────
 
 const GOAL_TYPES = [
-  { id: 'level', label: '📈 Level Goal', desc: 'Target a skill level for a player' },
-  { id: 'quest', label: '📜 Quest Goal', desc: 'Track a quest with all its requirements' },
-  { id: 'item',  label: '📦 Item Goal',  desc: 'Resource target with material breakdown' },
-  { id: 'custom', label: '✏️ Custom',    desc: 'Anything else' },
+  { id: 'quest_series',   label: '📜 Quest',              desc: 'Track a quest with all its requirements' },
+  { id: 'skill_unlock',   label: '📈 Skill Unlock',       desc: 'Target a skill level for a player' },
+  { id: 'important_item', label: '📦 Key Item',            desc: 'Boss drop, rare reward or key gear piece' },
+  { id: 'item_request',   label: '🎁 Item Request',        desc: 'Dungeoneering, Archaeology, special rewards' },
+  { id: 'diary',          label: '📋 Achievement Diary',   desc: 'Diary completion or task set milestone' },
+  { id: 'boss_kill',      label: '⚔️ Boss Kill',           desc: 'Combat milestone or boss completion goal' },
 ];
 
 // Normalize RSN — collapses non-breaking spaces and other Unicode variants before comparing
 function normRsn(s) {
-  return (s || '').replace(/[  �\s]+/g, ' ').trim().toLowerCase();
+  // Collapse ALL unicode whitespace variants (NBSP U+00A0, thin-space, etc.) to a plain space
+  return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
 }
 
 export default function GoalModal({ players, onClose, onSaved, prefill = {}, onToast, myRsn = '' }) {
@@ -735,7 +738,15 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
     return players.find(p => normRsn(p.rsn) === normRsn(myRsn))?.id ?? null;
   }, [players, myRsn]);
 
-  const [goalType, setGoalType] = useState(prefill.category === 'quest' ? 'quest' : prefill.category === 'item' ? 'item' : prefill.skill ? 'level' : 'custom');
+  const [goalType, setGoalType] = useState(
+    prefill.category === 'quest'        ? 'quest_series'   :
+    prefill.skill                       ? 'skill_unlock'   :
+    prefill.category === 'item_request' ? 'item_request'   :
+    prefill.category === 'diary'        ? 'diary'          :
+    prefill.category === 'boss'         ? 'boss_kill'      :
+    prefill.category === 'item'         ? 'important_item' :
+    'important_item'
+  );
   const [form, setForm] = useState({
     type: prefill.type || 'personal',
     owner_id: prefill.owner_id ?? myPlayerId ?? players[0]?.id ?? '',
@@ -753,16 +764,13 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
 
   // Auto-generate title based on goal type
   const autoTitle = useMemo(() => {
-    if (goalType === 'level' && form.skill && form.target_value) {
+    if (goalType === 'skill_unlock' && form.skill && form.target_value) {
       const owner = players.find(p => p.id === Number(form.owner_id));
       return `${owner?.rsn ?? 'Player'}: ${form.skill} ${form.target_value}`;
     }
-    if (goalType === 'quest' && form.details?.questName) {
+    if (goalType === 'quest_series' && form.details?.questName) {
       const owner = players.find(p => p.id === Number(form.owner_id));
       return `${owner?.rsn ?? 'Player'}: ${form.details.questName}`;
-    }
-    if (goalType === 'item' && form.details?.itemName && form.details?.quantity) {
-      return `${fmtNum(form.details.quantity)}x ${form.details.itemName}`;
     }
     return '';
   }, [goalType, form.skill, form.target_value, form.details, form.owner_id, players]);
@@ -784,10 +792,10 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
     let category = 'other';
     let details_json = null;
 
-    if (goalType === 'level') {
+    if (goalType === 'skill_unlock') {
       category = 'skill';
       details_json = { goalType: 'level' };
-    } else if (goalType === 'quest') {
+    } else if (goalType === 'quest_series') {
       category = 'quest';
       const quest = QUESTS[form.details?.questName];
       details_json = {
@@ -796,26 +804,21 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
         requirements: quest?.requirements ?? {},
         unlocks: quest?.unlocks ?? [],
       };
-    } else if (goalType === 'item') {
-
+    } else if (goalType === 'important_item') {
       category = 'item';
-      const recipe = RECIPES[form.details?.itemName];
-      details_json = {
-        goalType: 'item',
-        itemName: form.details?.itemName,
-        quantity: Number(form.details?.quantity) || 1,
-        recipe: recipe ? expandRecipe(form.details.itemName, Number(form.details.quantity) || 1) : null,
-        method: recipe?.method ?? null,
-        skill: recipe?.skill ?? null,
-        skillLevel: recipe?.skillLevel ?? null,
-      };
+    } else if (goalType === 'item_request') {
+      category = 'item_request';
+    } else if (goalType === 'diary') {
+      category = 'diary';
+    } else if (goalType === 'boss_kill') {
+      category = 'boss';
     }
 
     // Auto-determine initial status for quest goals:
     // If the owner doesn't meet skill requirements OR the quest has prerequisite quests,
     // start as 'blocked' so it's clear work is needed first.
     let initialStatus = undefined; // undefined = server default ('not_started')
-    if (goalType === 'quest' && form.details?.questName && form.type === 'personal') {
+    if (goalType === 'quest_series' && form.details?.questName && form.type === 'personal') {
       const quest = QUESTS[form.details.questName];
       const owner = players.find(p => p.id === Number(form.owner_id));
       if (quest && owner) {
@@ -837,8 +840,8 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
         title: title,
         description: form.description?.trim() || null,
         category,
-        skill: goalType === 'level' ? form.skill : null,
-        target_value: goalType === 'level' ? Number(form.target_value) || null : (goalType === 'item' ? Number(form.details?.quantity) || null : null),
+        skill: goalType === 'skill_unlock' ? form.skill : null,
+        target_value: goalType === 'skill_unlock' ? Number(form.target_value) || null : null,
         priority: form.priority,
         details_json,
         ...(initialStatus ? { status: initialStatus } : {}),
@@ -914,7 +917,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
             </div>
 
             {/* Group contributors */}
-            {form.type === 'group' && players.length > 0 && goalType !== 'level' && goalType !== 'quest' && (
+            {form.type === 'group' && players.length > 0 && goalType !== 'skill_unlock' && goalType !== 'quest_series' && (
               <div className="form-group">
                 <label className="form-label">Contributors (optional)</label>
                 <div className="flex gap-6" style={{ flexWrap: 'wrap' }}>
@@ -930,30 +933,17 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
             )}
 
             {/* Type-specific form */}
-            {goalType === 'level' && <LevelGoalForm players={players} form={form} set={set} />}
-            {goalType === 'quest' && <QuestGoalForm players={players} form={form} set={set} onSaved={onSaved} onToast={onToast} />}
-            {goalType === 'item'  && <ItemGoalForm players={players} form={form} set={set} />}
+            {goalType === 'skill_unlock' && <LevelGoalForm players={players} form={form} set={set} />}
+            {goalType === 'quest_series' && <QuestGoalForm players={players} form={form} set={set} onSaved={onSaved} onToast={onToast} />}
 
-            {goalType === 'custom' && (
-              <>
-                {form.type === 'personal' && (
-                  <div className="form-group">
-                    <label className="form-label">Owner</label>
-                    <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
-                      {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
-                    </select>
-                  </div>
-                )}
-                <div className="form-group">
-                  <label className="form-label">Category</label>
-                  <select className="form-select" value={form.skill || 'other'}
-                    onChange={e => set('skill', e.target.value === 'other' ? '' : e.target.value)}>
-                    <option value="other">Other</option>
-                    <option value="boss">Boss</option>
-                    <option value="diary">Diary / Task Set</option>
-                  </select>
-                </div>
-              </>
+            {/* Simple owner selector for item/diary/boss types */}
+            {['important_item', 'item_request', 'diary', 'boss_kill'].includes(goalType) && form.type === 'personal' && (
+              <div className="form-group">
+                <label className="form-label">Player</label>
+                <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
+                  {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
+                </select>
+              </div>
             )}
 
             <hr className="divider" />

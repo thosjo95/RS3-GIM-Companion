@@ -4,6 +4,12 @@ let _groupId = null;
 let _groupPassword = null;
 let _onUnauthorized = null;
 
+function toQS(params) {
+  const entries = Object.entries(params).filter(([, v]) => v != null && v !== '');
+  if (!entries.length) return '';
+  return '?' + entries.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+}
+
 export function setGroupContext(groupId, password) {
   _groupId = groupId ? String(groupId) : null;
   _groupPassword = password || null;
@@ -93,4 +99,15 @@ export const api = {
   getGroupEquipment: (groupId)                            => request(`/equipment/group/${groupId}`),
   saveEquipmentSlot: (playerId, style, slot, itemName, confirmed = false) =>
     request(`/equipment/${playerId}/${style}/${encodeURIComponent(slot)}`, { method: 'PUT', body: { item_name: itemName, confirmed } }),
+
+  // RS3 reference data
+  getRs3Bosses:          (params = {}) => request(`/rs3/bosses${toQS(params)}`),
+  getRs3Quests:          (params = {}) => request(`/rs3/quests${toQS(params)}`),
+  getRs3Items:           (params = {}) => request(`/rs3/items${toQS(params)}`),
+  getRs3GearItems:       (params = {}) => request(`/rs3/gear/items${toQS(params)}`),
+  getRs3GearPaths:       (params = {}) => request(`/rs3/gear/paths${toQS(params)}`),
+  getRs3Milestones:      (params = {}) => request(`/rs3/milestones${toQS(params)}`),
+  getRs3Slayer:          (params = {}) => request(`/rs3/slayer${toQS(params)}`),
+  getRs3SkillMilestones: (params = {}) => request(`/rs3/skill-milestones${toQS(params)}`),
+  getRs3Suggestions:     (params = {}) => request(`/rs3/suggestions${toQS(params)}`),
 };

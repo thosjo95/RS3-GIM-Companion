@@ -17,6 +17,8 @@ app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/boss-kills',   require('./routes/bossKills'));
 app.use('/api/group-notes',  require('./routes/groupNotes'));
 app.use('/api/equipment',    require('./routes/equipment'));
+app.use('/api/rs3',          require('./routes/rs3data'));
+app.use('/api/admin',        require('./routes/admin'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 

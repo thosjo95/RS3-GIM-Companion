@@ -1,26 +1,19 @@
 import React from 'react';
-import DropsTab from './DropsTab';
 import VaultTab from './VaultTab';
 import OverviewTab from './OverviewTab';
-import TipsTab from './TipsTab';
 import LeaderboardsTab from './LeaderboardsTab';
 import AchievementsTab from './AchievementsTab';
 import GoalsTab from './GoalsTab';
-
-const IS_DEV = typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
   const players = group?.players || [];
 
   const TABS = [
     { id: 'overview',      label: '📊 Overview' },
+    { id: 'goals',         label: '🎯 Goals' },
     { id: 'vault',         label: '🏆 Group Vault' },
-    { id: 'drops',         label: '💎 Items & Drops' },
-    { id: 'tips',          label: '💡 Tips & Milestones' },
     { id: 'achievements',  label: '📋 Achievement Diaries' },
     { id: 'leaderboards',  label: '🏅 Leaderboards' },
-    ...(IS_DEV ? [{ id: 'goals', label: '🎯 Goals ✦dev' }] : []),
   ];
 
   return (
@@ -43,6 +36,9 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
         ))}
       </div>
 
+      {/* Tab content — universal top gap */}
+      <div style={{ paddingTop: 12 }}>
+
       {/* OVERVIEW TAB */}
       {activeTab === 'overview' && (
         <OverviewTab
@@ -55,18 +51,22 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
           canWrite={canWrite}
           myRsn={myRsn}
           pendingRequests={pendingRequests ?? []}
-          onGoToRequests={() => onTabChange('drops')}
+          onGoToRequests={() => onTabChange('goals')}
         />
       )}
 
-      {/* DROPS TAB */}
-      {activeTab === 'drops' && (
-        players.length > 0
-          ? <DropsTab players={players} groupId={groupId} onToast={onToast} canWrite={canWrite} />
-          : <div className="empty-state">
-              <div className="icon">💎</div>
-              <p>Add players first to track drops and requests.</p>
-            </div>
+      {/* GOALS TAB */}
+      {activeTab === 'goals' && (
+        <GoalsTab
+          group={group}
+          goals={goals}
+          players={players}
+          groupId={groupId}
+          onRefresh={onRefresh}
+          onToast={onToast}
+          canWrite={canWrite}
+          myRsn={myRsn}
+        />
       )}
 
       {/* VAULT TAB */}
@@ -94,31 +94,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
         <LeaderboardsTab players={players} groupId={groupId} />
       )}
 
-      {/* TIPS TAB */}
-      {activeTab === 'tips' && (
-        <TipsTab
-          players={players}
-          groupId={groupId}
-          onRefresh={onRefresh}
-          onToast={onToast}
-          canWrite={canWrite}
-        />
-      )}
-
-      {/* GOALS TAB — dev only */}
-      {IS_DEV && activeTab === 'goals' && (
-        <GoalsTab
-          group={group}
-          goals={goals}
-          players={players}
-          groupId={groupId}
-          onRefresh={onRefresh}
-          onToast={onToast}
-          canWrite={canWrite}
-          myRsn={myRsn}
-        />
-      )}
-
+      </div>{/* end tab content */}
     </div>
   );
 }

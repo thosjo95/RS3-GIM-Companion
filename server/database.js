@@ -180,8 +180,117 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_player_activities_ts ON player_activities(player_id, ts DESC);
 `);
 
+// ── RS3 reference tables ──────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS rs3_bosses (
+    id               TEXT PRIMARY KEY,
+    name             TEXT NOT NULL,
+    difficulty       TEXT NOT NULL DEFAULT 'mid',
+    min_combat_level INTEGER DEFAULT 0,
+    requirements     TEXT NOT NULL DEFAULT '{}',
+    drops            TEXT NOT NULL DEFAULT '[]',
+    wiki_url         TEXT,
+    last_verified_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rs3_quests (
+    id               TEXT PRIMARY KEY,
+    name             TEXT NOT NULL,
+    series           TEXT,
+    members_only     INTEGER DEFAULT 1,
+    quest_points     INTEGER DEFAULT 1,
+    requirements     TEXT NOT NULL DEFAULT '{}',
+    rewards          TEXT NOT NULL DEFAULT '[]',
+    wiki_url         TEXT,
+    last_verified_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rs3_gear_items (
+    id                  TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    tier                INTEGER DEFAULT 0,
+    style               TEXT NOT NULL DEFAULT 'all',
+    slot                TEXT NOT NULL DEFAULT 'weapon',
+    is_power_armour     INTEGER DEFAULT 1,
+    stats               TEXT NOT NULL DEFAULT '{}',
+    acquisition_source  TEXT DEFAULT 'ge',
+    source_id           TEXT,
+    wiki_url            TEXT,
+    last_verified_at    TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rs3_gear_paths (
+    id             TEXT PRIMARY KEY,
+    style          TEXT NOT NULL,
+    slot           TEXT NOT NULL,
+    progression    TEXT NOT NULL DEFAULT '[]',
+    last_updated_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rs3_milestone_items (
+    id               TEXT PRIMARY KEY,
+    name             TEXT NOT NULL,
+    category         TEXT NOT NULL DEFAULT 'pvm_drop',
+    tier_impact      TEXT NOT NULL DEFAULT 'medium',
+    why_important    TEXT,
+    how_to_obtain    TEXT,
+    gim_notes        TEXT,
+    wiki_url         TEXT,
+    last_verified_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rs3_slayer_creatures (
+    id               TEXT PRIMARY KEY,
+    name             TEXT NOT NULL,
+    slayer_level_req INTEGER DEFAULT 1,
+    combat_level     INTEGER DEFAULT 1,
+    location         TEXT,
+    notable_drops    TEXT NOT NULL DEFAULT '[]',
+    is_boss          INTEGER DEFAULT 0,
+    wiki_url         TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rs3_skill_milestones (
+    id          TEXT PRIMARY KEY,
+    skill       TEXT NOT NULL,
+    level       INTEGER NOT NULL,
+    description TEXT,
+    unlock_type TEXT DEFAULT 'ability',
+    wiki_url    TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rs3_data_submissions (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    table_name     TEXT NOT NULL,
+    action         TEXT NOT NULL DEFAULT 'create',
+    record_id      TEXT,
+    proposed_data  TEXT NOT NULL DEFAULT '{}',
+    current_data   TEXT,
+    submitted_by   TEXT NOT NULL DEFAULT 'system',
+    submission_note TEXT,
+    status         TEXT NOT NULL DEFAULT 'pending',
+    review_note    TEXT,
+    reviewed_by    TEXT,
+    submitted_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at    DATETIME
+  );
+
+  CREATE TABLE IF NOT EXISTS admin_users (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    username     TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    salt         TEXT NOT NULL,
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login   DATETIME
+  );
+`);
+
 // Migrations — safe to run on existing DBs
 try { db.exec('ALTER TABLE goals ADD COLUMN details_json TEXT'); } catch {}
+// rs3_gear_items: icon + requirements columns
+try { db.exec('ALTER TABLE rs3_gear_items ADD COLUMN icon_url TEXT'); } catch {}
+try { db.exec("ALTER TABLE rs3_gear_items ADD COLUMN requirements_json TEXT DEFAULT '{}'"); } catch {}
+try { db.exec('ALTER TABLE rs3_gear_items ADD COLUMN quest TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_size INTEGER DEFAULT 5'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN password_hash TEXT'); } catch {}
@@ -197,6 +306,8 @@ try { db.exec("ALTER TABLE groups ADD COLUMN webhook_events TEXT DEFAULT '[\"lev
 // Per-player sync error tracking — set on failure, cleared on success
 try { db.exec('ALTER TABLE players ADD COLUMN sync_error TEXT'); } catch {}
 try { db.exec('ALTER TABLE players ADD COLUMN sync_error_at DATETIME'); } catch {}
+// rs3_gear_items: mark items that cannot be traded (Fire Cape, Kiln Cape, etc.)
+try { db.exec('ALTER TABLE rs3_gear_items ADD COLUMN untradeable INTEGER DEFAULT 0'); } catch {}
 
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {

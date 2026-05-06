@@ -1,6 +1,36 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { api } from '../api/client';
 import GearLoadouts from './GearLoadouts';
+import GroupNotesOverlay from './GroupNotesOverlay';
+
+// ── Item icon map — name → wiki icon URL ──────────────────────────────────────
+function useItemIconMap() {
+  const [iconMap, setIconMap] = useState(new Map());
+  useEffect(() => {
+    api.getRs3Items().then(items => {
+      const m = new Map();
+      for (const it of items) if (it.icon_url) m.set(it.name, it.icon_url);
+      setIconMap(m);
+    }).catch(() => {});
+  }, []);
+  return iconMap;
+}
+
+function ItemIcon({ name, iconMap, size = 32 }) {
+  const [failed, setFailed] = useState(false);
+  const src = iconMap?.get(name);
+  if (!src || failed) return null;
+  return (
+    <img src={src} alt={name} width={size} height={size}
+      onError={() => setFailed(true)}
+      style={{ imageRendering: 'crisp-edges', flexShrink: 0, display: 'block' }} />
+  );
+}
+
+// Collapse ALL unicode whitespace variants (NBSP U+00A0, thin-space, etc.) to a plain space
+function normRsn(s) {
+  return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
+}
 
 function fmtGp(n) {
   if (!n) return null;
@@ -15,143 +45,16 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-function fmtDateTime(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
 
-// ── Floating Notes overlay ────────────────────────────────────────────────────
+// ── Vault item tile (compact, click to expand) ────────────────────────────────
 
-function NotesOverlay({ groupId, canWrite, onToast, onClose }) {
-  const [content, setContent]    = useState('');
-  const [savedContent, setSaved] = useState('');
-  const [updatedAt, setUpdatedAt] = useState(null);
-  const [status, setStatus]      = useState('idle');
-  const debounceRef = useRef(null);
+function ItemTile({ item, groupEquipment, iconMap }) {
+  const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    api.getGroupNotes(groupId)
-      .then(data => { setContent(data.content || ''); setSaved(data.content || ''); setUpdatedAt(data.updated_at); })
-      .catch(() => {});
-    function onKey(e) { if (e.key === 'Escape') onClose(); }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [groupId]);
-
-  function handleChange(e) {
-    const val = e.target.value;
-    setContent(val);
-    setStatus('idle');
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => saveNotes(val), 1500);
-  }
-
-  async function saveNotes(text) {
-    if (!canWrite) return;
-    setStatus('saving');
-    try {
-      await api.saveGroupNotes(groupId, text);
-      setSaved(text);
-      setUpdatedAt(new Date().toISOString());
-      setStatus('saved');
-      setTimeout(() => setStatus('idle'), 2500);
-    } catch (err) {
-      setStatus('error');
-      onToast?.(err.message, 'error');
-    }
-  }
-
-  const isDirty = content !== savedContent;
-
-  return (
-    <div
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 8888,
-        background: 'rgba(0,0,0,0.55)',
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end',
-      }}>
-      <div style={{
-        width: 420, maxWidth: '90vw', height: '100%',
-        background: 'var(--bg-panel)',
-        borderLeft: '1px solid var(--border)',
-        display: 'flex', flexDirection: 'column',
-        boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0,
-        }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-bright)' }}>📝 Group Notes</div>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
-              Shared pinboard — strategies, loot rules, session notes
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              fontSize: 11,
-              color: status === 'saved' ? 'var(--green-bright)' : status === 'saving' ? 'var(--text-dim)' : status === 'error' ? 'var(--red)' : 'var(--text-dim)',
-            }}>
-              {status === 'saving' && '…saving'}
-              {status === 'saved'  && '✓ Saved'}
-              {status === 'error'  && '✗ Error'}
-              {status === 'idle' && updatedAt && !isDirty && fmtDateTime(updatedAt)}
-            </span>
-            <button
-              onClick={onClose}
-              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4 }}>
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <textarea
-          autoFocus
-          value={content}
-          onChange={canWrite ? handleChange : undefined}
-          readOnly={!canWrite}
-          placeholder={canWrite
-            ? 'Write anything — strategy notes, loot rules, session plans, links…'
-            : 'No notes yet. Unlock the group to add notes.'}
-          style={{
-            flex: 1, padding: '16px 20px',
-            background: 'transparent', border: 'none', outline: 'none',
-            color: 'var(--text-bright)', fontSize: 13, lineHeight: 1.7,
-            resize: 'none', fontFamily: 'inherit',
-            cursor: canWrite ? 'text' : 'default',
-          }}
-        />
-
-        <div style={{
-          padding: '10px 20px', borderTop: '1px solid var(--border)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-            {content.length} chars{!canWrite && ' · 🔒 Unlock to edit'}
-          </span>
-          {canWrite && isDirty && (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => { clearTimeout(debounceRef.current); saveNotes(content); }}
-              style={{ fontSize: 11 }}>
-              Save now
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Drop item card ────────────────────────────────────────────────────────────
-
-function ItemCard({ item, groupEquipment, myRsn, canWrite, onToast }) {
   const isDupe   = item.players.length > 1;
   const totalQty = item.drops.reduce((a, d) => a + (d.quantity || 1), 0);
-  const maxValue = Math.max(...item.drops.map(d => d.value_gp || 0));
 
-  // Find confirmed gear entries that match this item name (case-insensitive)
+  // All confirmed wearers for this item (de-duped by rsn)
   const wornBy = useMemo(() => {
     if (!groupEquipment?.length) return [];
     const nameLower = item.name.toLowerCase();
@@ -160,162 +63,185 @@ function ItemCard({ item, groupEquipment, myRsn, canWrite, onToast }) {
     return matches.filter(e => { if (seen.has(e.rsn)) return false; seen.add(e.rsn); return true; });
   }, [groupEquipment, item.name]);
 
-  const alreadyAssigned = useMemo(() => {
-    if (!myRsn || !groupEquipment?.length) return false;
-    const nameLower = item.name.toLowerCase();
-    return groupEquipment.some(e => e.rsn === myRsn && e.item_name.toLowerCase() === nameLower && e.confirmed);
-  }, [groupEquipment, myRsn, item.name]);
+  const isWorn = wornBy.length > 0;
 
-  const myDropped = item.drops.some(d => d.rsn === myRsn);
+  // Border colour: worn = green, dupe = gold, default = grey
+  const borderColor = isWorn ? '#4caf5055' : isDupe ? 'var(--gold-dark)' : 'var(--border)';
 
   return (
-    <div style={{
-      background: 'var(--bg-panel)',
-      border: `1px solid ${wornBy.length ? '#4caf5055' : isDupe ? 'var(--gold-dark)' : 'var(--border)'}`,
-      borderRadius: 'var(--radius-lg)',
-      padding: '12px 14px',
-      display: 'flex', flexDirection: 'column', gap: 8,
-      position: 'relative', transition: 'border-color 0.15s',
-    }}>
-      {wornBy.length > 0 ? (
-        <div style={{
-          position: 'absolute', top: -1, right: 10,
-          background: '#4caf50', color: '#fff',
-          fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
-          padding: '2px 6px', borderRadius: '0 0 5px 5px',
-        }}>WORN</div>
-      ) : isDupe ? (
-        <div style={{
-          position: 'absolute', top: -1, right: 10,
-          background: 'var(--gold-dark)', color: 'var(--bg-root)',
-          fontSize: 9, fontWeight: 800, letterSpacing: '0.5px',
-          padding: '2px 6px', borderRadius: '0 0 5px 5px',
-        }}>DUPE</div>
-      ) : null}
-
-      <div>
-        <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)', marginBottom: 1 }}>
-          💎 {item.name}
-          {totalQty > 1 && <span style={{ color: 'var(--text-dim)', fontWeight: 400, fontSize: 11 }}> ×{totalQty}</span>}
-        </div>
-        {item.boss && <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>🗡️ {item.boss}</div>}
-        {maxValue > 0 && <div style={{ fontSize: 11, color: 'var(--green-bright)' }}>{fmtGp(maxValue)}</div>}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {item.drops.map((drop, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '4px 8px', background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', fontSize: 11,
-          }}>
-            <span style={{ color: 'var(--gold)', fontWeight: 600 }}>👤 {drop.rsn}</span>
-            <div style={{ display: 'flex', gap: 6, color: 'var(--text-dim)' }}>
-              {drop.quantity > 1 && <span>×{drop.quantity}</span>}
-              <span>{fmtDate(drop.dropped_at)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Worn-by status row */}
-      {wornBy.length > 0 && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 2,
-          padding: '5px 8px',
-          background: 'rgba(76,175,80,0.08)',
-          border: '1px solid #4caf5033',
+    <>
+      {/* Tile */}
+      <div
+        onClick={() => setExpanded(e => !e)}
+        title={item.name}
+        style={{
+          width: 80, flexShrink: 0,
+          background: expanded ? 'var(--bg-panel-alt)' : 'var(--bg-panel)',
+          border: `1px solid ${borderColor}`,
           borderRadius: 'var(--radius)',
+          padding: '7px 5px 6px',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: 4,
+          cursor: 'pointer',
+          userSelect: 'none',
+          position: 'relative',
+          transition: 'background 0.1s, border-color 0.1s',
         }}>
-          {wornBy.map(e => (
-            <div key={e.rsn + e.slot} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10 }}>
-              <span style={{ color: '#4caf50', fontWeight: 700 }}>✅ Worn by {e.rsn}</span>
-              <span style={{ color: 'var(--text-dim)' }}>· {e.slot}</span>
-              {e.updated_at && <span style={{ color: 'var(--text-dim)' }}>· {fmtDate(e.updated_at)}</span>}
-            </div>
-          ))}
+
+        {/* Dupe count badge — top-left corner */}
+        {isDupe && (
+          <div style={{
+            position: 'absolute', top: -5, left: -5,
+            background: 'var(--gold-dark)', color: 'var(--bg-root)',
+            fontSize: 9, fontWeight: 800,
+            width: 18, height: 18, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid var(--bg-panel)',
+            zIndex: 1,
+          }}>×{item.players.length}</div>
+        )}
+
+        {/* WORN dot — top-right */}
+        {isWorn && (
+          <div style={{
+            position: 'absolute', top: -4, right: -4,
+            width: 10, height: 10, borderRadius: '50%',
+            background: '#4caf50',
+            border: '1.5px solid var(--bg-panel)',
+            zIndex: 1,
+          }} title="Currently worn" />
+        )}
+
+        {/* Icon */}
+        <div style={{
+          width: 38, height: 38,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--bg-root)', borderRadius: 'var(--radius)',
+          border: `1px solid ${isWorn ? '#4caf5033' : 'var(--border)'}`,
+        }}>
+          {iconMap?.get(item.name)
+            ? <ItemIcon name={item.name} iconMap={iconMap} size={30} />
+            : <span style={{ fontSize: 20 }}>💎</span>
+          }
+        </div>
+
+        {/* Item name */}
+        <span style={{
+          fontSize: 9, fontWeight: 600, color: 'var(--text-bright)',
+          textAlign: 'center', lineHeight: 1.25,
+          overflow: 'hidden', display: '-webkit-box',
+          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          wordBreak: 'break-word', maxWidth: '100%',
+        }}>
+          {item.name}
+          {totalQty > 1 && <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}> ×{totalQty}</span>}
+        </span>
+
+        {/* Owner(s) or Free */}
+        {isWorn ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%' }}>
+            {wornBy.map((e, i) => (
+              <span key={i} style={{
+                fontSize: 8, color: '#4caf50', fontWeight: 700,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%',
+              }}>{e.rsn}</span>
+            ))}
+          </div>
+        ) : item.players.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%' }}>
+            {item.players.map((rsn, i) => (
+              <span key={i} style={{
+                fontSize: 8, color: 'var(--gold)', fontWeight: 600,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', textAlign: 'center',
+              }}>{rsn}</span>
+            ))}
+            <span style={{ fontSize: 7.5, color: 'var(--text-dim)', fontStyle: 'italic', marginTop: 1 }}>Free</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Expand panel — full-width row break inside the flex-wrap grid */}
+      {expanded && (
+        <div style={{ flexBasis: '100%', width: '100%' }}>
+          <ExpandedTileDetail item={item} wornBy={wornBy} isWorn={isWorn} isDupe={isDupe} onClose={() => setExpanded(false)} />
+        </div>
+      )}
+    </>
+  );
+}
+
+// Full-width detail panel that appears below the tile row when expanded
+function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        width: '100%',
+        background: 'var(--bg-panel-alt)',
+        border: `1px solid ${isWorn ? '#4caf5055' : isDupe ? 'var(--gold-dark)' : 'var(--border)'}`,
+        borderRadius: 'var(--radius)',
+        padding: '10px 12px',
+        display: 'flex', flexDirection: 'column', gap: 6,
+        cursor: 'pointer',
+      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+        <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-bright)' }}>{item.name}</span>
+        <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>click to close ▲</span>
+      </div>
+
+      {/* Per-drop rows */}
+      {item.drops.map((drop, i) => (
+        <div key={i} style={{
+          display: 'flex', flexWrap: 'wrap', gap: '3px 10px',
+          padding: '5px 8px', background: 'var(--bg-panel)',
+          borderRadius: 'var(--radius)', fontSize: 11,
+        }}>
+          <span style={{ color: 'var(--gold)', fontWeight: 600 }}>👤 {drop.rsn}</span>
+          {drop.dropped_at && (
+            <span style={{ color: 'var(--text-dim)' }}>
+              Acquired {new Date(drop.dropped_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </span>
+          )}
+          {drop.boss_name && <span style={{ color: 'var(--text-dim)' }}>· {drop.boss_name}</span>}
+          {drop.quantity > 1 && <span style={{ color: 'var(--text-dim)' }}>· ×{drop.quantity}</span>}
+          {drop.value_gp > 0 && <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>{fmtGp(drop.value_gp)}</span>}
+          {drop.notes && drop.notes !== 'Auto-added from goal completion' && (
+            <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>"{drop.notes}"</span>
+          )}
+        </div>
+      ))}
+
+      {/* Dupe callout */}
+      {isDupe && (
+        <div style={{
+          padding: '4px 8px', background: 'rgba(200,168,75,0.08)',
+          border: '1px solid var(--gold-dark)', borderRadius: 'var(--radius)', fontSize: 11,
+          color: 'var(--gold)',
+        }}>
+          ⚠️ {item.players.length} members have this item — potential duplicate
         </div>
       )}
 
-      {/* Assign hint — only if logged-in player dropped it but hasn't assigned yet */}
-      {canWrite && myRsn && myDropped && !alreadyAssigned && (
-        <button
-          onClick={() => onToast?.(`To assign "${item.name}" to your gear, use the ⚔️ Gear Loadouts panel on the right.`, 'info')}
-          style={{
-            padding: '5px 10px', fontSize: 11, fontWeight: 600,
-            background: 'rgba(200,168,75,0.12)',
-            border: '1px solid var(--gold-dark)',
-            borderRadius: 'var(--radius)',
-            color: 'var(--gold)', cursor: 'pointer',
-            alignSelf: 'flex-start',
-          }}>
-          ⚔️ Assign to my gear
-        </button>
+      {/* Worn slots */}
+      {isWorn ? wornBy.map(e => (
+        <div key={e.rsn + e.slot} style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '5px 8px', background: 'rgba(76,175,80,0.07)',
+          border: '1px solid #4caf5033', borderRadius: 'var(--radius)', fontSize: 11,
+        }}>
+          <span style={{ color: '#4caf50', fontWeight: 700 }}>⚔️ Worn by {e.rsn}</span>
+          <span style={{ color: 'var(--text-dim)' }}>· {e.slot} slot</span>
+          {e.updated_at && <span style={{ color: 'var(--text-dim)' }}>· since {fmtDate(e.updated_at)}</span>}
+        </div>
+      )) : (
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: '3px 4px' }}>
+          🔓 Not currently worn by anyone — free to claim
+        </div>
       )}
     </div>
   );
 }
 
-// ── Worn Equipment section ────────────────────────────────────────────────────
-// Shows confirmed gear even if the item was never logged as a drop
-
-function WornEquipmentSection({ groupEquipment }) {
-  // Group by item name → list of { rsn, slot, updated_at }
-  const byItem = useMemo(() => {
-    const confirmed = groupEquipment.filter(e => e.confirmed && e.item_name?.trim());
-    const map = {};
-    for (const e of confirmed) {
-      const key = e.item_name.toLowerCase();
-      if (!map[key]) map[key] = { name: e.item_name, wearers: [] };
-      map[key].wearers.push({ rsn: e.rsn, slot: e.slot, updated_at: e.updated_at });
-    }
-    // Sort by most recently updated
-    return Object.values(map).sort((a, b) => {
-      const aMax = Math.max(...a.wearers.map(w => w.updated_at || '').map(d => d ? new Date(d).getTime() : 0));
-      const bMax = Math.max(...b.wearers.map(w => w.updated_at || '').map(d => d ? new Date(d).getTime() : 0));
-      return bMax - aMax;
-    });
-  }, [groupEquipment]);
-
-  if (!byItem.length) return null;
-
-  return (
-    <div style={{ marginTop: 8 }}>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: 'var(--text-dim)',
-        textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8,
-      }}>
-        ⚔️ Confirmed Worn Gear <span style={{ fontWeight: 400 }}>({byItem.length})</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        {byItem.map(item => (
-          <div key={item.name.toLowerCase()} style={{
-            background: 'var(--bg-panel)',
-            border: '1px solid #4caf5033',
-            borderLeft: '3px solid #4caf50',
-            borderRadius: 'var(--radius)',
-            padding: '8px 12px',
-            display: 'flex', flexDirection: 'column', gap: 4,
-          }}>
-            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-bright)' }}>
-              ✅ {item.name}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {item.wearers.map((w, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
-                  <span style={{ color: 'var(--gold)', fontWeight: 600 }}>👤 {w.rsn}</span>
-                  <span style={{ color: 'var(--text-dim)' }}>· {w.slot}</span>
-                  {w.updated_at && (
-                    <span style={{ color: 'var(--text-dim)' }}>· claimed {fmtDate(w.updated_at)}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Vaulted goal card ─────────────────────────────────────────────────────────
 
@@ -363,12 +289,13 @@ function AchievementCard({ goal }) {
 
 // ── Group Vault panel ─────────────────────────────────────────────────────────
 
-function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEquipment, onReloadDrops }) {
+function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEquipment, onReloadDrops, iconMap }) {
   const [drops, setDrops]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [sortBy, setSortBy]         = useState('recent');
   const [filterBoss, setFilterBoss] = useState('all');
   const [filterPlayer, setFilterPlayer] = useState('all');
+  const [searchQuery, setSearchQuery]   = useState('');
 
   async function loadDrops() {
     setLoading(true);
@@ -385,6 +312,8 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
     let filtered = drops;
     if (filterBoss   !== 'all') filtered = filtered.filter(d => d.boss_name === filterBoss);
     if (filterPlayer !== 'all') filtered = filtered.filter(d => d.rsn === filterPlayer);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) filtered = filtered.filter(d => d.item_name?.toLowerCase().includes(q));
 
     const byItem = {};
     for (const drop of filtered) {
@@ -439,21 +368,79 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
         ))}
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <select className="form-select" style={{ width: 'auto', fontSize: 11 }} value={filterPlayer} onChange={e => setFilterPlayer(e.target.value)}>
-          <option value="all">All members</option>
-          {players.map(p => <option key={p.id} value={p.rsn}>{p.rsn}</option>)}
-        </select>
+      {/* Search */}
+      <div style={{ position: 'relative' }}>
+        <input
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="🔍 Search items…"
+          style={{
+            width: '100%', padding: '6px 30px 6px 10px',
+            background: 'var(--bg-root)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)', color: 'var(--text-bright)',
+            fontSize: 12, outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            style={{
+              position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-dim)', fontSize: 14, lineHeight: 1, padding: 2,
+            }}>✕</button>
+        )}
+      </div>
+
+      {/* Player chips filter */}
+      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* "All" chip */}
+        <button
+          onClick={() => setFilterPlayer('all')}
+          style={{
+            padding: '4px 10px', borderRadius: 'var(--radius-lg)',
+            background: filterPlayer === 'all' ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel-alt)',
+            border: `1px solid ${filterPlayer === 'all' ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
+            color: filterPlayer === 'all' ? 'var(--gold)' : 'var(--text-dim)',
+            cursor: 'pointer', fontSize: 11, fontWeight: filterPlayer === 'all' ? 600 : 400,
+            transition: 'all 0.12s',
+          }}>All members</button>
+
+        {players.map(p => {
+          const active = filterPlayer === p.rsn;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setFilterPlayer(active ? 'all' : p.rsn)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '4px 10px', borderRadius: 'var(--radius-lg)',
+                background: active ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel-alt)',
+                border: `1px solid ${active ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
+                color: active ? 'var(--gold)' : 'var(--text-dim)',
+                cursor: 'pointer', fontSize: 11, fontWeight: active ? 600 : 400,
+                transition: 'all 0.12s',
+              }}>
+              <span style={{ fontSize: 10, opacity: 0.7 }}>👤</span>
+              <span style={{ color: active ? 'var(--text-bright)' : 'var(--text)' }}>{p.rsn}</span>
+            </button>
+          );
+        })}
+
+        {/* Boss filter — only shown when bosses exist */}
         {bosses.length > 0 && (
-          <select className="form-select" style={{ width: 'auto', fontSize: 11 }} value={filterBoss} onChange={e => setFilterBoss(e.target.value)}>
+          <select
+            className="form-select"
+            style={{ width: 'auto', fontSize: 11, marginLeft: 4 }}
+            value={filterBoss}
+            onChange={e => setFilterBoss(e.target.value)}>
             <option value="all">All bosses</option>
             {bosses.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         )}
       </div>
 
-      {/* Drop list */}
+      {/* Vault tile grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 32 }}><span className="spinner" /></div>
       ) : vaultItems.length === 0 ? (
@@ -462,22 +449,17 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
           <p style={{ fontSize: 12 }}>No drops logged yet. Add them in the Items &amp; Drops tab.</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
           {vaultItems.map(item => (
-            <ItemCard
+            <ItemTile
               key={item.name.toLowerCase()}
               item={item}
               groupEquipment={groupEquipment}
-              myRsn={myRsn}
-              canWrite={canWrite}
-              onToast={onToast}
+              iconMap={iconMap}
             />
           ))}
         </div>
       )}
-
-      {/* Worn Equipment — confirmed gear, always visible even without drops */}
-      <WornEquipmentSection groupEquipment={groupEquipment} />
 
       {/* Vaulted achievements */}
       {achievements.length > 0 && (
@@ -495,8 +477,8 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
 // ── Root VaultTab ─────────────────────────────────────────────────────────────
 
 export default function VaultTab({ players, groupId, goals = [], onToast, canWrite, myRsn }) {
-  const [notesOpen, setNotesOpen]         = useState(false);
-  const [groupEquipment, setGroupEquip]   = useState([]);
+  const iconMap        = useItemIconMap();
+  const [groupEquipment, setGroupEquip] = useState([]);
 
   // Central fetch for group equipment — shared by VaultPanel and GearLoadouts
   const loadEquipment = useCallback(async () => {
@@ -508,32 +490,6 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
 
   return (
     <div style={{ position: 'relative' }}>
-
-      {/* Floating Notes button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button
-          onClick={() => setNotesOpen(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px', fontSize: 12, fontWeight: 600,
-            background: notesOpen ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            color: 'var(--gold)', cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}>
-          📝 Group Notes
-        </button>
-      </div>
-
-      {notesOpen && (
-        <NotesOverlay
-          groupId={groupId}
-          canWrite={canWrite}
-          onToast={onToast}
-          onClose={() => setNotesOpen(false)}
-        />
-      )}
 
       {/* Side-by-side: Vault (left) + Gear (right) */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -556,6 +512,7 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
                 canWrite={canWrite}
                 groupEquipment={groupEquipment}
                 onReloadDrops={loadEquipment}
+                iconMap={iconMap}
               />
             : (
               <div className="empty-state">

@@ -5,19 +5,20 @@ import { api } from '../api/client';
 
 // Base key must match the server-side diaryRegionKey() in activitySync.js
 const DIARY_REGIONS = [
-  { base: 'diary_lumbridge_draynor', label: 'Lumbridge & Draynor' },
-  { base: 'diary_varrock',           label: 'Varrock'             },
-  { base: 'diary_falador',           label: 'Falador'             },
-  { base: 'diary_karamja',           label: 'Karamja'             },
-  { base: 'diary_ardougne',          label: 'Ardougne'            },
-  { base: 'diary_seers_village',     label: "Seers' Village"      },
-  { base: 'diary_fremennik',         label: 'Fremennik'           },
-  { base: 'diary_morytania',         label: 'Morytania'           },
-  { base: 'diary_desert',            label: 'Desert'              },
-  { base: 'diary_daemonheim',        label: 'Daemonheim'          },
-  { base: 'diary_tirannwn',          label: 'Tirannwn'            },
-  { base: 'diary_wilderness',        label: 'Wilderness'          },
-  { base: 'diary_underworld',        label: 'Underworld'          },
+  { base: 'diary_lumbridge_draynor',   label: 'Lumbridge & Draynor'  },
+  { base: 'diary_varrock',             label: 'Varrock'              },
+  { base: 'diary_falador',             label: 'Falador'              },
+  { base: 'diary_karamja',             label: 'Karamja'              },
+  { base: 'diary_ardougne',            label: 'Ardougne'             },
+  { base: 'diary_seers_village',       label: "Seers' Village"       },
+  { base: 'diary_fremennik',           label: 'Fremennik'            },
+  { base: 'diary_morytania',           label: 'Morytania'            },
+  { base: 'diary_desert',              label: 'Desert'               },
+  { base: 'diary_western_provinces',   label: 'Western Provinces'    },
+  { base: 'diary_daemonheim',          label: 'Daemonheim'           },
+  { base: 'diary_tirannwn',            label: 'Tirannwn'             },
+  { base: 'diary_wilderness',          label: 'Wilderness'           },
+  { base: 'diary_underworld',          label: 'Underworld'           },
 ];
 
 const TIERS = [
@@ -117,9 +118,15 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
   }
 
   return (
-    <div>
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 16,
+      background: 'var(--bg-panel)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '16px 18px',
+    }}>
       {/* Header */}
-      <div className="flex align-center justify-between mb-16" style={{ flexWrap: 'wrap', gap: 8 }}>
+      <div className="flex align-center justify-between" style={{ flexWrap: 'wrap', gap: 8 }}>
         <div>
           <div className="section-title" style={{ marginBottom: 4 }}>📋 Achievement Diaries</div>
           <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
@@ -139,7 +146,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
       </div>
 
       {/* Progress summary row */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {summary.map(p => (
           <div key={p.id} style={{
             flex: '1 1 140px', padding: '10px 14px',

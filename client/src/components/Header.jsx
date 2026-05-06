@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
+import GroupNotesOverlay from './GroupNotesOverlay';
 
 export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick, onWebhookClick, onMenuToggle, mobileMenuOpen }) {
   const [syncing, setSyncing] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   async function syncAll() {
     if (!group?.id) return;
@@ -115,6 +117,22 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
           </button>
         )}
 
+        {/* Group Notes — always accessible when a group is loaded */}
+        {group && (
+          <button
+            className="sync-btn"
+            onClick={() => setNotesOpen(n => !n)}
+            title="Group Notes"
+            style={{
+              background: notesOpen ? 'rgba(200,168,75,0.15)' : 'transparent',
+              border: `1px solid ${notesOpen ? 'var(--gold)' : 'var(--border)'}`,
+              color: 'var(--gold)',
+              padding: '0 10px', fontSize: 18,
+            }}>
+            📝
+          </button>
+        )}
+
         {/* Notifications / webhook settings — only when unlocked */}
         {group && isClaimed && isUnlocked && onWebhookClick && (
           <button
@@ -182,6 +200,14 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
           </button>
         )}
       </div>
+      {notesOpen && group?.id && (
+        <GroupNotesOverlay
+          groupId={group.id}
+          canWrite={isUnlocked}
+          onToast={onToast}
+          onClose={() => setNotesOpen(false)}
+        />
+      )}
     </header>
   );
 }

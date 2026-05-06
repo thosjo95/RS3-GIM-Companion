@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { api } from '../api/client';
 import GoalModal from './GoalModal';
+import {
+  GOAL_SUGGESTIONS, CATEGORIES, STAGES,
+  detectStage, checkPlayerReadiness,
+} from '../data/goalSuggestions';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -17,14 +21,48 @@ const CAT_ICONS  = { skill: '📈', quest: '📜', item: '📦', boss: '⚔️',
 const PRI_COLORS = { high: 'var(--red-bright)', medium: 'var(--gold)', low: 'var(--green-bright)' };
 const PRI_DOT    = { high: '🔴', medium: '🟠', low: '🟢' };
 
+// Map goalSuggestions category ids → existing CAT_ICONS keys for active-goal cards
+const SUGG_CAT_ICON = {
+  quest_series:   '📜',
+  skill_unlock:   '📈',
+  important_item: '⚔️',
+  diary:          '📋',
+  boss_kill:      '💀',
+};
+
 const SKILL_ICONS = {
-  Attack:'https://runescape.wiki/images/Attack.png', Defence:'https://runescape.wiki/images/Defence.png',
-  Strength:'https://runescape.wiki/images/Strength.png', Constitution:'https://runescape.wiki/images/Constitution.png',
-  Ranged:'https://runescape.wiki/images/Ranged.png', Prayer:'https://runescape.wiki/images/Prayer.png',
-  Magic:'https://runescape.wiki/images/Magic.png', Herblore:'https://runescape.wiki/images/Herblore.png',
-  Agility:'https://runescape.wiki/images/Agility.png', Slayer:'https://runescape.wiki/images/Slayer.png',
-  Farming:'https://runescape.wiki/images/Farming.png', Invention:'https://runescape.wiki/images/Invention.png',
-  Dungeoneering:'https://runescape.wiki/images/Dungeoneering.png', Necromancy:'https://runescape.wiki/images/Necromancy.png',
+  // Combat
+  Attack:        'https://runescape.wiki/images/Attack.png',
+  Strength:      'https://runescape.wiki/images/Strength.png',
+  Defence:       'https://runescape.wiki/images/Defence.png',
+  Constitution:  'https://runescape.wiki/images/Constitution.png',
+  Ranged:        'https://runescape.wiki/images/Ranged.png',
+  Prayer:        'https://runescape.wiki/images/Prayer.png',
+  Magic:         'https://runescape.wiki/images/Magic.png',
+  Necromancy:    'https://runescape.wiki/images/Necromancy.png',
+  // Gathering
+  Mining:        'https://runescape.wiki/images/Mining.png',
+  Fishing:       'https://runescape.wiki/images/Fishing.png',
+  Woodcutting:   'https://runescape.wiki/images/Woodcutting.png',
+  Farming:       'https://runescape.wiki/images/Farming.png',
+  Hunter:        'https://runescape.wiki/images/Hunter.png',
+  Divination:    'https://runescape.wiki/images/Divination.png',
+  // Artisan
+  Smithing:      'https://runescape.wiki/images/Smithing.png',
+  Cooking:       'https://runescape.wiki/images/Cooking.png',
+  Crafting:      'https://runescape.wiki/images/Crafting.png',
+  Firemaking:    'https://runescape.wiki/images/Firemaking.png',
+  Fletching:     'https://runescape.wiki/images/Fletching.png',
+  Herblore:      'https://runescape.wiki/images/Herblore.png',
+  Runecrafting:  'https://runescape.wiki/images/Runecrafting.png',
+  Construction:  'https://runescape.wiki/images/Construction.png',
+  // Support
+  Agility:       'https://runescape.wiki/images/Agility.png',
+  Thieving:      'https://runescape.wiki/images/Thieving.png',
+  Slayer:        'https://runescape.wiki/images/Slayer.png',
+  Summoning:     'https://runescape.wiki/images/Summoning.png',
+  Dungeoneering: 'https://runescape.wiki/images/Dungeoneering.png',
+  Invention:     'https://runescape.wiki/images/Invention.png',
 };
 
 // RS3 XP table
@@ -51,16 +89,115 @@ function parseDetails(raw) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-// ── Goal Card (board) ─────────────────────────────────────────────────────────
+function normRsn(s) {
+  // Collapse ALL unicode whitespace variants (NBSP U+00A0, thin-space, etc.) to a plain space
+  return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
+}
+
+// ── Diary suggestion ID → Achievement diary key mapping ───────────────────────
+// Goal suggestion IDs (diary_*) don't always match the achievement keys used in
+// AchievementsTab (diary_lumbridge_draynor_*, diary_seers_village_*, etc.).
+// This map translates the ones that differ so auto-tick and filtering work correctly.
+const DIARY_SUGGESTION_KEY_MAP = {
+  diary_lumbridge_easy:   'diary_lumbridge_draynor_easy',
+  diary_lumbridge_medium: 'diary_lumbridge_draynor_medium',
+  diary_lumbridge_hard:   'diary_lumbridge_draynor_hard',
+  diary_lumbridge_elite:  'diary_lumbridge_draynor_elite',
+  diary_seers_easy:       'diary_seers_village_easy',
+  diary_seers_medium:     'diary_seers_village_medium',
+  diary_seers_hard:       'diary_seers_village_hard',
+  diary_seers_elite:      'diary_seers_village_elite',
+  diary_western_easy:     'diary_western_provinces_easy',
+  diary_western_medium:   'diary_western_provinces_medium',
+  diary_western_hard:     'diary_western_provinces_hard',
+  diary_western_elite:    'diary_western_provinces_elite',
+};
+
+/** Returns the correct achievement diary key for a given suggestion ID. */
+function diaryAchievementKey(suggestionId) {
+  return DIARY_SUGGESTION_KEY_MAP[suggestionId] ?? suggestionId;
+}
+
+// ── Pill / tab style helpers ──────────────────────────────────────────────────
+
+function pillStyle(active, accent) {
+  const color = accent || 'var(--gold)';
+  return {
+    fontSize: 12, padding: '4px 12px', borderRadius: 'var(--radius)',
+    background: active ? color : 'transparent',
+    color: active ? '#111' : 'var(--text-dim)',
+    border: active ? `1px solid ${color}` : '1px solid transparent',
+    cursor: 'pointer', fontWeight: active ? 700 : 400,
+    transition: 'all 0.12s',
+  };
+}
+
+function sectionHeader(title, sub) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
+      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)' }}>{title}</span>
+      {sub && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{sub}</span>}
+    </div>
+  );
+}
+
+// ── Player chips (multi-select) ───────────────────────────────────────────────
+
+function PlayerChips({ players, selected, onToggle }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      {players.map(p => {
+        const active = selected.includes(p.id);
+        return (
+          <button
+            key={p.id}
+            onClick={() => onToggle(p.id)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '5px 10px', borderRadius: 'var(--radius-lg)',
+              background: active ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel-alt)',
+              border: `1px solid ${active ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
+              color: active ? 'var(--gold)' : 'var(--text-dim)',
+              cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400,
+              transition: 'all 0.12s',
+            }}>
+            <span style={{ color: active ? 'var(--text-bright)' : 'var(--text)' }}>{p.rsn}</span>
+            <span style={{ fontSize: 10, opacity: 0.8 }}>
+              Cmb {p.combat_level ?? '?'} · Lvl {p.total_level ?? '?'}
+            </span>
+          </button>
+        );
+      })}
+      {players.length > 1 && (
+        <button
+          onClick={() => {
+            if (selected.length === players.length) {
+              // deselect all → select all (toggle behaviour: all selected = clear selection)
+              onToggle('__none__');
+            } else {
+              onToggle('__all__');
+            }
+          }}
+          style={{
+            padding: '5px 10px', borderRadius: 'var(--radius-lg)',
+            background: 'transparent', border: '1px solid var(--border)',
+            color: 'var(--text-dim)', cursor: 'pointer', fontSize: 11,
+          }}>
+          {selected.length === players.length ? 'Deselect all' : 'Select all'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Active-goal card (board) ──────────────────────────────────────────────────
 
 function GoalCard({ goal, players, onCycle, onDelete, canWrite }) {
-  const [expanded, setExpanded] = useState(false);
   const details  = parseDetails(goal.details_json);
   const owner    = players.find(p => p.id === goal.owner_id);
   const isGroup  = goal.type === 'group';
   const isHot    = goal.priority === 'high' && goal.status === 'blocked';
 
-  // Skill progress bar
   let xpBar = null;
   if (goal.category === 'skill' && goal.skill && goal.target_value && owner) {
     const ownerSkill = owner.skills?.find(s => s.skill_name === goal.skill);
@@ -73,32 +210,24 @@ function GoalCard({ goal, players, onCycle, onDelete, canWrite }) {
   }
 
   const questName = details?.questName;
-  const wikiHref  = questName
-    ? `https://runescape.wiki/w/${questName.replace(/ /g, '_')}`
-    : null;
+  const wikiHref  = questName ? `https://runescape.wiki/w/${questName.replace(/ /g, '_')}` : null;
 
   return (
     <div style={{
       background: 'var(--bg-panel-alt)',
       border: `1px solid ${isHot ? 'rgba(192,64,64,0.5)' : 'var(--border)'}`,
       borderRadius: 'var(--radius-lg)',
-      padding: '10px 12px',
-      marginBottom: 6,
+      padding: '10px 12px', marginBottom: 6,
       boxShadow: isHot ? '0 0 8px rgba(192,64,64,0.2)' : undefined,
-      cursor: 'default',
     }}>
-      {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
         <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{CAT_ICONS[goal.category] ?? '✏️'}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-bright)', lineHeight: 1.3, wordBreak: 'break-word' }}>
-            {goal.title}
-            {isHot && <span style={{ marginLeft: 5, fontSize: 11 }}>🔥</span>}
+            {goal.title}{isHot && <span style={{ marginLeft: 5, fontSize: 11 }}>🔥</span>}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            {isGroup
-              ? <span style={{ color: 'var(--gold)' }}>👥 Group</span>
-              : owner && <span>{owner.rsn}</span>}
+            {isGroup ? <span style={{ color: 'var(--gold)' }}>👥 Group</span> : owner && <span>{owner.rsn}</span>}
             <span>{PRI_DOT[goal.priority]}</span>
             {wikiHref && (
               <a href={wikiHref} target="_blank" rel="noopener noreferrer"
@@ -113,25 +242,20 @@ function GoalCard({ goal, players, onCycle, onDelete, canWrite }) {
         </div>
         {canWrite && (
           <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-            <button
-              onClick={() => onCycle(goal)}
-              title="Advance status"
+            <button onClick={() => onCycle(goal)} title="Advance status"
               style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
-                cursor: 'pointer', fontSize: 10, padding: '2px 5px', color: 'var(--text-dim)' }}>
-              ▶
-            </button>
+                cursor: 'pointer', fontSize: 10, padding: '2px 5px', color: 'var(--text-dim)' }}>▶</button>
             <button
               onClick={() => onDelete(goal.id)}
-              title="Delete goal"
+              title="Remove goal"
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,64,64,0.15)'; e.currentTarget.style.borderColor = 'rgba(192,64,64,0.5)'; e.currentTarget.style.color = 'var(--red-bright)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
               style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
-                cursor: 'pointer', fontSize: 10, padding: '2px 5px', color: 'var(--text-dim)' }}>
-              ✕
-            </button>
+                cursor: 'pointer', fontSize: 11, padding: '2px 6px', color: 'var(--text-dim)',
+                transition: 'all 0.12s' }}>🗑</button>
           </div>
         )}
       </div>
-
-      {/* Skill progress bar */}
       {xpBar && (
         <div style={{ marginTop: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-dim)', marginBottom: 3 }}>
@@ -148,119 +272,11 @@ function GoalCard({ goal, players, onCycle, onDelete, canWrite }) {
           </div>
         </div>
       )}
-
-      {/* Group contributors */}
       {isGroup && goal.contributors?.length > 0 && (
         <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text-dim)' }}>
           {goal.contributors.map(c => c.rsn).join(' · ')}
         </div>
       )}
-    </div>
-  );
-}
-
-// ── Suggestions panel ─────────────────────────────────────────────────────────
-
-function SuggestionsPanel({ groupId, goals, players, onAdded, onToast, canWrite, myRsn }) {
-  const [suggestions, setSuggestions] = useState([]);
-  const [loading, setLoading]         = useState(false);
-  const [adding, setAdding]           = useState({});
-
-  useEffect(() => {
-    if (!groupId) return;
-    setLoading(true);
-    api.getSuggestions(groupId)
-      .then(setSuggestions)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [groupId]);
-
-  // Filter out suggestions that already exist as active goals
-  const activeGoalKeys = useMemo(() => new Set(
-    goals
-      .filter(g => g.status !== 'complete')
-      .map(g => `${g.skill ?? ''}_${g.target_value ?? ''}_${g.title}`)
-  ), [goals]);
-
-  const filtered = suggestions.filter(s => {
-    const key = `${s.skill ?? ''}_${s.target_value ?? ''}_${s.title}`;
-    return !activeGoalKeys.has(key);
-  });
-
-  async function addSuggestion(s) {
-    if (!canWrite) return onToast('Unlock group to add goals', 'error');
-    const key = s.title;
-    setAdding(a => ({ ...a, [key]: true }));
-    try {
-      await api.createGoal({
-        type: s.type || 'group',
-        title: s.title,
-        description: s.description,
-        category: s.category || 'skill',
-        skill: s.skill || null,
-        target_value: s.target_value || null,
-        priority: s.priority || 'medium',
-      });
-      onToast(`Added: ${s.title}`, 'success');
-      onAdded();
-    } catch (err) {
-      if (!err.message?.includes('already exists')) onToast(err.message, 'error');
-    } finally {
-      setAdding(a => ({ ...a, [key]: false }));
-    }
-  }
-
-  if (loading) return (
-    <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12 }}>
-      <span className="spinner" style={{ width: 14, height: 14, marginRight: 6 }} />
-      Loading suggestions…
-    </div>
-  );
-
-  if (filtered.length === 0) return (
-    <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>
-      ✓ No new suggestions — great progress!
-    </div>
-  );
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {filtered.map((s, i) => (
-        <div key={i} style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 12px',
-          background: 'var(--bg-panel-alt)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
-        }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>
-            {s.skill && SKILL_ICONS[s.skill]
-              ? <img src={SKILL_ICONS[s.skill]} alt={s.skill} style={{ width: 20, height: 20 }} />
-              : CAT_ICONS[s.category] ?? '🎯'}
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-bright)' }}>{s.title}</div>
-            {s.description && (
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, lineHeight: 1.4 }}>{s.description}</div>
-            )}
-          </div>
-          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, flexShrink: 0,
-            background: s.priority === 'high' ? 'rgba(192,64,64,0.15)' : 'rgba(200,168,75,0.1)',
-            color: PRI_COLORS[s.priority] ?? 'var(--text-dim)',
-            border: `1px solid ${s.priority === 'high' ? 'rgba(192,64,64,0.3)' : 'var(--border)'}` }}>
-            {s.priority}
-          </span>
-          {canWrite && (
-            <button
-              onClick={() => addSuggestion(s)}
-              disabled={adding[s.title]}
-              className="btn btn-primary btn-sm"
-              style={{ flexShrink: 0 }}>
-              {adding[s.title] ? '…' : '+ Add'}
-            </button>
-          )}
-        </div>
-      ))}
     </div>
   );
 }
@@ -304,22 +320,14 @@ function BoardView({ goals, players, onCycle, onDelete, canWrite }) {
             borderRadius: 'var(--radius-lg)',
             padding: '10px 10px 6px',
           }}>
-            {/* Column header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: col.color }}>
-                {col.icon} {col.label}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text-dim)',
-                background: 'var(--bg-input)', borderRadius: 10, padding: '1px 7px' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: col.color }}>{col.icon} {col.label}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)', background: 'var(--bg-input)', borderRadius: 10, padding: '1px 7px' }}>
                 {colGoals.length}
               </span>
             </div>
-
-            {/* Goal cards */}
             {colGoals.length === 0
-              ? <div style={{ color: 'var(--text-dim)', fontSize: 11, textAlign: 'center', padding: '12px 0', fontStyle: 'italic' }}>
-                  Empty
-                </div>
+              ? <div style={{ color: 'var(--text-dim)', fontSize: 11, textAlign: 'center', padding: '12px 0', fontStyle: 'italic' }}>Empty</div>
               : colGoals.map(g => (
                   <GoalCard key={g.id} goal={g} players={players}
                     onCycle={onCycle} onDelete={onDelete} canWrite={canWrite} />
@@ -340,7 +348,6 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
       No goals match the current filters.
     </div>
   );
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {goals.map(g => {
@@ -348,14 +355,11 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
         const owner     = players.find(p => p.id === g.owner_id);
         const statusCol = STATUS_COLS.find(s => s.id === g.status);
         const questName = details?.questName;
-
         return (
           <div key={g.id} style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            padding: '8px 12px',
-            background: 'var(--bg-panel-alt)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
+            padding: '8px 12px', background: 'var(--bg-panel-alt)',
+            border: '1px solid var(--border)', borderRadius: 'var(--radius)',
           }}>
             <span style={{ fontSize: 14, flexShrink: 0 }}>{CAT_ICONS[g.category] ?? '✏️'}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -388,14 +392,473 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
                 <button onClick={() => onCycle(g)} title="Advance status"
                   style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
                     cursor: 'pointer', fontSize: 10, padding: '2px 6px', color: 'var(--text-dim)' }}>▶</button>
-                <button onClick={() => onDelete(g.id)} title="Delete"
+                <button
+                  onClick={() => onDelete(g.id)}
+                  title="Remove goal"
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,64,64,0.15)'; e.currentTarget.style.borderColor = 'rgba(192,64,64,0.5)'; e.currentTarget.style.color = 'var(--red-bright)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
                   style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
-                    cursor: 'pointer', fontSize: 10, padding: '2px 6px', color: 'var(--text-dim)' }}>✕</button>
+                    cursor: 'pointer', fontSize: 11, padding: '2px 6px', color: 'var(--text-dim)',
+                    transition: 'all 0.12s' }}>🗑</button>
               </div>
             )}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ── Suggestion card ───────────────────────────────────────────────────────────
+
+function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, onDismiss, canWrite, adding }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Per-player readiness
+  const readiness = useMemo(() =>
+    selectedPlayers.map(p => ({
+      player: p,
+      ...checkPlayerReadiness(p, s),
+    })),
+  [selectedPlayers, s]);
+
+  const readyCount = readiness.filter(r => r.ready).length;
+  const total      = readiness.length;
+  const allReady   = total > 0 && readyCount === total;
+  const noneReady  = total > 0 && readyCount === 0;
+
+  const hasSkillReqs = Object.keys(s.requirements?.skills ?? {}).length > 0;
+  const hasQuestReqs = (s.requirements?.quests ?? []).length > 0;
+
+  return (
+    <div style={{
+      background: 'var(--bg-panel-alt)',
+      border: `1px solid ${alreadyAdded ? 'rgba(90,154,80,0.35)' : 'var(--border)'}`,
+      borderRadius: 'var(--radius-lg)',
+      padding: '12px 14px',
+      opacity: alreadyAdded ? 0.6 : 1,
+      transition: 'border-color 0.15s',
+    }}>
+      {/* Top row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>
+          {SUGG_CAT_ICON[s.category] ?? '🎯'}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-bright)' }}>{s.title}</span>
+            {s.targetLevel && (
+              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                background: 'rgba(74,136,184,0.12)', border: '1px solid rgba(74,136,184,0.25)',
+                color: '#6ab0e0' }}>
+                Lv {s.targetLevel}
+              </span>
+            )}
+            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, flexShrink: 0,
+              background: s.priority === 'high' ? 'rgba(192,64,64,0.12)' : s.priority === 'medium' ? 'rgba(200,168,75,0.10)' : 'rgba(90,154,80,0.10)',
+              color: PRI_COLORS[s.priority],
+              border: `1px solid ${s.priority === 'high' ? 'rgba(192,64,64,0.3)' : s.priority === 'medium' ? 'rgba(200,168,75,0.25)' : 'rgba(90,154,80,0.25)'}` }}>
+              {PRI_DOT[s.priority]} {s.priority}
+            </span>
+          </div>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+            {s.description}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+          {s.wikiUrl && (
+            <a href={s.wikiUrl} target="_blank" rel="noopener noreferrer"
+              title="RS Wiki"
+              style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderRadius: 'var(--radius)',
+                background: 'rgba(74,136,184,0.10)', border: '1px solid rgba(74,136,184,0.25)',
+                color: '#6ab0e0', fontSize: 11, textDecoration: 'none', fontWeight: 600 }}>
+              📖
+            </a>
+          )}
+          {alreadyAdded ? (
+            <span style={{ fontSize: 11, color: 'var(--green-bright)', padding: '4px 8px',
+              border: '1px solid rgba(90,154,80,0.35)', borderRadius: 'var(--radius)' }}>
+              ✓ Added
+            </span>
+          ) : canWrite ? (
+            <>
+              <button
+                onClick={() => onAdd(s, 'not_started')}
+                disabled={adding}
+                className="btn btn-primary btn-sm"
+                style={{ flexShrink: 0 }}>
+                {adding ? '…' : '+ Add'}
+              </button>
+              <button
+                onClick={() => onAdd(s, 'complete')}
+                disabled={adding}
+                title="Mark as already completed"
+                style={{
+                  flexShrink: 0, padding: '4px 8px', borderRadius: 'var(--radius)',
+                  background: 'rgba(90,154,80,0.12)', border: '1px solid rgba(90,154,80,0.35)',
+                  color: 'var(--green-bright)', fontSize: 11, cursor: 'pointer', fontWeight: 600,
+                }}>
+                ✓ Done
+              </button>
+            </>
+          ) : null}
+          {/* Dismiss / hide this suggestion */}
+          {!alreadyAdded && onDismiss && (
+            <button
+              onClick={() => onDismiss(s.id)}
+              title="Hide this suggestion"
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--red-bright)'; e.currentTarget.style.borderColor = 'rgba(192,64,64,0.4)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+              style={{
+                flexShrink: 0, padding: '4px 7px', borderRadius: 'var(--radius)',
+                background: 'none', border: '1px solid var(--border)',
+                color: 'var(--text-dim)', fontSize: 11, cursor: 'pointer',
+                transition: 'all 0.12s',
+              }}>
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Readiness row */}
+      {readiness.length > 0 && (
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>Readiness:</span>
+          {readiness.map(({ player, ready, failed }) => (
+            <span
+              key={player.id}
+              title={ready ? `${player.rsn} meets all requirements` : `${player.rsn} missing: ${failed.map(f => `${f.skill} (have ${f.have}, need ${f.need})`).join(', ')}`}
+              style={{
+                fontSize: 10, padding: '2px 7px', borderRadius: 10, cursor: 'default',
+                background: ready ? 'rgba(90,154,80,0.15)' : 'rgba(192,64,64,0.10)',
+                border: `1px solid ${ready ? 'rgba(90,154,80,0.4)' : 'rgba(192,64,64,0.3)'}`,
+                color: ready ? 'var(--green-bright)' : 'var(--red-bright)',
+                fontWeight: 600,
+              }}>
+              {ready ? '✓' : `✗ ${failed.length}`} {player.rsn}
+            </span>
+          ))}
+          {total > 1 && (
+            <span style={{ fontSize: 10, color: allReady ? 'var(--green-bright)' : noneReady ? 'var(--red-bright)' : 'var(--gold)', marginLeft: 2 }}>
+              {readyCount}/{total} ready
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Requirements / unlocks expandable */}
+      {(hasSkillReqs || hasQuestReqs || s.unlocks?.length > 0) && (
+        <div style={{ marginTop: 8 }}>
+          <button
+            onClick={() => setExpanded(e => !e)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: 10, color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            {expanded ? '▾' : '▸'}
+            <span>{expanded ? 'Hide' : 'Show'} details</span>
+          </button>
+          {expanded && (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {hasSkillReqs && (
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600, marginBottom: 4 }}>SKILL REQUIREMENTS</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {Object.entries(s.requirements.skills).map(([skill, level]) => (
+                      <span key={skill} style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        fontSize: 11, padding: '2px 7px', borderRadius: 'var(--radius)',
+                        background: 'var(--bg-input)', border: '1px solid var(--border)',
+                        color: 'var(--text)',
+                      }}>
+                        {SKILL_ICONS[skill] && <img src={SKILL_ICONS[skill]} alt={skill} style={{ width: 12, height: 12 }} />}
+                        {skill} {level}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {hasQuestReqs && (
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600, marginBottom: 4 }}>QUEST REQUIREMENTS</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.6 }}>
+                    {s.requirements.quests.join(' · ')}
+                  </div>
+                </div>
+              )}
+              {s.requirements?.activity && (
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600, marginBottom: 4 }}>ACTIVITY</div>
+                  <span style={{
+                    fontSize: 11, padding: '2px 8px', borderRadius: 'var(--radius)',
+                    background: 'rgba(200,168,75,0.10)', border: '1px solid rgba(200,168,75,0.3)',
+                    color: 'var(--gold)',
+                  }}>🎮 {s.requirements.activity}</span>
+                </div>
+              )}
+              {s.unlocks?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600, marginBottom: 4 }}>UNLOCKS</div>
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    {s.unlocks.map((u, i) => (
+                      <span key={i} style={{
+                        fontSize: 10, padding: '2px 7px', borderRadius: 'var(--radius)',
+                        background: 'rgba(90,154,80,0.10)', border: '1px solid rgba(90,154,80,0.25)',
+                        color: 'var(--green-bright)',
+                      }}>
+                        {u}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Goal Browser ──────────────────────────────────────────────────────────────
+
+const DISMISSED_KEY = 'rs3gim_dismissed_suggestions';
+
+function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom, achievements }) {
+  const autoStage = useMemo(() => detectStage(players), [players]);
+  const [stage,    setStage]    = useState(autoStage);
+  const [category, setCategory] = useState('all');
+  const [selected, setSelected] = useState(() => players.map(p => p.id));
+  const [search,   setSearch]   = useState('');
+  const [showDismissed,        setShowDismissed]        = useState(false);
+  const [showCompletedDiaries, setShowCompletedDiaries] = useState(false);
+
+  // Map: playerId → Set of achieved diary keys
+  const achievedByPlayer = useMemo(() => {
+    const map = {};
+    for (const a of (achievements || [])) {
+      if (a.achieved && a.key?.startsWith('diary_')) {
+        if (!map[a.player_id]) map[a.player_id] = new Set();
+        map[a.player_id].add(a.key);
+      }
+    }
+    return map;
+  }, [achievements]);
+
+  // DB suggestions (boss_kill + important_item) — loaded once on mount
+  const [dbSuggestions, setDbSuggestions] = useState([]);
+  useEffect(() => {
+    api.getRs3Suggestions().then(setDbSuggestions).catch(() => {});
+  }, []);
+
+  // Merged suggestion list: DB overrides boss_kill + important_item; static handles the rest
+  const allSuggestions = useMemo(() => {
+    const DB_CATS = new Set(['boss_kill', 'important_item']);
+    const staticFiltered = GOAL_SUGGESTIONS.filter(s => !DB_CATS.has(s.category));
+    return [...staticFiltered, ...dbSuggestions];
+  }, [dbSuggestions]);
+
+  // Dismissed suggestions — persisted to localStorage
+  const [dismissed, setDismissed] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]')); }
+    catch { return new Set(); }
+  });
+
+  function dismissSuggestion(id) {
+    setDismissed(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem(DISMISSED_KEY, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }
+
+  function restoreAll() {
+    setDismissed(new Set());
+    try { localStorage.removeItem(DISMISSED_KEY); } catch {}
+  }
+
+  const allPlayerIds = players.map(p => p.id);
+  function togglePlayer(id) {
+    if (id === '__all__')  { setSelected(allPlayerIds); return; }
+    if (id === '__none__') { setSelected([]); return; }
+    setSelected(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  }
+
+  const activeKeys = useMemo(() => new Set(goals.map(g => g.title)), [goals]);
+  const selectedPlayers = players.filter(p => selected.includes(p.id));
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allSuggestions.filter(s => {
+      if (s.stage !== stage) return false;
+      if (category !== 'all' && s.category !== category) return false;
+      if (!showDismissed && dismissed.has(s.id)) return false;
+      // Hide diary suggestions that ALL selected players have already completed
+      if (s.category === 'diary' && selected.length > 0 && !showCompletedDiaries) {
+        const achKey = diaryAchievementKey(s.id);
+        const allAchieved = selected.every(pid => achievedByPlayer[pid]?.has(achKey));
+        if (allAchieved) return false;
+      }
+      if (q) {
+        return (
+          s.title.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q) ||
+          s.unlocks?.some(u => u.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [allSuggestions, stage, category, dismissed, showDismissed, showCompletedDiaries, selected, achievedByPlayer, search]);
+
+  const dismissedInView = useMemo(() =>
+    allSuggestions.filter(s => s.stage === stage && (category === 'all' || s.category === category) && dismissed.has(s.id)).length,
+  [allSuggestions, stage, category, dismissed]);
+
+  // Count diary suggestions hidden because all selected players have completed them
+  const completedDiariesHidden = useMemo(() => {
+    if (selected.length === 0) return 0;
+    return allSuggestions.filter(s =>
+      s.stage === stage &&
+      (category === 'all' || s.category === category) &&
+      s.category === 'diary' &&
+      !dismissed.has(s.id) &&
+      selected.every(pid => achievedByPlayer[pid]?.has(diaryAchievementKey(s.id)))
+    ).length;
+  }, [allSuggestions, stage, category, dismissed, selected, achievedByPlayer]);
+
+  const stageKeys = Object.keys(STAGES);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* Top bar: search + create custom */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--text-dim)', pointerEvents: 'none' }}>🔍</span>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search suggestions by title, description or reward…"
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              padding: '7px 10px 7px 32px', fontSize: 12,
+              background: 'var(--bg-input)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)', color: 'var(--text)',
+            }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 13 }}>
+              ✕
+            </button>
+          )}
+        </div>
+        {canWrite && onCreateCustom && (
+          <button
+            onClick={onCreateCustom}
+            className="btn btn-primary btn-sm"
+            style={{ flexShrink: 0 }}>
+            + Custom Goal
+          </button>
+        )}
+      </div>
+
+      {/* Player chips */}
+      <div>
+        {sectionHeader('Players', 'select one or more to check readiness')}
+        <PlayerChips players={players} selected={selected} onToggle={togglePlayer} />
+      </div>
+
+      {/* Stage tabs */}
+      <div>
+        {sectionHeader('Stage', STAGES[stage]?.desc)}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {stageKeys.map(key => (
+            <button key={key} onClick={() => setStage(key)} style={{
+              ...pillStyle(stage === key),
+              ...(key === autoStage && stage !== key ? { borderColor: 'rgba(200,168,75,0.3)' } : {}),
+            }}>
+              {STAGES[key].label}
+              {key === autoStage && <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.7 }}>●</span>}
+            </button>
+          ))}
+          {stage !== autoStage && (
+            <button onClick={() => setStage(autoStage)}
+              style={{ fontSize: 11, padding: '4px 8px', background: 'none', border: 'none',
+                color: 'var(--text-dim)', cursor: 'pointer' }}>
+              ↩ Auto
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Category tabs */}
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        <button onClick={() => setCategory('all')} style={pillStyle(category === 'all')}>All</button>
+        {CATEGORIES.map(c => (
+          <button key={c.id} onClick={() => setCategory(c.id)} style={pillStyle(category === c.id)}>
+            {c.icon} {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Hidden count + restore */}
+      {(dismissedInView > 0 || completedDiariesHidden > 0) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+          {dismissedInView > 0 && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button onClick={() => setShowDismissed(s => !s)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
+                  color: 'var(--text-dim)', textDecoration: 'underline', padding: 0 }}>
+                {showDismissed ? '▾ Hide dismissed' : `▸ Show ${dismissedInView} hidden suggestion${dismissedInView > 1 ? 's' : ''}`}
+              </button>
+              {showDismissed && (
+                <button onClick={restoreAll}
+                  style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
+                    cursor: 'pointer', fontSize: 11, color: 'var(--text-dim)', padding: '2px 8px' }}>
+                  ↺ Restore all
+                </button>
+              )}
+            </span>
+          )}
+          {completedDiariesHidden > 0 && (
+            <button onClick={() => setShowCompletedDiaries(s => !s)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
+                color: 'var(--green-bright)', textDecoration: 'underline', padding: 0 }}>
+              {showCompletedDiaries
+                ? '▾ Hide completed diaries'
+                : `✓ ${completedDiariesHidden} diary${completedDiariesHidden > 1 ? ' entries' : ''} already completed`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Suggestion cards */}
+      {filtered.length === 0 ? (
+        <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
+          {search ? `No suggestions match "${search}".` : 'No suggestions for this stage and category.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtered.map(s => (
+            <SuggestionCard
+              key={s.id}
+              suggestion={s}
+              selectedPlayers={selectedPlayers}
+              alreadyAdded={activeKeys.has(s.title)}
+              onAdd={(suggestion, status) => onAdd(suggestion, status, selected)}
+              onDismiss={dismissed.has(s.id) ? undefined : dismissSuggestion}
+              canWrite={canWrite}
+              adding={addingId === s.id}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -408,17 +871,24 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterScope,    setFilterScope]    = useState('all');
-  const [showSuggestions, setShowSuggestions] = useState(true);
   const [showModal,      setShowModal]      = useState(false);
   const [prefill,        setPrefill]        = useState({});
+  const [addingId,       setAddingId]       = useState(null);
+  const [activeSection,  setActiveSection]  = useState('browser'); // 'browser' | 'active'
+  const [achievements,   setAchievements]   = useState([]);
 
-  const normRsn = s => (s || '').replace(/[  �\s]+/g, ' ').trim().toLowerCase();
   const myPlayerId = useMemo(() =>
     myRsn ? players.find(p => normRsn(p.rsn) === normRsn(myRsn))?.id ?? null : null,
   [players, myRsn]);
 
-  // Filter goals
-  const filtered = useMemo(() => {
+  // Load achievements for diary suggestion filtering
+  useEffect(() => {
+    if (!groupId) return;
+    api.getAchievements(groupId).then(setAchievements).catch(() => {});
+  }, [groupId]);
+
+  // Filter active goals
+  const filteredGoals = useMemo(() => {
     let r = goals.filter(g => g.status !== 'vaulted');
     if (filterPlayer   !== 'all') r = r.filter(g => String(g.owner_id) === filterPlayer || g.type === 'group');
     if (filterCategory !== 'all') r = r.filter(g => g.category === filterCategory);
@@ -430,13 +900,31 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
 
   async function cycleStatus(goal) {
     const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(goal.status) + 1) % STATUS_CYCLE.length];
-    try { await api.updateGoal(goal.id, { status: next }); onRefresh(); }
-    catch (err) { onToast(err.message, 'error'); }
+    try {
+      const result = await api.updateGoal(goal.id, {
+        status: next,
+        // Tell the server who is marking this done so their diary gets ticked too
+        ...(next === 'complete' && myPlayerId ? { completedBy: myPlayerId } : {}),
+      });
+      if (next === 'complete') {
+        // Auto-vault: items added server-side
+        const vaulted = result?.autoVaulted ?? [];
+        if (vaulted.length > 0) {
+          onToast(`🏆 ${vaulted.length} item${vaulted.length > 1 ? 's' : ''} auto-added to vault: ${vaulted.join(', ')}`, 'success');
+        }
+        // Diary auto-tick: refresh achievements so browser hides the completed diary
+        if (result?.diaryTicked) {
+          api.getAchievements(groupId).then(setAchievements).catch(() => {});
+        }
+      }
+      onRefresh();
+    } catch (err) { onToast(err.message, 'error'); }
   }
 
   async function deleteGoal(id) {
-    if (!confirm('Delete this goal?')) return;
-    try { await api.deleteGoal(id); onRefresh(); }
+    const goal = goals.find(g => g.id === id);
+    if (!confirm(`Remove "${goal?.title ?? 'this goal'}"?\nThis cannot be undone.`)) return;
+    try { await api.deleteGoal(id); onToast('Goal removed', 'success'); onRefresh(); }
     catch (err) { onToast(err.message, 'error'); }
   }
 
@@ -445,7 +933,62 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
     setShowModal(true);
   }
 
-  // Unique categories present in goals
+  async function addSuggestion(s, status = 'not_started', selectedPlayerIds = []) {
+    if (!canWrite) return onToast('Unlock group to add goals', 'error');
+    setAddingId(s.id);
+    // All selected players except the owner become contributors so the server
+    // can tick the achievement diary for every one of them on completion.
+    const contributorIds = myPlayerId
+      ? selectedPlayerIds.filter(id => id !== myPlayerId)
+      : selectedPlayerIds;
+    try {
+      const result = await api.createGoal({
+        type: 'group',
+        owner_id: myPlayerId || null,
+        contributor_ids: contributorIds.length ? contributorIds : undefined,
+        title: s.title,
+        description: s.description,
+        category: s.category === 'quest_series' ? 'quest'
+                : s.category === 'skill_unlock'  ? 'skill'
+                : s.category === 'diary'         ? 'diary'
+                : s.category === 'boss_kill'     ? 'boss'
+                : 'item',
+        skill: s.skill ?? null,
+        target_value: s.targetLevel ? String(s.targetLevel) : null,
+        priority: s.priority ?? 'medium',
+        status,
+        details_json: {
+          wikiUrl: s.wikiUrl || null,
+          unlocks: s.unlocks || [],
+          suggestionCategory: s.category,
+          // For diary goals: store the achievement key (may differ from suggestion ID)
+          ...(s.category === 'diary' ? { diaryKey: diaryAchievementKey(s.id) } : {}),
+        },
+      });
+
+      if (status === 'complete') {
+        const vaulted = result?.autoVaulted ?? [];
+        if (vaulted.length > 0) {
+          onToast(`🏆 ${vaulted.length} item${vaulted.length > 1 ? 's' : ''} auto-added to vault: ${vaulted.join(', ')}`, 'success');
+        }
+        if (result?.diaryTicked) {
+          onToast(`📋 Achievement diary updated: ${s.title}`, 'success');
+          api.getAchievements(groupId).then(setAchievements).catch(() => {});
+        }
+        if (!vaulted.length && !result?.diaryTicked) {
+          onToast(`Marked done: ${s.title}`, 'success');
+        }
+      } else {
+        onToast(`Added: ${s.title}`, 'success');
+      }
+      onRefresh();
+    } catch (err) {
+      if (!err.message?.includes('already exists')) onToast(err.message, 'error');
+    } finally {
+      setAddingId(null);
+    }
+  }
+
   const presentCategories = useMemo(() =>
     [...new Set(goals.map(g => g.category).filter(Boolean))],
   [goals]);
@@ -456,103 +999,132 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
     color: 'var(--text)', cursor: 'pointer',
   };
 
-  function pillStyle(active) {
-    return {
-      fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius)',
-      background: active ? 'var(--gold)' : 'transparent',
-      color: active ? '#111' : 'var(--text-dim)',
-      border: 'none', cursor: 'pointer', fontWeight: active ? 700 : 400,
-    };
-  }
+  const sectionPillStyle = active => ({
+    fontSize: 13, padding: '6px 16px', borderRadius: 'var(--radius)',
+    background: active ? 'var(--gold)' : 'transparent',
+    color: active ? '#111' : 'var(--text-dim)',
+    border: active ? '1px solid var(--gold)' : '1px solid var(--border)',
+    cursor: 'pointer', fontWeight: active ? 700 : 400,
+    transition: 'all 0.12s',
+  });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 16,
+      background: 'var(--bg-panel)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '16px 18px',
+    }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h2 style={{ margin: 0, fontSize: 16, color: 'var(--text-bright)' }}>🎯 Goals</h2>
-        <div style={{ flex: 1 }} />
-        {/* View toggle */}
-        <div style={{ display: 'flex', gap: 2, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
-          {[['board','📋 Board'],['list','☰ List']].map(([id, label]) => (
-            <button key={id} onClick={() => setView(id)} style={pillStyle(view === id)}>{label}</button>
-          ))}
-        </div>
-        {canWrite
-          ? <button className="btn btn-primary btn-sm" onClick={() => openAdd()}>+ Add Goal</button>
-          : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>🔒 Claim to add</span>}
       </div>
 
       {/* ── Stats bar ── */}
       <StatsBar goals={goals} />
 
-      {/* ── Filters ── */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <select style={selStyle} value={filterPlayer} onChange={e => setFilterPlayer(e.target.value)}>
-          <option value="all">All players</option>
-          {players.map(p => <option key={p.id} value={String(p.id)}>{p.rsn}</option>)}
-        </select>
-        <select style={selStyle} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-          <option value="all">All types</option>
-          {presentCategories.map(c => <option key={c} value={c}>{CAT_ICONS[c]} {c}</option>)}
-        </select>
-        <select style={selStyle} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
-          <option value="all">All priorities</option>
-          <option value="high">🔴 High</option>
-          <option value="medium">🟠 Medium</option>
-          <option value="low">🟢 Low</option>
-        </select>
-        <div style={{ display: 'flex', gap: 2, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
-          {[['all','All'],['personal','Personal'],['group','Group']].map(([id, label]) => (
-            <button key={id} onClick={() => setFilterScope(id)} style={pillStyle(filterScope === id)}>{label}</button>
-          ))}
-        </div>
-        {(filterPlayer !== 'all' || filterCategory !== 'all' || filterPriority !== 'all' || filterScope !== 'all') && (
-          <button
-            onClick={() => { setFilterPlayer('all'); setFilterCategory('all'); setFilterPriority('all'); setFilterScope('all'); }}
-            style={{ fontSize: 11, color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
-            ✕ Clear filters
-          </button>
-        )}
-      </div>
-
-      {/* ── Board / List ── */}
-      {view === 'board'
-        ? <BoardView goals={filtered} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />
-        : <ListView  goals={filtered} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />}
-
-      {/* ── Suggested Goals ── */}
-      <div style={{
-        background: 'var(--bg-panel-alt)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        overflow: 'hidden',
-      }}>
-        <button
-          onClick={() => setShowSuggestions(s => !s)}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
-          }}>
-          <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)' }}>
-            💡 Suggested Goals <span style={{ fontWeight: 400, color: 'var(--text-dim)', fontSize: 11 }}>based on your group's current levels</span>
-          </span>
-          <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{showSuggestions ? '▲' : '▼'}</span>
+      {/* ── Section tabs ── */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button onClick={() => setActiveSection('browser')} style={sectionPillStyle(activeSection === 'browser')}>
+          💡 Goal Browser
         </button>
-        {showSuggestions && (
-          <div style={{ padding: '0 16px 16px' }}>
-            <SuggestionsPanel
-              groupId={groupId}
-              goals={goals}
-              players={players}
-              onAdded={onRefresh}
-              onToast={onToast}
-              canWrite={canWrite}
-              myRsn={myRsn}
-            />
-          </div>
-        )}
+        <button onClick={() => setActiveSection('active')} style={sectionPillStyle(activeSection === 'active')}>
+          📋 Active Goals
+          {goals.filter(g => g.status !== 'complete' && g.status !== 'vaulted').length > 0 && (
+            <span style={{ marginLeft: 7, fontSize: 11, background: 'rgba(200,168,75,0.2)', borderRadius: 10, padding: '1px 7px' }}>
+              {goals.filter(g => g.status !== 'complete' && g.status !== 'vaulted').length}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* ── Goal Browser ── */}
+      {activeSection === 'browser' && (
+        <GoalBrowser
+          players={players}
+          goals={goals}
+          onAdd={addSuggestion}
+          canWrite={canWrite}
+          addingId={addingId}
+          onCreateCustom={() => openAdd()}
+          achievements={achievements}
+        />
+      )}
+
+      {/* ── Active Goals ── */}
+      {activeSection === 'active' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* View toggle + filters */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* View toggle */}
+            <div style={{ display: 'flex', gap: 2, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
+              {[['board','📋 Board'],['list','☰ List']].map(([id, label]) => (
+                <button key={id} onClick={() => setView(id)} style={pillStyle(view === id)}>{label}</button>
+              ))}
+            </div>
+
+            {/* Player filter */}
+            <select style={selStyle} value={filterPlayer} onChange={e => setFilterPlayer(e.target.value)}>
+              <option value="all">All players</option>
+              {players.map(p => <option key={p.id} value={String(p.id)}>{p.rsn}</option>)}
+            </select>
+
+            {/* Category filter */}
+            <select style={selStyle} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+              <option value="all">All types</option>
+              {presentCategories.map(c => <option key={c} value={c}>{CAT_ICONS[c]} {c}</option>)}
+            </select>
+
+            {/* Priority filter */}
+            <select style={selStyle} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+              <option value="all">All priorities</option>
+              <option value="high">🔴 High</option>
+              <option value="medium">🟠 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+
+            {/* Scope pills */}
+            <div style={{ display: 'flex', gap: 2, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
+              {[['all','All'],['personal','Personal'],['group','Group']].map(([id, label]) => (
+                <button key={id} onClick={() => setFilterScope(id)} style={pillStyle(filterScope === id)}>{label}</button>
+              ))}
+            </div>
+
+            {/* Clear filters */}
+            {(filterPlayer !== 'all' || filterCategory !== 'all' || filterPriority !== 'all' || filterScope !== 'all') && (
+              <button
+                onClick={() => { setFilterPlayer('all'); setFilterCategory('all'); setFilterPriority('all'); setFilterScope('all'); }}
+                style={{ fontSize: 11, color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}>
+                ✕ Clear filters
+              </button>
+            )}
+          </div>
+
+          {/* Board / List */}
+          {view === 'board'
+            ? <BoardView goals={filteredGoals} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />
+            : <ListView  goals={filteredGoals} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />}
+
+          {/* Empty state */}
+          {goals.length === 0 && (
+            <div style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '32px 0' }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>🎯</div>
+              <div style={{ fontSize: 14, marginBottom: 6, color: 'var(--text)' }}>No goals yet</div>
+              <div style={{ fontSize: 12 }}>
+                Browse the{' '}
+                <button onClick={() => setActiveSection('browser')}
+                  style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', padding: 0, fontSize: 12, fontWeight: 600 }}>
+                  Goal Browser
+                </button>
+                {' '}to add your first goal.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Goal modal ── */}
       {showModal && (
@@ -565,6 +1137,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
           onToast={onToast}
         />
       )}
+
     </div>
   );
 }

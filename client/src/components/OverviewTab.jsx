@@ -122,7 +122,8 @@ function getPlayerSkill(players, ownerId, skillName) {
 // Normalize RSN for comparison — collapses any whitespace variant (non-breaking space,
 // unicode replacement char, etc.) to a regular space before lowercasing.
 function normRsn(s) {
-  return (s || '').replace(/[ �\s]+/g, ' ').trim().toLowerCase();
+  // Collapse ALL unicode whitespace variants (NBSP U+00A0, thin-space, etc.) to a plain space
+  return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
 }
 
 // ── Edit RSN modal ────────────────────────────────────────────────────────────
@@ -134,7 +135,8 @@ function EditRsnModal({ player, onClose, onSaved, onToast }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const trimmed = rsn.trim();
+    // normRsn collapses NBSP / unicode spaces so the DB always gets a clean value
+    const trimmed = normRsn(rsn);
     if (!trimmed || trimmed === player.rsn) { onClose(); return; }
     setSaving(true);
     setError('');
