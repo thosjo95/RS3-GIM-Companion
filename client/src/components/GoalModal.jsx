@@ -883,6 +883,17 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
 
             <hr className="divider" />
 
+            {/* "Set your name" hint when myRsn is not configured */}
+            {!myRsn && (
+              <div style={{
+                marginBottom: 10, padding: '6px 10px',
+                background: 'rgba(200,168,75,0.07)', border: '1px solid rgba(200,168,75,0.25)',
+                borderRadius: 'var(--radius)', fontSize: 11, color: 'var(--text-dim)',
+              }}>
+                💡 Set <strong style={{ color: 'var(--gold)' }}>👤 Who are you?</strong> in the header to auto-select yourself when adding goals.
+              </div>
+            )}
+
             {/* Personal / Group toggle */}
             <div className="form-group">
               <label className="form-label">Scope</label>

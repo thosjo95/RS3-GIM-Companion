@@ -7,7 +7,8 @@ import LeaderboardsTab from './LeaderboardsTab';
 import AchievementsTab from './AchievementsTab';
 import GoalsTab from './GoalsTab';
 
-const IS_DEV = import.meta.env.DEV;
+const IS_DEV = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
   const players = group?.players || [];

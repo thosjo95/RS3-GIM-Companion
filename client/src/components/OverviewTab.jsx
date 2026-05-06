@@ -917,7 +917,12 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
         </div>
         <div style={{ flex: 1 }} />
         {(view === 'goals' || view === 'both') && (canWrite
-          ? <button className="btn btn-primary btn-sm" onClick={() => { setPrefill(myPlayerId ? { owner_id: myPlayerId } : {}); setShowModal(true); }}>+ Add Goal</button>
+          ? <button className="btn btn-primary btn-sm" onClick={() => {
+              // Priority: active player card → myRsn match → nothing (GoalModal will use first player)
+              const defaultOwner = filteredPlayerId ?? myPlayerId ?? null;
+              setPrefill(defaultOwner ? { owner_id: defaultOwner } : {});
+              setShowModal(true);
+            }}>+ Add Goal</button>
           : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>🔒 Claim to add</span>
         )}
       </div>
