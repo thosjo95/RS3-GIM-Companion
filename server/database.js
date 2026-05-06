@@ -308,6 +308,9 @@ try { db.exec('ALTER TABLE players ADD COLUMN sync_error TEXT'); } catch {}
 try { db.exec('ALTER TABLE players ADD COLUMN sync_error_at DATETIME'); } catch {}
 // rs3_gear_items: mark items that cannot be traded (Fire Cape, Kiln Cape, etc.)
 try { db.exec('ALTER TABLE rs3_gear_items ADD COLUMN untradeable INTEGER DEFAULT 0'); } catch {}
+// rs3_bosses + rs3_milestone_items: wiki image URL for display in Goals tab
+try { db.exec('ALTER TABLE rs3_bosses ADD COLUMN icon_url TEXT'); } catch {}
+try { db.exec('ALTER TABLE rs3_milestone_items ADD COLUMN icon_url TEXT'); } catch {}
 
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {

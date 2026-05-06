@@ -161,6 +161,10 @@ router.get('/suggestions', (req, res) => {
     try { reqs  = JSON.parse(b.requirements); } catch { reqs  = {}; }
     try { drops = JSON.parse(b.drops);        } catch { drops = []; }
 
+    // Derive icon_url from stored column or fall back to wiki-based derivation
+    const bossIconUrl = b.icon_url
+      || (b.wiki_url ? `https://runescape.wiki/images/${b.wiki_url.split('/w/').pop()}.png` : null);
+
     suggestions.push({
       id:          `boss_${b.id}`,
       title:       b.name,
@@ -171,9 +175,10 @@ router.get('/suggestions', (req, res) => {
       category:    'boss_kill',
       priority:    b.difficulty === 'end' ? 'high' : b.difficulty === 'mid' ? 'medium' : 'low',
       wikiUrl:     b.wiki_url,
+      icon_url:    bossIconUrl,
       requirements: reqs,
       unlocks:     drops.map(d => d.name),
-      _raw:        b,
+      _raw:        { ...b, icon_url: bossIconUrl },
     });
   }
 
@@ -183,6 +188,9 @@ router.get('/suggestions', (req, res) => {
     for (const m of milestones) {
       const mStage = m.tier_impact === 'critical' || m.tier_impact === 'high' ? 'end' : m.tier_impact === 'medium' ? 'mid' : 'early';
       if (stage && mStage !== stage) continue;
+      const itemIconUrl = m.icon_url
+        || (m.wiki_url ? `https://runescape.wiki/images/${m.wiki_url.split('/w/').pop()}.png` : null);
+
       suggestions.push({
         id:          `milestone_${m.id}`,
         title:       m.name,
@@ -191,9 +199,10 @@ router.get('/suggestions', (req, res) => {
         category:    'important_item',
         priority:    m.tier_impact === 'critical' ? 'high' : m.tier_impact === 'high' ? 'high' : 'medium',
         wikiUrl:     m.wiki_url,
+        icon_url:    itemIconUrl,
         requirements: {},
         unlocks:     [m.name],
-        _raw:        m,
+        _raw:        { ...m, icon_url: itemIconUrl },
       });
     }
   }

@@ -11,13 +11,19 @@ const db = require('../database');
 
 function j(v) { return typeof v === 'string' ? v : JSON.stringify(v); }
 
+function bossIconUrl(wikiUrl) {
+  if (!wikiUrl) return null;
+  return `https://runescape.wiki/images/${wikiUrl.split('/w/').pop()}.png`;
+}
+
 function upsertBoss(b) {
+  const iconUrl = b.icon_url ?? bossIconUrl(b.wiki_url);
   db.prepare(`INSERT OR REPLACE INTO rs3_bosses
-    (id, name, difficulty, min_combat_level, requirements, drops, wiki_url, last_verified_at)
-    VALUES (?,?,?,?,?,?,?,?)`)
+    (id, name, difficulty, min_combat_level, requirements, drops, wiki_url, icon_url, last_verified_at)
+    VALUES (?,?,?,?,?,?,?,?,?)`)
   .run(b.id, b.name, b.difficulty, b.min_combat_level ?? 0,
        j(b.requirements ?? {}), j(b.drops ?? []),
-       b.wiki_url ?? null, new Date().toISOString());
+       b.wiki_url ?? null, iconUrl, new Date().toISOString());
 }
 
 const MISSING_BOSSES = [

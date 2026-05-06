@@ -388,6 +388,32 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
   );
 }
 
+// ── Suggestion icon (boss/item image with emoji fallback) ─────────────────────
+
+function SuggIcon({ category, iconUrl, size = 34 }) {
+  const [failed, setFailed] = useState(false);
+  const emoji = SUGG_CAT_ICON[category] ?? '🎯';
+  if (iconUrl && !failed) {
+    return (
+      <img
+        src={iconUrl}
+        alt=""
+        width={size}
+        height={size}
+        onError={() => setFailed(true)}
+        style={{
+          imageRendering: 'crisp-edges',
+          objectFit: 'contain',
+          borderRadius: 4,
+          display: 'block',
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+  return <span style={{ fontSize: 20, lineHeight: 1 }}>{emoji}</span>;
+}
+
 // ── Suggestion card ───────────────────────────────────────────────────────────
 
 function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, onDismiss, canWrite, adding }) {
@@ -420,9 +446,15 @@ function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, o
     }}>
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>
-          {SUGG_CAT_ICON[s.category] ?? '🎯'}
-        </span>
+        <div style={{
+          width: 34, height: 34, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--bg-root)', borderRadius: 'var(--radius)',
+          border: '1px solid var(--border)',
+          overflow: 'hidden',
+        }}>
+          <SuggIcon category={s.category} iconUrl={s.icon_url} />
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-bright)' }}>{s.title}</span>
