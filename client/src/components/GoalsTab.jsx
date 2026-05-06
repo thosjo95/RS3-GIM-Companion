@@ -390,13 +390,25 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
 
 // ── Suggestion icon (boss/item image with emoji fallback) ─────────────────────
 
-function SuggIcon({ category, iconUrl, size = 34 }) {
+// Quest category: always use the RS3 Lore Achievements icon
+const QUEST_ICON_URL = 'https://runescape.wiki/images/Lore_achievements_icon.png';
+
+function SuggIcon({ category, iconUrl, skill, size = 34 }) {
   const [failed, setFailed] = useState(false);
+
+  // Resolve the best icon URL for this suggestion
+  const resolvedUrl = (() => {
+    if (category === 'quest_series') return QUEST_ICON_URL;
+    if (category === 'skill_unlock' && skill) return SKILL_ICONS[skill] ?? null;
+    return iconUrl ?? null;
+  })();
+
   const emoji = SUGG_CAT_ICON[category] ?? '🎯';
-  if (iconUrl && !failed) {
+
+  if (resolvedUrl && !failed) {
     return (
       <img
-        src={iconUrl}
+        src={resolvedUrl}
         alt=""
         width={size}
         height={size}
@@ -453,7 +465,7 @@ function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, o
           border: '1px solid var(--border)',
           overflow: 'hidden',
         }}>
-          <SuggIcon category={s.category} iconUrl={s.icon_url} />
+          <SuggIcon category={s.category} iconUrl={s.icon_url} skill={s.skill} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -634,9 +646,8 @@ function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, o
 
 // ── Goal Browser ──────────────────────────────────────────────────────────────
 
-const DISMISSED_KEY = 'rs3gim_dismissed_suggestions';
-
-function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom, achievements }) {
+function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom, achievements, groupId }) {
+  const DISMISSED_KEY = `rs3gim_dismissed_suggestions_${groupId || 'default'}`;
   const autoStage = useMemo(() => detectStage(players), [players]);
   const [stage,    setStage]    = useState(autoStage);
   const [category, setCategory] = useState('all');
@@ -1061,6 +1072,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
           addingId={addingId}
           onCreateCustom={() => openAdd()}
           achievements={achievements}
+          groupId={groupId}
         />
       )}
 

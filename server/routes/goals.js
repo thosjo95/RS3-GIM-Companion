@@ -90,10 +90,10 @@ router.get('/', (req, res) => {
       SELECT g.*, p.rsn as owner_rsn
       FROM goals g
       LEFT JOIN players p ON p.id = g.owner_id
-      WHERE g.type = 'group'
+      WHERE g.group_id = ?
          OR g.owner_id IN (SELECT id FROM players WHERE group_id = ?)
       ORDER BY g.created_at DESC
-    `).all(group_id);
+    `).all(group_id, group_id);
   } else {
     goals = db.prepare(`
       SELECT g.*, p.rsn as owner_rsn
@@ -154,11 +154,12 @@ router.post('/', (req, res) => {
   const completedAt = finalStatus === 'complete' ? new Date().toISOString() : null;
 
   const result = db.prepare(`
-    INSERT INTO goals (type, owner_id, title, description, category, skill, target_value, priority, status, completed_at, details_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO goals (type, owner_id, group_id, title, description, category, skill, target_value, priority, status, completed_at, details_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     type || 'personal',
     owner_id || null,
+    groupId   || null,
     title.trim(),
     description?.trim() || null,
     category || 'skill',
