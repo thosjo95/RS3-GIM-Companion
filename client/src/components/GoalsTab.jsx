@@ -412,8 +412,9 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
   const [showModal,      setShowModal]      = useState(false);
   const [prefill,        setPrefill]        = useState({});
 
+  const normRsn = s => (s || '').replace(/[  �\s]+/g, ' ').trim().toLowerCase();
   const myPlayerId = useMemo(() =>
-    myRsn ? players.find(p => p.rsn.toLowerCase() === myRsn.toLowerCase())?.id ?? null : null,
+    myRsn ? players.find(p => normRsn(p.rsn) === normRsn(myRsn))?.id ?? null : null,
   [players, myRsn]);
 
   // Filter goals

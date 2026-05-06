@@ -111,7 +111,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
               color: myRsn ? 'var(--green-bright)' : 'var(--text-dim)',
               padding: '0 12px', fontSize: 12, fontWeight: myRsn ? 600 : 400,
             }}>
-            👤 {myRsn || 'Set your name'}
+            {myRsn || 'Set your name'}
           </button>
         )}
 

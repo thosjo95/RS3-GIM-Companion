@@ -723,11 +723,16 @@ const GOAL_TYPES = [
   { id: 'custom', label: '✏️ Custom',    desc: 'Anything else' },
 ];
 
+// Normalize RSN — collapses non-breaking spaces and other Unicode variants before comparing
+function normRsn(s) {
+  return (s || '').replace(/[  �\s]+/g, ' ').trim().toLowerCase();
+}
+
 export default function GoalModal({ players, onClose, onSaved, prefill = {}, onToast, myRsn = '' }) {
   // Resolve "me" — prefer explicit prefill, then myRsn match, then first player
   const myPlayerId = useMemo(() => {
     if (!myRsn) return null;
-    return players.find(p => p.rsn.toLowerCase() === myRsn.toLowerCase())?.id ?? null;
+    return players.find(p => normRsn(p.rsn) === normRsn(myRsn))?.id ?? null;
   }, [players, myRsn]);
 
   const [goalType, setGoalType] = useState(prefill.category === 'quest' ? 'quest' : prefill.category === 'item' ? 'item' : prefill.skill ? 'level' : 'custom');

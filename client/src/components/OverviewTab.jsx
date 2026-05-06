@@ -119,6 +119,12 @@ function getPlayerSkill(players, ownerId, skillName) {
   return players.find(p => p.id === ownerId)?.skills?.find(s => s.skill_name === skillName);
 }
 
+// Normalize RSN for comparison — collapses any whitespace variant (non-breaking space,
+// unicode replacement char, etc.) to a regular space before lowercasing.
+function normRsn(s) {
+  return (s || '').replace(/[ �\s]+/g, ' ').trim().toLowerCase();
+}
+
 // ── Edit RSN modal ────────────────────────────────────────────────────────────
 
 function EditRsnModal({ player, onClose, onSaved, onToast }) {
@@ -857,7 +863,7 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
 
   // Resolve "me" — the player whose RSN matches what the user set as their character
   const myPlayerId = myRsn
-    ? (players.find(p => p.rsn.toLowerCase() === myRsn.toLowerCase())?.id ?? null)
+    ? (players.find(p => normRsn(p.rsn) === normRsn(myRsn))?.id ?? null)
     : null;
 
   const filtered = filteredPlayerId
@@ -1041,7 +1047,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
               active={selectedId === p.id}
               color={MEMBER_COLORS[i % MEMBER_COLORS.length]}
               onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
-              isMe={!!myRsn && p.rsn.toLowerCase() === myRsn.toLowerCase()}
+              isMe={!!myRsn && normRsn(p.rsn) === normRsn(myRsn)}
               canWrite={canWrite}
               onEditRsn={setEditRsnPlayer}
             />
