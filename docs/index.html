@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Documentation v1.2</title>
+  <title>RS3 GIM Companion — Documentation v1.4</title>
   <style>
     :root {
       --bg:        #0d0b14;
@@ -188,7 +188,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.2 documentation</div>
+        <div class="sidebar-version">v1.4 documentation</div>
       </div>
     </div>
 
@@ -199,20 +199,20 @@
       <a href="#access">Access Control</a>
 
       <div class="sidebar-section">Features</div>
-      <a href="#tab-overview">📊 Overview</a>
-      <a href="#tab-vault">🏆 Group Vault</a>
-      <a href="#tab-gear">⚔️ Gear Loadouts</a>
-      <a href="#tab-drops">💎 Items &amp; Drops</a>
-      <a href="#tab-tips">💡 Tips &amp; Milestones</a>
-      <a href="#tab-diaries">📋 Achievement Diaries</a>
-      <a href="#tab-leaderboards">🏅 Leaderboards</a>
-      <a href="#tab-notifications">🔔 Notifications</a>
+      <a href="#tab-overview">Overview</a>
+      <a href="#tab-goals">Goals</a>
+      <a href="#tab-vault">Group Vault</a>
+      <a href="#tab-gear">Gear Loadouts</a>
+      <a href="#tab-achievements">Achievements</a>
+      <a href="#tab-diaries">Achievement Diaries</a>
+      <a href="#tab-leaderboards">Leaderboards</a>
+      <a href="#tab-notifications">Notifications</a>
 
       <div class="sidebar-section">Reference</div>
       <a href="#tech">Tech Stack</a>
       <a href="#database">Database</a>
       <a href="#selfhost">Self-Hosting</a>
-      <a href="#faq">🛠️ Admin FAQ</a>
+      <a href="#faq">Admin FAQ</a>
       <a href="#changelog">Changelog</a>
     </nav>
 
@@ -230,9 +230,9 @@
       <img src="logo.svg" alt="RS3 GIM Companion logo" />
       <div class="hero-text">
         <h1>RS3 GIM Companion</h1>
-        <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, drops, gear loadouts, and achievements — all in one place.</p>
+        <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.2.0</span>
+          <span class="badge badge-green">v1.4.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -248,10 +248,10 @@
     <h2 id="quickstart">Quick Start</h2>
 
     <h3>1. Find Your Group</h3>
-    <p>Open the app and click <strong>👥 Find or Manage Groups</strong> in the sidebar. Search for your GIM group name — the app looks it up against the RS3 hiscores API and auto-populates all members.</p>
+    <p>Open the app and click <strong>Find or Manage Groups</strong> in the sidebar. Search for your GIM group name — the app looks it up against the RS3 hiscores API and auto-populates all members.</p>
 
     <h3>2. Claim Your Group</h3>
-    <p>A newly added group is unclaimed (read-only for everyone). Click <strong>🔒 Claim group</strong> in the header. A secret code is generated once — copy it and share it with your team on Discord. Any browser that enters this secret can edit; everyone else gets read-only access.</p>
+    <p>A newly added group is unclaimed (read-only for everyone). Click <strong>Claim group</strong> in the header. A secret code is generated once — copy it and share it with your team on Discord. Any browser that enters this secret can edit; everyone else gets read-only access.</p>
 
     <div class="callout callout-tip">
       <span class="callout-icon">✅</span>
@@ -259,10 +259,10 @@
     </div>
 
     <h3>3. Set Your Character Name</h3>
-    <p>After unlocking, click the <strong>👤 Set your name</strong> button in the header and pick your RSN. This tells the app which gear loadout belongs to you — you can only edit your own character's equipment.</p>
+    <p>After unlocking, click <strong>Set your name</strong> in the header and pick your RSN. This tells the app which gear loadout belongs to you — you can only edit your own character's equipment.</p>
 
     <h3>4. Sync Data</h3>
-    <p>Click <strong>↻ Sync All</strong> to pull the latest hiscores for all members. The activity feed (RuneMetrics) is updated automatically every 2 hours in the background — it is intentionally kept separate from Sync All to avoid rate-limiting the Jagex API. XP snapshots are taken daily at midnight.</p>
+    <p>Click <strong>Sync All</strong> to pull the latest hiscores for all members. The activity feed (RuneMetrics) is updated automatically every 2 hours in the background. XP snapshots are taken daily at midnight.</p>
 
     <!-- Access Control -->
     <h2 id="access">Access Control</h2>
@@ -276,12 +276,12 @@
       </tbody>
     </table>
 
-    <p>Gear loadouts have an additional permission layer: even when a group is unlocked, you can only edit <strong>your own character's</strong> gear. Other players' slots are view-only.</p>
+    <p>Gear loadouts have an additional permission layer: even when a group is unlocked, you can only edit <strong>your own character's</strong> gear. When viewing another group without being unlocked, all editing UI (slot pickers, add item, delete item, add goal) is hidden — the app is fully read-only for visitors.</p>
 
     <hr />
 
     <!-- Tab: Overview -->
-    <h2 id="tab-overview">📊 Overview Tab</h2>
+    <h2 id="tab-overview">Overview Tab</h2>
     <p>The landing page for your group. Defaults to this tab on load.</p>
 
     <h3>Member Cards</h3>
@@ -294,143 +294,139 @@
       <li><strong>Combat tab</strong> — shows Combat level with RS3 skill icons</li>
     </ul>
 
-    <h3>Goals &amp; Activity</h3>
-    <p>Side-by-side panels (or stacked on mobile). Goals support four types: <strong>Level</strong> (with XP-to-go tracking), <strong>Item</strong>, <strong>Quest</strong>, and <strong>Custom</strong>. The activity feed shows the RuneMetrics history for the selected player — entries are stored permanently in the database and auto-refreshed every 2 hours.</p>
+    <h3>Activity Feed</h3>
+    <p>Side panel showing the RuneMetrics history for the selected player — entries are stored permanently in the database and auto-refreshed every 2 hours.</p>
+
+    <hr />
+
+    <!-- Tab: Goals -->
+    <h2 id="tab-goals">Goals Tab</h2>
+    <p>The Goals tab is the central planning board for your GIM group. It replaces the old Item Requests panel with a more flexible system covering all goal types.</p>
+
+    <h3>Goal Types</h3>
+    <table>
+      <thead><tr><th>Type</th><th>Use case</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Quest</strong></td><td>Track a quest with all its skill requirements and prereqs</td></tr>
+        <tr><td><strong>Skill Unlock</strong></td><td>Target a skill level for a specific player (with XP-to-go tracking)</td></tr>
+        <tr><td><strong>Key Item</strong></td><td>Boss drops, rare rewards, or key gear pieces to obtain</td></tr>
+        <tr><td><strong>Item Request</strong></td><td>Dungeoneering tokens, Archaeology materials, or special currency rewards</td></tr>
+        <tr><td><strong>Achievement Diary</strong></td><td>Diary completion or task set milestone goals</td></tr>
+        <tr><td><strong>Boss Kill</strong></td><td>Combat milestones or boss completion goals</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Goal Browser</h3>
+    <p>Goals are displayed in a filterable list. Filter controls along the top let you narrow by:</p>
+    <ul>
+      <li><strong>Status</strong> — Active, Complete, Vaulted, or All</li>
+      <li><strong>Type</strong> — any of the six goal types above</li>
+      <li><strong>Priority</strong> — High, Medium, or Low</li>
+      <li><strong>Player</strong> — per-member filter chips (same chip design used across the entire app)</li>
+    </ul>
+
+    <h3>Adding Goals</h3>
+    <p>Click <strong>+ Add Goal</strong> (visible only when the group is unlocked) to open the goal modal. Fill in the type, title, priority, and optional notes. Skill Unlock goals automatically calculate XP remaining. Quest goals let you track individual step completion.</p>
+
+    <h3>Goal Status</h3>
+    <table>
+      <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag-dim">Active</span></td><td>In progress — shown on the Goals tab and Overview panel</td></tr>
+        <tr><td><span class="tag-green">Complete</span></td><td>Done — can be moved to Vaulted to archive</td></tr>
+        <tr><td><span class="tag-gold">Vaulted</span></td><td>Archived in the Group Vault achievements section</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Goal Suggestions</h3>
+    <p>The app ships with a library of pre-built goal suggestions covering common RS3 GIM priorities — quests, skill milestones, boss targets, and key items. These populate the "Add Goal" picker with one click.</p>
 
     <hr />
 
     <!-- Tab: Group Vault -->
-    <h2 id="tab-vault">🏆 Group Vault</h2>
-    <p>The vault shows every item the group has logged — from the drop log and the automatic RuneMetrics activity feed. It also tracks confirmed worn gear so the group always knows who has what.</p>
+    <h2 id="tab-vault">Group Vault</h2>
+    <p>The vault is the left panel of the Vault tab. It shows every item the group has logged — from the activity feed, manual adds, and completed goals — displayed as a compact tile grid.</p>
 
-    <h3>Drop Cards</h3>
-    <p>Each unique item gets a card showing who dropped it, the boss source, value, and date. Cards are sorted by most recent by default. Additional sort/filter options: Dupes · Value · A–Z · filter by player or boss.</p>
+    <h3>Item Tiles</h3>
+    <p>Each unique item gets an 80 px tile showing its RS3 wiki icon, name, and the player(s) who own it. Click a tile to expand it for full details; click again to collapse.</p>
 
     <ul>
-      <li><span class="tag-gold">WORN</span> — someone in the group has confirmed they wear this item</li>
-      <li><span class="tag-gold">DUPE</span> — two or more players have obtained this item</li>
+      <li><strong>Dupe badge</strong> (gold circle, top-left) — two or more players have logged this item</li>
+      <li><strong>Worn dot</strong> (green circle, top-right) — a player has this item confirmed in their gear loadout</li>
     </ul>
 
-    <p>When a drop card matches a confirmed gear entry, it shows a green row: <em>"✅ Worn by PlayerName · slot · claimed date"</em></p>
+    <h3>Expanded Detail</h3>
+    <p>Clicking a tile opens an inline panel below the tile row showing each drop entry: player name, acquisition date, source boss/activity, quantity, and value. When <code>canWrite</code> is active, a small <strong>×</strong> button appears on the right of each entry to delete it from the vault. Deletion requires a confirmation prompt.</p>
 
-    <h3>Confirmed Gear section</h3>
-    <p>Below the drop list, every confirmed gear entry is listed — even items never logged as drops. This is how gear set in the Gear Loadouts panel immediately shows in the Vault without needing a corresponding drop entry.</p>
+    <h3>Filters &amp; Sort</h3>
+    <ul>
+      <li><strong>Sort buttons</strong> — Recent · Dupes · Value · A–Z</li>
+      <li><strong>Search bar</strong> — live filter by item name</li>
+      <li><strong>Player chips</strong> — one chip per member; click to filter to that player's items (same chip design as Goals and Gear Loadouts)</li>
+      <li><strong>Boss dropdown</strong> — filter by source boss (appears only when boss-sourced items exist)</li>
+    </ul>
+
+    <h3>Adding Items Manually</h3>
+    <p>Click <strong>+ Add Item</strong> (visible when unlocked) to open the Add Item modal. Type any item name to search the RS3 wiki — results show the item icon and name. Select the item, choose which player obtained it, and optionally enter a source (e.g. "Nex", "Crafting"). Manual entries are tagged internally and their note is not shown in the vault display.</p>
 
     <div class="callout callout-tip">
       <span class="callout-icon">⚡</span>
-      <p>Confirming an item in Gear Loadouts updates the Vault in real time — no refresh needed.</p>
+      <p>Items are also added automatically from the RuneMetrics activity feed on every 2-hour sync. Manual add is for items that weren't detected automatically.</p>
     </div>
 
+    <h3>Vaulted Achievements</h3>
+    <p>Below the item grid, any goals with status "Vaulted" appear as achievement cards showing the goal title, owner, and completion date.</p>
+
     <h3>Group Notes</h3>
-    <p>Click <strong>📝 Group Notes</strong> (top right of the vault) to open a slide-in overlay — a shared pinboard for strategies, loot distribution rules, or session plans. Auto-saves with a 1.5 s debounce. Close with <kbd>Escape</kbd> or clicking the backdrop.</p>
+    <p>Click <strong>Group Notes</strong> (top right of the vault) to open a slide-in overlay — a shared pinboard for strategies, loot distribution rules, or session plans. Auto-saves with a 1.5 s debounce. Close with <kbd>Escape</kbd> or clicking the backdrop.</p>
 
     <hr />
 
     <!-- Tab: Gear Loadouts -->
-    <h2 id="tab-gear">⚔️ Gear Loadouts</h2>
+    <h2 id="tab-gear">Gear Loadouts</h2>
     <p>Sits side-by-side with the Group Vault in the same tab. Tracks each player's equipment across five combat styles.</p>
+
+    <h3>Player Selector</h3>
+    <p>A row of player chips at the top lets you switch between group members. The active chip is gold-highlighted. Your own character is marked with a small "you" label. This uses the same universal chip design as the vault and goals filters.</p>
 
     <h3>Combat Styles</h3>
     <p>Melee · Ranged · Magic · Necromancy · Hybrid — each has its own 12-slot grid (head, cape, neck, ammo, weapon, body, offhand, legs, gloves, boots, ring, pocket).</p>
 
     <h3>Slot States</h3>
     <table>
-      <thead><tr><th>Border colour</th><th>Dot</th><th>Meaning</th></tr></thead>
+      <thead><tr><th>Border colour</th><th>Meaning</th></tr></thead>
       <tbody>
-        <tr><td style="color:#4caf50">Green</td><td>✅</td><td>Confirmed — player owns / wears this item</td></tr>
-        <tr><td style="color:#f7c97e">Gold / amber</td><td>📋</td><td>Planning — goal, not yet obtained</td></tr>
-        <tr><td>Default</td><td>—</td><td>Empty slot</td></tr>
+        <tr><td style="color:#4caf50">Green</td><td>Confirmed — player owns / wears this item</td></tr>
+        <tr><td style="color:#f7c97e">Gold / amber</td><td>Planning — targeted, not yet obtained</td></tr>
+        <tr><td>Default</td><td>Empty slot</td></tr>
       </tbody>
     </table>
 
     <h3>Item Requirements</h3>
-    <p>Every suggested item has wiki-verified equip requirements. Items you can't use show a 🔒 lock with the missing skill levels (e.g. <em>Defence 80/90</em>). Missing requirements can be added as Goals directly from the picker with one click.</p>
-
-    <p>Quest-locked items cascade correctly — e.g. Salve amulet (e) requires <em>Lair of Tarn Razorlor</em>, which itself requires completing <em>Haunted Mine</em> (Agility 15, Crafting 35) and having Slayer 40.</p>
+    <p>Every suggested item has wiki-verified equip requirements. Items you can't use show a lock with the missing skill levels (e.g. <em>Defence 80/90</em>). Missing requirements can be added as Goals directly from the picker with one click.</p>
 
     <h3>Permissions</h3>
-    <p>Only your own character is editable (the one you set with <strong>👤 Set your name</strong>). When viewing a teammate's gear the panel shows: <em>"🔒 View only — switch to your character to edit gear"</em>.</p>
+    <p>Only your own character is editable (the one set with <strong>Set your name</strong>). When viewing a teammate's gear the slot picker is hidden. When visiting another group without being unlocked, the entire editing UI is hidden — no slot picker, no quick-fill, no clear button.</p>
 
     <h3>Quick-fill &amp; Clear</h3>
     <ul>
-      <li><strong>⚡ Quick-fill</strong> — fills all empty slots with the best item you can currently equip, marked as Planning</li>
-      <li><strong>🗑 Clear gear</strong> — removes all items for the current style in one click</li>
+      <li><strong>Quick-fill</strong> — fills all empty slots with the best item you can currently equip, marked as Planning</li>
+      <li><strong>Clear gear</strong> — removes all items for the current style in one click</li>
     </ul>
 
     <hr />
 
-    <!-- Tab: Items & Drops -->
-    <h2 id="tab-drops">💎 Items &amp; Drops</h2>
-    <p>Single page showing three panels simultaneously — no sub-tabs to switch between.</p>
+    <!-- Tab: Achievements -->
+    <h2 id="tab-achievements">Achievements Panel</h2>
+    <p>A panel showing the group's overall completion progress across tracked goal categories. Displayed with the same dark panel background as the Goals and Vault tabs.</p>
 
-    <h3>Item Requests <em>(left panel)</em></h3>
-    <p>Your group's wish-list. Each request has: item name, boss/activity, requesting player, priority (🔴 High / 🟡 Medium / 🟢 Low), quantity, and optional notes.</p>
-    <p>Boss names show a colour-coded readiness chip: <span class="tag-green">🟢 Can kill now</span> / 🟠 Close / 🔴 Missing requirements. Hover the chip to see a detailed popup with exact skill requirements and which players are eligible.</p>
-    <p>Mark requests as ✓ Obtained to archive them; filter between Pending / Obtained / All.</p>
-
-    <h3>Drop Log <em>(middle panel)</em></h3>
-    <p>Manual drop logging plus auto-detected entries from the RuneMetrics activity feed (e.g. <em>"I found a Dragon chainbody"</em> lines are parsed on every sync). Filter by player.</p>
-
-    <h3>Boss Overview <em>(right sidebar, 20%)</em></h3>
-    <p>A compact sidebar showing every boss that has pending requests. For each boss:</p>
-    <ul>
-      <li>Colour-coded readiness chip</li>
-      <li>Items being requested (tags)</li>
-      <li>Who needs them</li>
-      <li>Who can attempt the boss (or how many levels away the closest player is)</li>
-    </ul>
-
-    <hr />
-
-    <!-- Tab: Tips & Milestones -->
-    <h2 id="tab-tips">💡 Tips &amp; Milestones</h2>
-    <p>A curated guide of the most impactful RS3 GIM targets, filterable by category and priority.</p>
-
-    <h3>Key Quests</h3>
-    <table>
-      <thead><tr><th>Priority</th><th>Quest</th><th>Unlock</th></tr></thead>
-      <tbody>
-        <tr><td><span class="tag-gold">High</span></td><td>While Guthix Sleeps</td><td>Ancient Curses (Soulsplit, Turmoil)</td></tr>
-        <tr><td><span class="tag-gold">High</span></td><td>Plague's End</td><td>Seren prayers, Enhanced Excalibur, Prifddinas</td></tr>
-        <tr><td><span class="tag-gold">High</span></td><td>Recipe for Disaster</td><td>Culinaromancer's gloves (best hand slot)</td></tr>
-        <tr><td><span class="tag-gold">High</span></td><td>Desert Treasure</td><td>Ancient Magicks spellbook</td></tr>
-        <tr><td><span class="tag-gold">High</span></td><td>The Elder Kiln</td><td>TokHaar-Kal-Ket / Xil / Mej (T90 capes)</td></tr>
-        <tr><td><span class="tag-gold">High</span></td><td>Smoking Kills</td><td>Double Slayer points, full reward shop</td></tr>
-      </tbody>
-    </table>
-
-    <h3>Milestone Capes (RS3)</h3>
-    <table>
-      <thead><tr><th>Cape</th><th>Tier</th><th>How to get</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Fire Cape</strong></td><td>T60 Melee</td><td>Solo TzTok-Jad in the Fight Cave</td></tr>
-        <tr><td><strong>TokHaar-Kal-Ket</strong></td><td>T90 Melee</td><td>Fight Kiln (requires The Elder Kiln quest)</td></tr>
-        <tr><td><strong>TokHaar-Kal-Xil</strong></td><td>T90 Ranged</td><td>Fight Kiln</td></tr>
-        <tr><td><strong>TokHaar-Kal-Mej</strong></td><td>T90 Magic</td><td>Fight Kiln</td></tr>
-        <tr><td><strong>Igneous Kal-Ket</strong></td><td>T95 Melee</td><td>Upgrade TokHaar-Kal-Ket with igneous stone (Hardmode TzKal-Zuk)</td></tr>
-        <tr><td><strong>Igneous Kal-Xil</strong></td><td>T95 Ranged</td><td>Upgrade TokHaar-Kal-Xil with igneous stone</td></tr>
-        <tr><td><strong>Igneous Kal-Mej</strong></td><td>T95 Magic</td><td>Upgrade TokHaar-Kal-Mej with igneous stone</td></tr>
-        <tr><td><strong>Igneous Kal-Mor</strong></td><td>T95 Necromancy</td><td>Complete TzKal-Zuk Necromancy challenge</td></tr>
-      </tbody>
-    </table>
-
-    <h3>Key Skill Milestones</h3>
-    <ul>
-      <li><strong>Prayer 43</strong> — Protection prayers</li>
-      <li><strong>Prayer 70</strong> — Piety-equivalent curses</li>
-      <li><strong>Prayer 95</strong> — Soulsplit + Turmoil / Anguish / Torment (after While Guthix Sleeps)</li>
-      <li><strong>Herblore 96</strong> — Overloads (mandatory for serious PvM)</li>
-      <li><strong>Herblore 106</strong> — Elder overload salve with prayer restore</li>
-      <li><strong>Dungeoneering 85</strong> — Chaotic weaponry</li>
-      <li><strong>Necromancy 70 / 99 / 120</strong> — Conjure army / Death Guard T80 / Soulbound Lantern T95</li>
-      <li><strong>Invention 27</strong> — Augment weapons and armour</li>
-      <li><strong>Slayer 85</strong> — Abyssal demons, Nechryael</li>
-    </ul>
+    <h3>Progress Summary</h3>
+    <p>Completion bars and counts broken down by goal type — showing how many goals are active, complete, or vaulted across the whole group.</p>
 
     <hr />
 
     <!-- Tab: Achievement Diaries -->
-    <h2 id="tab-diaries">📋 Achievement Diaries</h2>
+    <h2 id="tab-diaries">Achievement Diaries</h2>
     <p>Tracks diary completion across all 13 RS3 regions × 4 tiers (Easy / Medium / Hard / Elite).</p>
 
     <h3>Grid View <em>(default)</em></h3>
@@ -440,18 +436,18 @@
     <p>Per-player breakdown with tier buttons and completion dates. Completion percentage bar per player.</p>
 
     <h3>Auto-detection</h3>
-    <p>Diary completions are detected from the RuneMetrics activity feed on every sync (e.g. <em>"I completed the Easy Varrock diary"</em>). Any cell can also be toggled manually if the feed entry was missed.</p>
+    <p>Diary completions are detected from the RuneMetrics activity feed on every sync. Any cell can also be toggled manually if the feed entry was missed.</p>
 
     <hr />
 
     <!-- Tab: Leaderboards -->
-    <h2 id="tab-leaderboards">🏅 Leaderboards</h2>
+    <h2 id="tab-leaderboards">Leaderboards</h2>
 
     <h3>Boss Kills</h3>
     <p>Accumulated boss kill counts from the RuneMetrics activity feed. Boss × player matrix with a boss filter dropdown. Auto-updates on every sync.</p>
 
     <h3>Firsts</h3>
-    <p>~40 milestone cards showing who achieved each one first in the group — quests, bosses, skill 99s, rare drops. Unachieved cards are dimmed as <em>"Not yet"</em>.</p>
+    <p>~40 milestone cards showing who achieved each one first in the group — quests, bosses, skill 99s, rare drops. Unachieved cards are dimmed as "Not yet".</p>
 
     <h3>Milestones Feed</h3>
     <p>Full chronological feed of 99s, 120s, quest completions, and notable boss kills.</p>
@@ -465,27 +461,27 @@
     <hr />
 
     <!-- Discord Notifications -->
-    <h2 id="tab-notifications">🔔 Discord Notifications</h2>
+    <h2 id="tab-notifications">Discord Notifications</h2>
     <p>Connect your group to a Discord channel to receive automatic notifications when things happen in-game. Each group stores its own webhook and event preferences.</p>
 
     <h3>Setup</h3>
     <ol style="padding-left:20px;color:var(--text-dim);line-height:2;">
       <li>Unlock your group (enter the group secret)</li>
-      <li>Click the <strong>🔔</strong> button in the header</li>
+      <li>Click the notification bell icon in the header</li>
       <li>In Discord: right-click a channel → <em>Edit Channel</em> → <em>Integrations</em> → <em>Webhooks</em> → <em>New Webhook</em> → copy the URL</li>
-      <li>Paste the URL, choose which events to enable, click <strong>✓ Save</strong></li>
-      <li>Click <strong>📨 Test</strong> to confirm the connection — a test embed will appear in your Discord channel immediately</li>
+      <li>Paste the URL, choose which events to enable, click <strong>Save</strong></li>
+      <li>Click <strong>Test</strong> to confirm the connection — a test embed will appear in your Discord channel immediately</li>
     </ol>
 
     <h3>Notification Events</h3>
     <table>
       <thead><tr><th>Event</th><th>Default</th><th>Trigger</th></tr></thead>
       <tbody>
-        <tr><td>🎉 <strong>Level 99s &amp; 120s</strong></td><td><span class="tag-green">On</span></td><td>Detected from RuneMetrics activity feed on every sync</td></tr>
-        <tr><td>📋 <strong>Achievement Diaries</strong></td><td><span class="tag-green">On</span></td><td>When a diary tier completion is detected or manually toggled</td></tr>
-        <tr><td>⚔️ <strong>Boss First Kills</strong></td><td><span class="tag-green">On</span></td><td>First time a player's kill count for a boss goes above zero</td></tr>
-        <tr><td>🎯 <strong>Group Goals</strong></td><td><span class="tag-green">On</span></td><td>When any goal is marked as complete</td></tr>
-        <tr><td>🎁 <strong>Drops</strong></td><td><span class="tag-dim">Off</span></td><td>Every drop auto-detected from activity feed — can be noisy</td></tr>
+        <tr><td><strong>Level 99s &amp; 120s</strong></td><td><span class="tag-green">On</span></td><td>Detected from RuneMetrics activity feed on every sync</td></tr>
+        <tr><td><strong>Achievement Diaries</strong></td><td><span class="tag-green">On</span></td><td>When a diary tier completion is detected or manually toggled</td></tr>
+        <tr><td><strong>Boss First Kills</strong></td><td><span class="tag-green">On</span></td><td>First time a player's kill count for a boss goes above zero</td></tr>
+        <tr><td><strong>Group Goals</strong></td><td><span class="tag-green">On</span></td><td>When any goal is marked as complete</td></tr>
+        <tr><td><strong>Drops</strong></td><td><span class="tag-dim">Off</span></td><td>Every drop auto-detected from activity feed — can be noisy</td></tr>
       </tbody>
     </table>
 
@@ -504,7 +500,7 @@
         <tr><td><strong>Frontend</strong></td><td>React 18 + Vite</td></tr>
         <tr><td><strong>Backend</strong></td><td>Node.js 22 + Express</td></tr>
         <tr><td><strong>Database</strong></td><td>SQLite via <code>node:sqlite</code> built-in (zero extra deps)</td></tr>
-        <tr><td><strong>Data</strong></td><td>RS3 Hiscores CSV API + RuneMetrics JSON API</td></tr>
+        <tr><td><strong>Data</strong></td><td>RS3 Hiscores CSV API + RuneMetrics JSON API + RS3 Wiki opensearch API</td></tr>
         <tr><td><strong>Hosting</strong></td><td>Hetzner VPS — Ubuntu 22.04</td></tr>
         <tr><td><strong>Web server</strong></td><td>Nginx (reverse proxy + SSL termination)</td></tr>
         <tr><td><strong>SSL</strong></td><td>Cloudflare Origin Certificate</td></tr>
@@ -524,14 +520,15 @@
         <tr><td><code>snapshots</code></td><td>Daily XP snapshots for weekly gain calculation</td></tr>
         <tr><td><code>goals</code></td><td>Goal type, status, current/target values, details JSON</td></tr>
         <tr><td><code>goal_contributors</code></td><td>Many-to-many: goals ↔ players</td></tr>
-        <tr><td><code>drops</code></td><td>Drop log (auto-detected + manually added)</td></tr>
-        <tr><td><code>item_requests</code></td><td>Item wish-list per player with priority and boss</td></tr>
+        <tr><td><code>drops</code></td><td>Drop log (auto-detected from activity feed + manually added)</td></tr>
         <tr><td><code>achievements</code></td><td>Diary completion per player (region + tier key, timestamp)</td></tr>
         <tr><td><code>boss_kills</code></td><td>Accumulated kill counts per player from activity feed</td></tr>
         <tr><td><code>boss_kill_log</code></td><td>Deduplication log — prevents double-counting on re-sync</td></tr>
         <tr><td><code>equipment_loadouts</code></td><td>Gear slots: player × combat style × slot, item name, confirmed flag</td></tr>
         <tr><td><code>group_notes</code></td><td>Shared pinboard content per group</td></tr>
-        <tr><td><code>player_activities</code></td><td>Persistent RuneMetrics activity log (deduplicated by player + date + text); rebuilt into <code>activities_json</code> cache on every fetch</td></tr>
+        <tr><td><code>player_activities</code></td><td>Persistent RuneMetrics activity log (deduplicated by player + date + text)</td></tr>
+        <tr><td><code>rs3_items</code></td><td>RS3 item names and wiki icon URLs (seeded from <code>seedRs3Data.js</code>)</td></tr>
+        <tr><td><code>admin_users</code></td><td>Admin portal credentials (PBKDF2-SHA512 hashed)</td></tr>
       </tbody>
     </table>
 
@@ -553,6 +550,11 @@ npm run install:all   # installs root + server + client deps
 npm run dev           # API on :3001, Vite dev server on :5173</code></pre>
     <p>Open <strong>http://localhost:5173</strong> — <code>/api</code> requests are proxied to the backend automatically by Vite.</p>
 
+    <h3>Seed Item Icons</h3>
+    <p>After first deploy (or after pulling to a new server), seed the RS3 item icon database so gear slot icons and vault item icons display correctly:</p>
+    <pre><code>node server/scripts/seedRs3Data.js
+node server/scripts/addMissingGearIcons.js</code></pre>
+
     <h3>Production Deploy</h3>
     <pre><code>ssh root@YOUR_SERVER_IP
 bash /root/deploy.sh
@@ -567,7 +569,7 @@ bash /root/deploy.sh
     <hr />
 
     <!-- Admin FAQ -->
-    <h2 id="faq">🛠️ Admin FAQ</h2>
+    <h2 id="faq">Admin FAQ</h2>
     <p>Common issues encountered when running the server or managing groups.</p>
 
     <h3>Group shows 0 members / members not loading</h3>
@@ -595,42 +597,45 @@ console.log('Moved:', moved.changes, 'players. Deleted:', del.changes, 'group(s)
     <p>Replace <code>OLD_ID</code> and <code>NEW_ID</code> with the values you found. Refresh the app — all members appear immediately.</p>
 
     <h3>Activity feed is empty</h3>
-    <p><strong>Cause:</strong> The activity feed is populated by a 2-hour background cron (RuneMetrics API). <strong>↻ Sync All</strong> only updates hiscores — it does not touch RuneMetrics. If the cron hasn't run yet since the server started, the feed will be empty.</p>
+    <p><strong>Cause:</strong> The activity feed is populated by a 2-hour background cron (RuneMetrics API). <strong>Sync All</strong> only updates hiscores — it does not touch RuneMetrics.</p>
     <p>Check the last cron run:</p>
     <pre><code>pm2 logs rs3-gim --lines 50</code></pre>
-    <p>To trigger immediately without waiting (no UI button — server-side only):</p>
+    <p>To trigger immediately (server-side only):</p>
     <pre><code># Replace 5 with your group's numeric ID
 curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m json.tool</code></pre>
-    <p>This fetches RuneMetrics for every player with a 1-second delay between requests and writes new activities to the database straight away.</p>
 
     <h3>RuneMetrics returns 502 / 503 errors</h3>
-    <p><strong>Cause:</strong> Jagex's RuneMetrics endpoint is temporarily down or overloaded — this is a server-side problem at Jagex, not a rate-limit issue and not a bug in the app.</p>
-    <p><strong>Also check:</strong> Each player must have their RuneMetrics profile set to <strong>Public</strong> in-game. Go to <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em> and ensure the profile is not private. A private profile also returns 502.</p>
-    <p><strong>Solution:</strong> Wait and retry. The 2-hour cron will pick it up automatically. You can also re-run the manual curl once Jagex recovers. No code changes are needed.</p>
+    <p><strong>Cause:</strong> Jagex's RuneMetrics endpoint is temporarily down, or the player's profile is set to Private.</p>
+    <p><strong>Fix:</strong> Ensure each player has their RuneMetrics profile set to <strong>Public</strong> in-game: <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em>. For server errors, wait and the 2-hour cron will retry automatically.</p>
     <div class="callout callout-info">
       <span class="callout-icon">ℹ️</span>
-      <p><strong>502</strong> = Jagex server error (just wait). <strong>429</strong> = rate limited (reduce sync frequency). In practice, at 1 req/sec with a 2-hour window the app is well within safe limits for thousands of players.</p>
+      <p><strong>502</strong> = Jagex server error (just wait). <strong>429</strong> = rate limited (reduce sync frequency). At 1 req/sec with a 2-hour window the app is well within safe limits.</p>
     </div>
 
+    <h3>Gear icons missing in the vault or loadouts</h3>
+    <p><strong>Cause:</strong> The <code>rs3_items</code> table has not been seeded on this server.</p>
+    <p><strong>Fix:</strong></p>
+    <pre><code>cd /var/www/RS3-GIM-Companion
+node server/scripts/seedRs3Data.js
+node server/scripts/addMissingGearIcons.js</code></pre>
+    <p>Both scripts use <code>INSERT OR REPLACE</code> and are safe to re-run at any time. No restart needed — icons appear on the next page load.</p>
+
     <h3>A group lost their secret / need to re-claim</h3>
-    <p><strong>Symptom:</strong> The group owner lost their secret code and can no longer edit the group.</p>
-    <p><strong>Fix:</strong> Clear the <code>password_hash</code> — this resets the group to unclaimed so they can claim it again and get a new secret. All data (players, goals, drops, gear) is untouched.</p>
-    <p><strong>Step 1 — list all groups to find their ID:</strong></p>
+    <p><strong>Fix:</strong> Clear the <code>password_hash</code> — this resets the group to unclaimed so they can claim again. All data is untouched.</p>
     <pre><code>node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
-const groups = db.prepare('SELECT id, name, password_hash, (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS players FROM groups g ORDER BY id').all();
+// List groups to find the ID
+const groups = db.prepare('SELECT id, name, (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS players FROM groups g ORDER BY id').all();
 console.log(JSON.stringify(groups, null, 2));
-"</code></pre>
-    <p><strong>Step 2 — clear the password (replace <code>26</code> with their actual group ID):</strong></p>
-    <pre><code>node -e "
+"
+
+node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
-const result = db.prepare('UPDATE groups SET password_hash = NULL WHERE id = ?').run(26);
+const result = db.prepare('UPDATE groups SET password_hash = NULL WHERE id = ?').run(GROUP_ID);
 console.log('Updated rows:', result.changes);
 "</code></pre>
-    <p>If it prints <code>Updated rows: 1</code> you're done. Tell them to refresh — <strong>🔒 Claim group</strong> reappears in the header. They click it, get a new secret shown once, and save it somewhere safe (e.g. a private Discord channel).</p>
 
     <h3>Permanently delete a group</h3>
-    <p>The <code>players</code> table references <code>groups</code> without a cascade rule, so delete the players first. Everything else (skills, drops, achievements, loadouts, etc.) cascades automatically from the player delete, and <code>group_notes</code> cascades from the group delete. Replace <code>GROUP_ID</code> with the target ID.</p>
     <pre><code>node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
 const id = GROUP_ID;
@@ -640,15 +645,7 @@ console.log('Deleted groups:', result.changes);
 "</code></pre>
 
     <h3>Player shows "Not synced" / hiscores lookup fails</h3>
-    <p><strong>Symptom:</strong> One player always shows "Not synced" and syncing returns <code>Player "Name" not found on hiscores</code>.</p>
-    <p><strong>Cause:</strong> The RSN was entered with a <strong>non-breaking space</strong> (<code> </code>) instead of a regular space — common when copy-pasting from Discord, the RS website, or a mobile keyboard. The hiscores API doesn't recognise it.</p>
-    <p><strong>Diagnosis:</strong> Check the exact bytes stored (non-breaking space appears as <code> </code> in JSON output):</p>
-    <pre><code>node -e "
-const db = require('/var/www/RS3-GIM-Companion/server/database');
-const p = db.prepare('SELECT id, rsn FROM players WHERE group_id = ?').all(GROUP_ID);
-p.forEach(x => console.log(x.id, JSON.stringify(x.rsn)));
-"</code></pre>
-    <p><strong>Fix:</strong> Overwrite the RSN with a clean version, then re-sync:</p>
+    <p><strong>Cause:</strong> The RSN was entered with a non-breaking space instead of a regular space — common when copy-pasting from Discord or mobile. Fix by overwriting the RSN with a clean version:</p>
     <pre><code>node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
 db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run('Correct Name Here', PLAYER_ID);
@@ -671,39 +668,53 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.2.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.4.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
     <ul>
-      <li>🗃️ <strong>Persistent activity feed</strong> — RuneMetrics entries stored permanently in <code>player_activities</code> table; new activity detected once, never duplicated on re-sync</li>
-      <li>⏱️ <strong>2-hour activity cron</strong> — RuneMetrics fetched every 2 h in background (1 s/player delay); <strong>↻ Sync All</strong> now only updates hiscores</li>
-      <li>🛠️ <strong>Manual activity sync endpoint</strong> — <code>POST /api/players/sync-activities/:groupId</code> for on-demand pulls (server-side curl, no UI button)</li>
-      <li>🏆 <strong>Elite Achievement Diary tier</strong> — 4th tier with purple colour coding; auto-detected from activity feed</li>
-      <li>🎯 <strong>Add Goal from Gear Loadouts fixed</strong> — "+ Goal" now correctly sets title, type, and target value</li>
-      <li>🖼️ <strong>Goal modal icons fixed</strong> — skill picker uses RS3 wiki icons instead of emoji</li>
-      <li>🐛 <strong>Group Vault blank screen fix</strong> — <code>playerId</code> prop correctly threaded through all sub-components</li>
-      <li>📖 <strong>Admin FAQ</strong> — duplicate-group fix, manual activity sync, 502 error handling, deploy process guide</li>
+      <li><strong>Universal chip design</strong> — all player filter selectors and toggle chips across Goals, Group Vault, and Gear Loadouts now use a single shared CSS class (<code>.chip</code> / <code>.chip.active</code>) for a consistent look</li>
+      <li><strong>Add Item to Vault</strong> — new "+ Add Item" button (canWrite only) with RS3 wiki opensearch proxy; shows item icons in results; optional source field</li>
+      <li><strong>Delete vault entries</strong> — each expanded vault item now shows a × delete button per drop entry (canWrite only, with confirmation prompt)</li>
+      <li><strong>Gear visitor bug fix</strong> — visiting another group without being unlocked no longer shows the gear editing UI; <code>isMyPlayer</code> now requires <code>canWrite</code></li>
+      <li><strong>Emoji cleanup</strong> — all decorative unicode/generative emoji removed from UI labels, buttons, and section headers; RS3 wiki item/skill images are kept</li>
+      <li><strong>Achievements panel</strong> — AchievementsTab wrapped in same dark panel background as Goals and Vault</li>
+      <li><strong>GoalModal type alignment</strong> — goal types renamed to match vault/browser categories: Quest, Skill Unlock, Key Item, Item Request, Achievement Diary, Boss Kill</li>
+      <li><strong>RS3 wiki item search proxy</strong> — server-side <code>GET /api/rs3/item-search?q=</code> endpoint proxies the wiki opensearch API (avoids CORS, filters non-item pages)</li>
+    </ul>
+
+    <h3>v1.3.0 — May 2026</h3>
+    <ul>
+      <li><strong>Goals tab</strong> — full goal browser replacing the old Items &amp; Drops tab; six goal types (Quest, Skill Unlock, Key Item, Item Request, Achievement Diary, Boss Kill); filter by status, type, priority, and player</li>
+      <li><strong>Goal suggestions library</strong> — curated pre-built goals for common RS3 GIM targets</li>
+      <li><strong>Group Vault redesign</strong> — compact 80 px tile grid with click-to-expand; dupe badge; worn dot from gear loadout data; per-player chip filter</li>
+      <li><strong>Gear Loadouts player chips</strong> — player selector upgraded from dropdown to chip row</li>
+      <li><strong>Group Notes overlay</strong> — slide-in shared pinboard with auto-save, accessible from vault header</li>
+      <li><strong>Items &amp; Drops tab removed</strong> — superseded by Goals tab + Group Vault</li>
+      <li><strong>Tips &amp; Milestones tab removed</strong> — content accessible via goal suggestions instead</li>
+    </ul>
+
+    <h3>v1.2.0 — May 2026</h3>
+    <ul>
+      <li><strong>Persistent activity feed</strong> — RuneMetrics entries stored permanently in <code>player_activities</code> table; new activity detected once, never duplicated on re-sync</li>
+      <li><strong>2-hour activity cron</strong> — RuneMetrics fetched every 2 h in background; Sync All now only updates hiscores</li>
+      <li><strong>Manual activity sync endpoint</strong> — <code>POST /api/players/sync-activities/:groupId</code> for on-demand pulls</li>
+      <li><strong>Elite Achievement Diary tier</strong> — 4th tier with purple colour coding; auto-detected from activity feed</li>
+      <li><strong>Goal modal icons fixed</strong> — skill picker uses RS3 wiki icons instead of emoji</li>
+      <li><strong>Admin FAQ</strong> — duplicate-group fix, manual activity sync, 502 error handling, deploy process guide</li>
     </ul>
 
     <h3>v1.1.0 — May 2026</h3>
     <ul>
-      <li>🔔 <strong>Discord Notifications</strong> — webhook integration with configurable events: level 99/120, diary completions, boss first kills, goal completions, drops; rich embeds; test button</li>
-      <li>🐛 <strong>Last sync timezone fix</strong> — hiscores sync time now displays correctly in all timezones</li>
-      <li>🐛 <strong>RSN picker</strong> — "Set your name" now accepts free-text input with autocomplete suggestions</li>
-      <li>📖 <strong>Docs site</strong> — documentation published via GitHub Pages</li>
-      <li>🔗 <strong>Docs &amp; Discord links</strong> added to the app header</li>
+      <li><strong>Discord Notifications</strong> — webhook integration with configurable events: level 99/120, diary completions, boss first kills, goal completions, drops; rich embeds; test button</li>
+      <li><strong>Docs site</strong> — documentation published via GitHub Pages</li>
+      <li><strong>Docs &amp; Discord links</strong> added to the app header</li>
     </ul>
 
     <h3>v1.0.0 — May 2026</h3>
     <ul>
-      <li>⚔️ <strong>Gear Loadouts</strong> — per-player equipment grids for all 5 combat styles with wiki-verified requirements and quest-chained prereqs</li>
-      <li>💎 <strong>Group Vault</strong> redesign — confirmed gear shows real-time "Worn by" status on matching vault drops; live updates on gear change</li>
-      <li>🛡️ <strong>Permission model</strong> — only your own character is editable; teammates' gear is view-only</li>
-      <li>📝 <strong>Group Notes</strong> — floating slide-in overlay with auto-save, accessible from the vault tab</li>
-      <li>🗡️ <strong>Items &amp; Drops</strong> redesigned as single-page three-panel layout (Item Requests | Drop Log | Boss Overview)</li>
-      <li>🔥 <strong>Tips &amp; Milestones</strong> — all RS3 cape names corrected (Fire Cape → TokHaar-Kal-Ket/Xil/Mej → Igneous Kal variants)</li>
-      <li>🐛 <strong>Gear requirement fixes</strong> — corrected Defence-only requirements for RS3 armour (Bandos T70, Armadyl T70, Pernix/Virtus T80 Def+Con, etc.)</li>
-      <li>🖼️ <strong>New logo</strong> — custom SVG shield + iron helm replacing the emoji icon</li>
-      <li>🎮 <strong>Discord integration</strong> — Discord link in the app header</li>
-      <li>📐 <strong>Layout polish</strong> — 50/50 vault/gear panels with card backgrounds; Group Vault moved next to Overview in the tab bar</li>
+      <li><strong>Gear Loadouts</strong> — per-player equipment grids for all 5 combat styles with wiki-verified requirements and quest-chained prereqs</li>
+      <li><strong>Group Vault</strong> — confirmed gear shows real-time "Worn by" status on matching vault drops</li>
+      <li><strong>Permission model</strong> — only your own character is editable; teammates' gear is view-only</li>
+      <li><strong>Group Notes</strong> — floating slide-in overlay with auto-save, accessible from the vault tab</li>
+      <li><strong>New logo</strong> — custom SVG shield + iron helm</li>
     </ul>
 
     <hr />
@@ -712,7 +723,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.2.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.4.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 

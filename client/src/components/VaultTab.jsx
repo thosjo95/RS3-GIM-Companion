@@ -47,7 +47,7 @@ function fmtDate(iso) {
 
 // ── Vault item tile (compact, click to expand) ────────────────────────────────
 
-function ItemTile({ item, groupEquipment, iconMap }) {
+function ItemTile({ item, groupEquipment, iconMap, canWrite, onDropDeleted }) {
   const [expanded, setExpanded] = useState(false);
 
   const isDupe   = item.players.length > 1;
@@ -155,14 +155,31 @@ function ItemTile({ item, groupEquipment, iconMap }) {
       {/* Expand panel */}
       {expanded && (
         <div style={{ flexBasis: '100%', width: '100%' }}>
-          <ExpandedTileDetail item={item} wornBy={wornBy} isWorn={isWorn} isDupe={isDupe} onClose={() => setExpanded(false)} />
+          <ExpandedTileDetail item={item} wornBy={wornBy} isWorn={isWorn} isDupe={isDupe} onClose={() => setExpanded(false)} canWrite={canWrite} onDropDeleted={onDropDeleted} />
         </div>
       )}
     </>
   );
 }
 
-function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
+function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose, canWrite, onDropDeleted }) {
+  const [deletingId, setDeletingId] = useState(null);
+
+  async function handleDelete(e, dropId) {
+    e.stopPropagation();
+    if (!window.confirm('Remove this entry from the vault?')) return;
+    setDeletingId(dropId);
+    try {
+      await api.deleteDrop(dropId);
+      onDropDeleted?.();
+    } catch {
+      // silently ignore — reload will reflect truth
+      onDropDeleted?.();
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div
       onClick={onClose}
@@ -185,6 +202,7 @@ function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
           display: 'flex', flexWrap: 'wrap', gap: '3px 10px',
           padding: '5px 8px', background: 'var(--bg-panel)',
           borderRadius: 'var(--radius)', fontSize: 11,
+          alignItems: 'center',
         }}>
           <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{drop.rsn}</span>
           {drop.dropped_at && (
@@ -197,6 +215,24 @@ function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
           {drop.value_gp > 0 && <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>{fmtGp(drop.value_gp)}</span>}
           {drop.notes && drop.notes !== 'Auto-added from goal completion' && drop.notes !== 'Manual entry' && (
             <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>"{drop.notes}"</span>
+          )}
+          {canWrite && drop.id && (
+            <button
+              onClick={e => handleDelete(e, drop.id)}
+              disabled={deletingId === drop.id}
+              title="Remove from vault"
+              style={{
+                marginLeft: 'auto', flexShrink: 0,
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text-dim)', fontSize: 13, lineHeight: 1, padding: '0 2px',
+                opacity: deletingId === drop.id ? 0.4 : 0.6,
+                transition: 'opacity 0.1s, color 0.1s',
+              }}
+              onMouseEnter={e => { if (deletingId !== drop.id) e.currentTarget.style.color = '#e57373'; e.currentTarget.style.opacity = '1'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.opacity = deletingId === drop.id ? '0.4' : '0.6'; }}
+            >
+              {deletingId === drop.id ? '…' : '×'}
+            </button>
           )}
         </div>
       ))}
@@ -586,6 +622,8 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
               item={item}
               groupEquipment={groupEquipment}
               iconMap={iconMap}
+              canWrite={canWrite}
+              onDropDeleted={loadDrops}
             />
           ))}
         </div>

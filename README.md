@@ -40,9 +40,11 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Group Vault** — unified tile grid combining worn and free items; compact 80px tiles show item icon, name, and owner (or "Free" if unclaimed); click any tile to expand full details (acquired date, source, slot)
 - **Dupe indicator** — gold ×N badge (top-left) when multiple members hold the same item; green dot (top-right) when the item is currently worn
 - **Player filter chips** — filter the vault to any single player using the same chip style as the Goals tab
+- **Add Item** — "+ Add Item" button (canWrite only) searches the RS3 wiki for any item by name and adds it to the vault with an optional source field
+- **Delete vault entries** — each expanded item row has a × button (canWrite only) to remove that drop entry; confirmation prompt before deletion
 - **Gear Loadouts** — per-player equipment grid across 5 combat styles (Melee / Ranged / Magic / Necromancy / Hybrid); wiki-verified item requirements; confirmation dialog (✅ Owned vs 📋 Planning); only your own character is editable
 - **Viewing another player's gear** — item picker and Best Available panel are hidden; gear grid centres on screen for a clean read-only view
-- **Player selector chips** — 👤 icon makes it obvious the player names are clickable; "you" badge highlights your own character
+- **Player selector chips** — "you" badge highlights your own character; same chip design as vault and goals
 - **Group Notes** — floating slide-in pinboard for strategies, loot rules, and session plans; auto-saves with debounce
 
 ### 📋 Achievement Diaries
@@ -431,10 +433,12 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 - 🗂️ **GoalModal types aligned** — "Add Goal" modal now uses the same six categories as the Goal Browser: Quest, Skill Unlock, Key Item, Item Request, Achievement Diary, Boss Kill; removes the old generic "Custom" and "Item (recipe)" types
 - 🏆 **Vault redesign** — unified tile grid replaces separate "Confirmed Worn Gear" and "Vault" sections; worn items and free items live in the same grid; click any tile to expand full details
 - 🔴🟢 **Dupe & worn indicators** — gold ×N badge (top-left) for items held by multiple players; green dot (top-right) for currently worn items; "Free" label when no one is wearing it
-- 🧩 **Vault player filter chips** — dropdown selector replaced with the same chip-button style used in the Goals tab
-- 👤 **Gear Loadouts chip selector** — player dropdown replaced with chip buttons that include a 👤 icon and a "you" badge on your own character
-- 🔒 **Gear Loadouts other-player view** — item picker and Best Available panel are hidden when viewing a teammate; gear grid centres for a clean read-only layout
-- 📋 **Achievements panel design** — Achievement Diaries tab now uses the same dark-panel background as Goals and Vault
+- ➕ **Add Item to Vault** — "+ Add Item" button (canWrite only) with RS3 wiki opensearch proxy; live item search with icons; optional source field; tagged as "Manual entry" internally
+- 🗑️ **Delete vault entries** — × delete button per drop row in the expanded tile detail (canWrite only); confirmation prompt; reload on success
+- 🧩 **Universal chip design** — all player filter chips and selector chips across Goals, Vault, and Gear Loadouts use a single shared CSS class (`chip` / `chip.active`) for consistent styling
+- 🔒 **Gear Loadouts visitor fix** — `isMyPlayer` now requires `canWrite`; visiting another group without being unlocked no longer shows the editing UI
+- 📋 **Achievements panel design** — AchievementsTab wrapped in the same dark-panel background as Goals and Vault
+- 🚫 **Emoji cleanup** — all decorative unicode/generative emoji removed from UI labels, buttons, and headers; RS3 wiki item and skill images are preserved
 
 ### v1.3.0 — May 2026
 - ✅ **RSN validation on add** — adding a player now checks the RS3 hiscores first; unranked or mistyped names are rejected with an inline error before being saved
