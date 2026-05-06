@@ -540,28 +540,20 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
       {/* Player chips */}
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
         <button
-          onClick={() => setFilterPlayer('all')}
-          style={{
-            padding: '4px 10px', borderRadius: 'var(--radius-lg)',
-            background: filterPlayer === 'all' ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel-alt)',
-            border: `1px solid ${filterPlayer === 'all' ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
-            color: filterPlayer === 'all' ? 'var(--gold)' : 'var(--text-dim)',
-            cursor: 'pointer', fontSize: 11, fontWeight: filterPlayer === 'all' ? 600 : 400,
-          }}>All members</button>
+          className={`chip${filterPlayer === 'all' ? ' active' : ''}`}
+          onClick={() => setFilterPlayer('all')}>
+          All members
+        </button>
 
         {players.map(p => {
           const active = filterPlayer === p.rsn;
           return (
             <button
               key={p.id}
-              onClick={() => setFilterPlayer(active ? 'all' : p.rsn)}
-              style={{
-                padding: '4px 10px', borderRadius: 'var(--radius-lg)',
-                background: active ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel-alt)',
-                border: `1px solid ${active ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
-                color: active ? 'var(--text-bright)' : 'var(--text-dim)',
-                cursor: 'pointer', fontSize: 11, fontWeight: active ? 600 : 400,
-              }}>{p.rsn}</button>
+              className={`chip${active ? ' active' : ''}`}
+              onClick={() => setFilterPlayer(active ? 'all' : p.rsn)}>
+              {p.rsn}
+            </button>
           );
         })}
 

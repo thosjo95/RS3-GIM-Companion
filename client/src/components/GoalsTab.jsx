@@ -151,38 +151,17 @@ function PlayerChips({ players, selected, onToggle }) {
         return (
           <button
             key={p.id}
-            onClick={() => onToggle(p.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '5px 10px', borderRadius: 'var(--radius-lg)',
-              background: active ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel-alt)',
-              border: `1px solid ${active ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
-              color: active ? 'var(--gold)' : 'var(--text-dim)',
-              cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400,
-              transition: 'all 0.12s',
-            }}>
-            <span style={{ color: active ? 'var(--text-bright)' : 'var(--text)' }}>{p.rsn}</span>
-            <span style={{ fontSize: 10, opacity: 0.8 }}>
-              Cmb {p.combat_level ?? '?'} · Lvl {p.total_level ?? '?'}
-            </span>
+            className={`chip${active ? ' active' : ''}`}
+            onClick={() => onToggle(p.id)}>
+            {p.rsn}
+            <span style={{ fontSize: 10, opacity: 0.7 }}>Cmb {p.combat_level ?? '?'}</span>
           </button>
         );
       })}
       {players.length > 1 && (
         <button
-          onClick={() => {
-            if (selected.length === players.length) {
-              // deselect all → select all (toggle behaviour: all selected = clear selection)
-              onToggle('__none__');
-            } else {
-              onToggle('__all__');
-            }
-          }}
-          style={{
-            padding: '5px 10px', borderRadius: 'var(--radius-lg)',
-            background: 'transparent', border: '1px solid var(--border)',
-            color: 'var(--text-dim)', cursor: 'pointer', fontSize: 11,
-          }}>
+          className="chip"
+          onClick={() => onToggle(selected.length === players.length ? '__none__' : '__all__')}>
           {selected.length === players.length ? 'Deselect all' : 'Select all'}
         </button>
       )}

@@ -358,6 +358,35 @@ a:hover { color: var(--gold-light); }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 .btn-icon { padding: 6px; }
 
+/* ── Filter / player chips ─────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.chip:hover:not(.active):not(:disabled) {
+  border-color: var(--border-light);
+  color: var(--text);
+}
+.chip.active {
+  background: rgba(200,168,75,0.15);
+  border-color: rgba(200,168,75,0.6);
+  color: var(--gold);
+  font-weight: 600;
+  cursor: default;
+}
+
 /* Forms */
 .form-group { margin-bottom: 14px; }
 .form-label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px; }

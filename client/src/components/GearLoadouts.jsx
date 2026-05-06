@@ -774,23 +774,11 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
             return (
               <button
                 key={p.id}
+                className={`chip${active ? ' active' : ''}`}
                 onClick={() => { setSelectedPlayerId(p.id); setActiveSlot(null); }}
-                title={isMe ? 'Your character' : `View ${p.rsn}'s loadout`}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '5px 11px', borderRadius: 'var(--radius-lg)',
-                  background: active ? 'rgba(200,168,75,0.18)' : 'var(--bg-panel-alt)',
-                  border: `1px solid ${active ? 'rgba(200,168,75,0.7)' : 'var(--border)'}`,
-                  color: active ? 'var(--gold)' : 'var(--text-dim)',
-                  cursor: active ? 'default' : 'pointer',
-                  fontSize: 12, fontWeight: active ? 700 : 400,
-                  transition: 'all 0.12s',
-                }}>
-                {/* Person icon — signals these are clickable "people" */}
-                <span style={{ fontSize: 11, opacity: active ? 1 : 0.6 }}>👤</span>
-                <span style={{ color: active ? 'var(--text-bright)' : 'var(--text)' }}>{p.rsn}</span>
-                {/* "you" badge on your own player */}
-                {isMe && <span style={{ fontSize: 9, color: active ? 'var(--gold)' : 'var(--text-dim)', opacity: 0.8 }}>you</span>}
+                title={isMe ? 'Your character' : `View ${p.rsn}'s loadout`}>
+                {p.rsn}
+                {isMe && <span style={{ fontSize: 9, opacity: 0.75 }}>you</span>}
               </button>
             );
           })}
