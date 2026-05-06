@@ -16,14 +16,35 @@ function useItemIconMap() {
   return iconMap;
 }
 
+const VAULT_FALLBACK_ICON = 'https://runescape.wiki/images/RS_news_icon.png';
+
 function ItemIcon({ name, iconMap, size = 32 }) {
-  const [failed, setFailed] = useState(false);
-  const src = iconMap?.get(name);
-  if (!src || failed) return null;
+  const [stage, setStage] = useState(0);
+  // stage 0: try iconMap / wiki-derived URL
+  // stage 1: try generic RS news icon
+  // stage 2: nothing (last resort — both images 404'd)
+
+  const imgStyle = { imageRendering: 'crisp-edges', flexShrink: 0, display: 'block', objectFit: 'contain' };
+
+  if (stage === 2) return null;
+
+  // Primary: gear-items DB icon → wiki image derived from item name
+  const primary = iconMap?.get(name)
+    ?? `https://runescape.wiki/images/${encodeURIComponent(name.replace(/ /g, '_'))}.png`;
+
+  if (stage === 0) {
+    return (
+      <img src={primary} alt={name} width={size} height={size}
+        onError={() => setStage(1)}
+        style={imgStyle} />
+    );
+  }
+
+  // Fallback: RS news icon
   return (
-    <img src={src} alt={name} width={size} height={size}
-      onError={() => setFailed(true)}
-      style={{ imageRendering: 'crisp-edges', flexShrink: 0, display: 'block' }} />
+    <img src={VAULT_FALLBACK_ICON} alt="" width={size} height={size}
+      onError={() => setStage(2)}
+      style={imgStyle} />
   );
 }
 
