@@ -644,8 +644,9 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
   const normRsn = s => (s || '').replace(/\s/g, ' ').trim().toLowerCase();
 
   // Only allow editing if: group is unlocked AND the selected player is the logged-in player.
+  // canWrite must be true — ensures visitors of other groups never get the editing UI even if myRsn is unset.
   // normRsn() handles empty string, null/undefined, case differences, and NBSP/unicode-space variants.
-  const isMyPlayer = !normRsn(myRsn) || normRsn(selectedPlayer?.rsn) === normRsn(myRsn);
+  const isMyPlayer = canWrite && (!normRsn(myRsn) || normRsn(selectedPlayer?.rsn) === normRsn(myRsn));
   const canEditCurrentPlayer = canWrite && isMyPlayer;
 
   // Load loadout whenever player or style changes
