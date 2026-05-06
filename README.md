@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.3.0-4caf50?style=flat-square" alt="v1.3.0"/>
+    <img src="https://img.shields.io/badge/version-1.4.0-4caf50?style=flat-square" alt="v1.4.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -14,7 +14,7 @@
 
 ## What is this?
 
-RS3 GIM Companion is a self-hosted web app that gives your Group Ironman team a shared dashboard — syncing hiscores, tracking goals, logging drops, managing gear loadouts, and celebrating achievements together. Built specifically for **RuneScape 3** (not OSRS).
+RS3 GIM Companion is a self-hosted web app that gives your Group Ironman team a shared dashboard — syncing hiscores, tracking goals, managing gear loadouts, and celebrating achievements together. Built specifically for **RuneScape 3** (not OSRS).
 
 Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minutes.
 
@@ -29,23 +29,21 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Goals panel** — level / item / quest / custom goals with live XP-to-go tracking
 - **Activity feed** — RuneMetrics feed showing recent drops, quests, milestones; entries are persisted permanently in the database and auto-refreshed every 2 hours in the background
 
+### 🎯 Goals
+- **Goal Browser** — curated suggestion library organised into six categories: Quest Series, Skill Unlocks, Key Items, Item Requests, Achievement Diaries, Boss Kills
+- **Item Requests** — 35+ pre-loaded suggestions covering Dungeoneering cape & rewards (Chaotic weapons, Hex/Farsight, Stalker bow, Balmung), Archaeology artefacts (Pontifex ring, Inquisitor staff, Guildmaster's aura), Shattered Worlds codices (Double Surge, Double Escape, Bladed Dive, Natural Instinct, etc.), ports armour, boss drops and more
+- **Active Goals** — personal and group goals with status tracking (Not Started / In Progress / Blocked / Complete); filter by player, category, priority, or search by name
+- **Goal creation modal** — six types matching the browser categories; Quest type shows prerequisite quests + skill requirement checker with one-click "add missing prereqs" buttons; Skill type shows XP-to-go and progress bar
+- Any suggestion can be added to Active Goals in one click; Custom Goal button for anything not in the library
+
 ### 🏆 Group Vault & Gear Loadouts
-- **Group Vault** — every logged drop displayed as an item card; shows WORN badge + "Worn by [player] · slot · date" when an item is confirmed in someone's gear; DUPE badge for items multiple players have obtained
-- **Gear Loadouts** — per-player equipment grid across 5 combat styles (Melee / Ranged / Magic / Necromancy / Hybrid); wiki-verified item requirements (Defence, Constitution, quest prereqs); confirmation dialog (✅ Owned vs 📋 Planning); read-only when viewing teammates' gear; only your own character is editable
+- **Group Vault** — unified tile grid combining worn and free items; compact 80px tiles show item icon, name, and owner (or "Free" if unclaimed); click any tile to expand full details (acquired date, source, slot)
+- **Dupe indicator** — gold ×N badge (top-left) when multiple members hold the same item; green dot (top-right) when the item is currently worn
+- **Player filter chips** — filter the vault to any single player using the same chip style as the Goals tab
+- **Gear Loadouts** — per-player equipment grid across 5 combat styles (Melee / Ranged / Magic / Necromancy / Hybrid); wiki-verified item requirements; confirmation dialog (✅ Owned vs 📋 Planning); only your own character is editable
+- **Viewing another player's gear** — item picker and Best Available panel are hidden; gear grid centres on screen for a clean read-only view
+- **Player selector chips** — 👤 icon makes it obvious the player names are clickable; "you" badge highlights your own character
 - **Group Notes** — floating slide-in pinboard for strategies, loot rules, and session plans; auto-saves with debounce
-- Real-time: confirming gear instantly updates the vault's worn status without page reload
-
-### 💎 Items & Drops  *(single page, three panels)*
-- **Item Requests** — wish-list per player: boss, priority (High/Medium/Low), quantity, notes; boss colour key shows readiness (🟢 ready / 🟠 close / 🔴 missing reqs)
-- **Drop Log** — manually logged drops plus auto-detected entries from the RuneMetrics activity feed; every drop also shows in the Group Vault
-- **Boss Overview** — compact sidebar showing which bosses have pending requests, which players can attempt them, and how far the closest player is from meeting requirements
-
-### 💡 Tips & Milestones
-- **Key Quests** — curated list with unlock rewards and priority ratings (e.g. While Guthix Sleeps → Ancient Curses, Elder Kiln → TokHaar-Kal capes)
-- **Skill Goals** — milestone levels for every key RS3 breakpoint (Prayer 43/70/95, Herblore 96/106, Necromancy 70/99/120, Invention 27/99, etc.)
-- **Milestone Items** — Fire Cape → TokHaar-Kal-Ket/Xil/Mej → Igneous Kal-Ket/Xil/Mej/Mor; Barrows, Void, Chaotics, Nox, Trimmed masterwork, and more
-- All items link to the RS3 Wiki; any milestone can be added as a group or personal goal in one click
-- Custom milestones — add your own with type / priority / description; saved locally per group
 
 ### 📋 Achievement Diaries
 - 13 regions × 4 tiers (Easy / Medium / Hard / Elite) — same structure as RS3
@@ -184,19 +182,20 @@ RS3-GIM-Companion/
 │       ├── index.css                # Global styles + CSS variables + mobile media queries
 │       ├── api/client.js            # Typed fetch wrapper with group auth headers
 │       └── components/
-│           ├── Dashboard.jsx        # Tab router (Overview / Vault / Drops / Tips / Diaries / Leaderboards)
+│           ├── Dashboard.jsx        # Tab router (Overview / Goals / Vault / Diaries / Leaderboards)
 │           ├── Header.jsx           # Logo, Discord link, lock/unlock, sync button
-│           ├── OverviewTab.jsx      # Member cards · Group Stats · Goals · Activity feed
-│           ├── VaultTab.jsx         # Group Vault (drops + worn gear) · Gear Loadouts · Notes overlay
-│           ├── GearLoadouts.jsx     # Equipment grid, item picker, wiki-verified requirements
-│           ├── DropsTab.jsx         # Item Requests · Drop Log · Boss Overview (single page)
-│           ├── TipsTab.jsx          # Quests · Skill goals · Milestone items (custom milestones)
+│           ├── OverviewTab.jsx      # Member cards · Group Stats · Goals panel · Activity feed
+│           ├── GoalsTab.jsx         # Goal Browser (suggestions) · Active Goals · Goal management
+│           ├── VaultTab.jsx         # Unified tile grid (worn + free items) · player filter chips
+│           ├── GearLoadouts.jsx     # Equipment grid, item picker, wiki-verified requirements, player chips
 │           ├── AchievementsTab.jsx  # Achievement Diaries — grid + player view
 │           ├── LeaderboardsTab.jsx  # Boss Kills · Firsts · Milestones · Skill Mastery · Clue Scrolls
-│           ├── GoalModal.jsx        # Goal creation wizard
+│           ├── GoalModal.jsx        # Goal creation modal (Quest / Skill / Key Item / Item Request / Diary / Boss)
+│           ├── GroupNotesOverlay.jsx # Floating slide-in pinboard, auto-save
 │           └── WebhookSettings.jsx  # Discord webhook config modal (URL + event toggles + test)
 │   └── data/
 │       ├── gearSuggestions.js       # Wiki-verified item requirements for all 5 combat styles
+│       ├── goalSuggestions.js       # Curated goal library: ~200 suggestions across 6 categories
 │       └── bosses.js                # Boss requirements, tiers, and drop tables
 └── server/
     ├── database.js                  # SQLite schema + safe ALTER TABLE migrations
@@ -425,6 +424,17 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.4.0 — May 2026
+- 🎯 **Goals tab promoted** — Goals is now the 2nd tab (was dev-only); the Items & Drops tab has been removed entirely
+- 🎁 **Item Requests category** — 35+ curated suggestions added to the Goal Browser: Dungeoneering rewards (Chaotic weapons, Hex/Farsight, Stalker bow, Balmung, DG cape), Archaeology artefacts (Pontifex shadow ring, Inquisitor staff, Guildmaster's quarterstaff), Shattered Worlds codices (Double Surge, Double Escape, Bladed Dive, Natural Instinct, Ingenuity, etc.), Ports armour (Seasinger, Death Lotus, Superior), and key boss drops
+- 🗂️ **GoalModal types aligned** — "Add Goal" modal now uses the same six categories as the Goal Browser: Quest, Skill Unlock, Key Item, Item Request, Achievement Diary, Boss Kill; removes the old generic "Custom" and "Item (recipe)" types
+- 🏆 **Vault redesign** — unified tile grid replaces separate "Confirmed Worn Gear" and "Vault" sections; worn items and free items live in the same grid; click any tile to expand full details
+- 🔴🟢 **Dupe & worn indicators** — gold ×N badge (top-left) for items held by multiple players; green dot (top-right) for currently worn items; "Free" label when no one is wearing it
+- 🧩 **Vault player filter chips** — dropdown selector replaced with the same chip-button style used in the Goals tab
+- 👤 **Gear Loadouts chip selector** — player dropdown replaced with chip buttons that include a 👤 icon and a "you" badge on your own character
+- 🔒 **Gear Loadouts other-player view** — item picker and Best Available panel are hidden when viewing a teammate; gear grid centres for a clean read-only layout
+- 📋 **Achievements panel design** — Achievement Diaries tab now uses the same dark-panel background as Goals and Vault
 
 ### v1.3.0 — May 2026
 - ✅ **RSN validation on add** — adding a player now checks the RS3 hiscores first; unranked or mistyped names are rejected with an inline error before being saved
