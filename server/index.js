@@ -25,7 +25,8 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().t
 // persists NEW entries to the player_activities table (INSERT OR IGNORE —
 // re-fetching never duplicates). Detectors (drops, diaries, boss kills,
 // milestones) only fire on newly inserted rows so notifications never repeat.
-// 1s delay between players ≈ 1 req/sec peak — safe at any realistic player count.
+// 5s delay between players — RuneMetrics throttles at ~1 req/sec sustained;
+// 5s keeps well clear of the 429/IP-ban threshold per community reports.
 cron.schedule('0 */2 * * *', async () => {
   const { fetchRuneMetrics } = require('./services/runescape');
   const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
@@ -48,9 +49,9 @@ cron.schedule('0 */2 * * *', async () => {
     } catch (err) {
       console.error(`[2h cron] ${player.rsn}: ${err.message}`);
     }
-    // 1s delay → ~1 req/sec peak. At 2h interval this handles 7,000+ players
-    // comfortably within the window before the next cron fires.
-    await new Promise(r => setTimeout(r, 1000));
+    // 5s delay → 0.2 req/sec — well within RuneMetrics limits per community reports.
+    // At 2h interval this handles ~1,400 players per window.
+    await new Promise(r => setTimeout(r, 5000));
   }
 });
 

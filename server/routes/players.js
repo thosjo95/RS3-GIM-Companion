@@ -268,7 +268,7 @@ router.post('/sync-activities/:groupId', async (req, res) => {
       console.error(`[sync-activities] Failed ${player.rsn}: ${err.message}`);
       results.push({ rsn: player.rsn, success: false, error: err.message });
     }
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 5000));
   }
 
   res.json(results);
