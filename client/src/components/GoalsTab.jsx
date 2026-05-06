@@ -388,13 +388,14 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
   );
 }
 
-// ── Suggestion icon (boss/item image with emoji fallback) ─────────────────────
+// ── Suggestion icon ───────────────────────────────────────────────────────────
 
-// Quest category: always use the RS3 Lore Achievements icon
-const QUEST_ICON_URL = 'https://runescape.wiki/images/Lore_achievements_icon.png';
+const QUEST_ICON_URL    = 'https://runescape.wiki/images/Lore_achievements_icon.png';
+const FALLBACK_ICON_URL = 'https://runescape.wiki/images/RS_news_icon.png';
 
 function SuggIcon({ category, iconUrl, skill, size = 34 }) {
-  const [failed, setFailed] = useState(false);
+  const [primaryFailed,  setPrimaryFailed]  = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   // Resolve the best icon URL for this suggestion
   const resolvedUrl = (() => {
@@ -403,27 +404,36 @@ function SuggIcon({ category, iconUrl, skill, size = 34 }) {
     return iconUrl ?? null;
   })();
 
-  const emoji = SUGG_CAT_ICON[category] ?? '🎯';
+  const imgStyle = {
+    imageRendering: 'crisp-edges',
+    objectFit: 'contain',
+    borderRadius: 4,
+    display: 'block',
+    flexShrink: 0,
+  };
 
-  if (resolvedUrl && !failed) {
+  // Primary icon (category-specific)
+  if (resolvedUrl && !primaryFailed) {
     return (
-      <img
-        src={resolvedUrl}
-        alt=""
-        width={size}
-        height={size}
-        onError={() => setFailed(true)}
-        style={{
-          imageRendering: 'crisp-edges',
-          objectFit: 'contain',
-          borderRadius: 4,
-          display: 'block',
-          flexShrink: 0,
-        }}
+      <img src={resolvedUrl} alt="" width={size} height={size}
+        onError={() => setPrimaryFailed(true)}
+        style={imgStyle}
       />
     );
   }
-  return <span style={{ fontSize: 20, lineHeight: 1 }}>{emoji}</span>;
+
+  // Generic RS news icon as universal fallback
+  if (!fallbackFailed) {
+    return (
+      <img src={FALLBACK_ICON_URL} alt="" width={size} height={size}
+        onError={() => setFallbackFailed(true)}
+        style={imgStyle}
+      />
+    );
+  }
+
+  // Last resort: emoji (only if even the fallback image 404s)
+  return <span style={{ fontSize: 20, lineHeight: 1 }}>{SUGG_CAT_ICON[category] ?? '🎯'}</span>;
 }
 
 // ── Suggestion card ───────────────────────────────────────────────────────────
