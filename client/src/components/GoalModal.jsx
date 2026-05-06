@@ -150,12 +150,14 @@ function LevelGoalForm({ players, form, set }) {
 
   return (
     <>
-      <div className="form-group">
-        <label className="form-label">Player</label>
-        <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
-          {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
-        </select>
-      </div>
+      {form.type === 'personal' && (
+        <div className="form-group">
+          <label className="form-label">Player</label>
+          <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
+            {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
+          </select>
+        </div>
+      )}
 
       <div className="grid-2" style={{ gap: 10 }}>
         <div className="form-group" style={{ marginBottom: 0 }}>
@@ -423,12 +425,14 @@ function QuestGoalForm({ players, form, set, onSaved, onToast }) {
 
   return (
     <>
-      <div className="form-group">
-        <label className="form-label">Player</label>
-        <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
-          {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
-        </select>
-      </div>
+      {form.type === 'personal' && (
+        <div className="form-group">
+          <label className="form-label">Player</label>
+          <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
+            {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
+          </select>
+        </div>
+      )}
 
       <div className="form-group">
         <label className="form-label">Quest</label>
@@ -719,11 +723,17 @@ const GOAL_TYPES = [
   { id: 'custom', label: '✏️ Custom',    desc: 'Anything else' },
 ];
 
-export default function GoalModal({ players, onClose, onSaved, prefill = {}, onToast }) {
+export default function GoalModal({ players, onClose, onSaved, prefill = {}, onToast, myRsn = '' }) {
+  // Resolve "me" — prefer explicit prefill, then myRsn match, then first player
+  const myPlayerId = useMemo(() => {
+    if (!myRsn) return null;
+    return players.find(p => p.rsn.toLowerCase() === myRsn.toLowerCase())?.id ?? null;
+  }, [players, myRsn]);
+
   const [goalType, setGoalType] = useState(prefill.category === 'quest' ? 'quest' : prefill.category === 'item' ? 'item' : prefill.skill ? 'level' : 'custom');
   const [form, setForm] = useState({
     type: prefill.type || 'personal',
-    owner_id: prefill.owner_id || players[0]?.id || '',
+    owner_id: prefill.owner_id ?? myPlayerId ?? players[0]?.id ?? '',
     title: prefill.title || '',
     description: prefill.description || '',
     priority: prefill.priority || 'medium',
@@ -910,12 +920,14 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
 
             {goalType === 'custom' && (
               <>
-                <div className="form-group">
-                  <label className="form-label">Owner</label>
-                  <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
-                    {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
-                  </select>
-                </div>
+                {form.type === 'personal' && (
+                  <div className="form-group">
+                    <label className="form-label">Owner</label>
+                    <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
+                      {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Category</label>
                   <select className="form-select" value={form.skill || 'other'}

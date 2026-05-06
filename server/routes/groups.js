@@ -252,6 +252,7 @@ router.get('/:id', (req, res) => {
   const players = db.prepare(`
     SELECT p.id, p.rsn, p.quest_points, p.combat_level, p.group_id,
            p.joined_at, p.last_synced, p.stats_json, p.activities_json,
+           p.sync_error, p.sync_error_at,
       (SELECT SUM(xp) FROM skills WHERE player_id = p.id AND skill_name = 'Overall') as total_xp,
       (SELECT level FROM skills WHERE player_id = p.id AND skill_name = 'Overall') as total_level
     FROM players p

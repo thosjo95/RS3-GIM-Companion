@@ -5,6 +5,9 @@ import OverviewTab from './OverviewTab';
 import TipsTab from './TipsTab';
 import LeaderboardsTab from './LeaderboardsTab';
 import AchievementsTab from './AchievementsTab';
+import GoalsTab from './GoalsTab';
+
+const IS_DEV = import.meta.env.DEV;
 
 export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
   const players = group?.players || [];
@@ -16,6 +19,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
     { id: 'tips',          label: '💡 Tips & Milestones' },
     { id: 'achievements',  label: '📋 Achievement Diaries' },
     { id: 'leaderboards',  label: '🏅 Leaderboards' },
+    ...(IS_DEV ? [{ id: 'goals', label: '🎯 Goals ✦dev' }] : []),
   ];
 
   return (
@@ -97,6 +101,20 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
           onRefresh={onRefresh}
           onToast={onToast}
           canWrite={canWrite}
+        />
+      )}
+
+      {/* GOALS TAB — dev only */}
+      {IS_DEV && activeTab === 'goals' && (
+        <GoalsTab
+          group={group}
+          goals={goals}
+          players={players}
+          groupId={groupId}
+          onRefresh={onRefresh}
+          onToast={onToast}
+          canWrite={canWrite}
+          myRsn={myRsn}
         />
       )}
 

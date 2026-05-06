@@ -957,6 +957,7 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
         <GoalModal
           players={players}
           prefill={filteredPlayerId ? { ...prefill, owner_id: filteredPlayerId } : prefill}
+          myRsn={myRsn}
           onClose={() => setShowModal(false)}
           onSaved={onRefresh}
           onToast={onToast}
