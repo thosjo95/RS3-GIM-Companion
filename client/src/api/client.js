@@ -110,4 +110,5 @@ export const api = {
   getRs3Slayer:          (params = {}) => request(`/rs3/slayer${toQS(params)}`),
   getRs3SkillMilestones: (params = {}) => request(`/rs3/skill-milestones${toQS(params)}`),
   getRs3Suggestions:     (params = {}) => request(`/rs3/suggestions${toQS(params)}`),
+  searchRs3Items:        (q)            => request(`/rs3/item-search?q=${encodeURIComponent(q)}`),
 };

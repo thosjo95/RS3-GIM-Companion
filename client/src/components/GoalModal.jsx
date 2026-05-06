@@ -717,12 +717,12 @@ function ItemGoalForm({ players, form, set }) {
 // ── Main Modal ────────────────────────────────────────────────────────────────
 
 const GOAL_TYPES = [
-  { id: 'quest_series',   label: '📜 Quest',              desc: 'Track a quest with all its requirements' },
-  { id: 'skill_unlock',   label: '📈 Skill Unlock',       desc: 'Target a skill level for a player' },
-  { id: 'important_item', label: '📦 Key Item',            desc: 'Boss drop, rare reward or key gear piece' },
-  { id: 'item_request',   label: '🎁 Item Request',        desc: 'Dungeoneering, Archaeology, special rewards' },
-  { id: 'diary',          label: '📋 Achievement Diary',   desc: 'Diary completion or task set milestone' },
-  { id: 'boss_kill',      label: '⚔️ Boss Kill',           desc: 'Combat milestone or boss completion goal' },
+  { id: 'quest_series',   label: 'Quest',              desc: 'Track a quest with all its requirements' },
+  { id: 'skill_unlock',   label: 'Skill Unlock',       desc: 'Target a skill level for a player' },
+  { id: 'important_item', label: 'Key Item',            desc: 'Boss drop, rare reward or key gear piece' },
+  { id: 'item_request',   label: 'Item Request',        desc: 'Dungeoneering, Archaeology, special rewards' },
+  { id: 'diary',          label: 'Achievement Diary',   desc: 'Diary completion or task set milestone' },
+  { id: 'boss_kill',      label: 'Boss Kill',           desc: 'Combat milestone or boss completion goal' },
 ];
 
 // Normalize RSN — collapses non-breaking spaces and other Unicode variants before comparing
@@ -860,7 +860,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 560 }}>
         <div className="modal-header">
-          <span className="modal-title">🎯 Add Goal</span>
+          <span className="modal-title">Add Goal</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
         </div>
 
@@ -972,7 +972,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
                   <button key={p} type="button"
                     className={`btn btn-sm ${form.priority === p ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => set('priority', p)}>
-                    {p === 'high' ? '🔴' : p === 'medium' ? '🟠' : '🟢'} {p}
+                    {p}
                   </button>
                 ))}
               </div>
@@ -982,7 +982,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Saving…</> : '🎯 Add Goal'}
+              {saving ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Saving…</> : 'Add Goal'}
             </button>
           </div>
         </form>

@@ -203,4 +203,30 @@ router.get('/suggestions', (req, res) => {
   res.json(filtered);
 });
 
+// GET /api/rs3/item-search?q=QUERY — proxy to RS3 wiki opensearch (items only)
+router.get('/item-search', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q || q.length < 2) return res.json([]);
+  try {
+    const url = `https://runescape.wiki/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=15&namespace=0&format=json`;
+    const r = await fetch(url, {
+      headers: { 'User-Agent': 'RS3-GIM-Companion/1.0 (github.com/thosjo95)' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) return res.json([]);
+    const data = await r.json();
+    // Format: [searchTerm, [titles], [descs], [urls]]
+    const titles = (Array.isArray(data[1]) ? data[1] : [])
+      .filter(t => !t.includes(':'))  // drop Category:, File:, Exchange: etc.
+      .slice(0, 12);
+    const items = titles.map(name => ({
+      name,
+      icon_url: `https://runescape.wiki/images/${name.replace(/ /g, '_')}.png`,
+    }));
+    res.json(items);
+  } catch {
+    res.json([]);
+  }
+});
+
 module.exports = router;

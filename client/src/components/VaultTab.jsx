@@ -27,7 +27,6 @@ function ItemIcon({ name, iconMap, size = 32 }) {
   );
 }
 
-// Collapse ALL unicode whitespace variants (NBSP U+00A0, thin-space, etc.) to a plain space
 function normRsn(s) {
   return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
 }
@@ -54,7 +53,6 @@ function ItemTile({ item, groupEquipment, iconMap }) {
   const isDupe   = item.players.length > 1;
   const totalQty = item.drops.reduce((a, d) => a + (d.quantity || 1), 0);
 
-  // All confirmed wearers for this item (de-duped by rsn)
   const wornBy = useMemo(() => {
     if (!groupEquipment?.length) return [];
     const nameLower = item.name.toLowerCase();
@@ -64,13 +62,10 @@ function ItemTile({ item, groupEquipment, iconMap }) {
   }, [groupEquipment, item.name]);
 
   const isWorn = wornBy.length > 0;
-
-  // Border colour: worn = green, dupe = gold, default = grey
   const borderColor = isWorn ? '#4caf5055' : isDupe ? 'var(--gold-dark)' : 'var(--border)';
 
   return (
     <>
-      {/* Tile */}
       <div
         onClick={() => setExpanded(e => !e)}
         title={item.name}
@@ -88,7 +83,7 @@ function ItemTile({ item, groupEquipment, iconMap }) {
           transition: 'background 0.1s, border-color 0.1s',
         }}>
 
-        {/* Dupe count badge — top-left corner */}
+        {/* Dupe count badge */}
         {isDupe && (
           <div style={{
             position: 'absolute', top: -5, left: -5,
@@ -101,7 +96,7 @@ function ItemTile({ item, groupEquipment, iconMap }) {
           }}>×{item.players.length}</div>
         )}
 
-        {/* WORN dot — top-right */}
+        {/* Worn dot */}
         {isWorn && (
           <div style={{
             position: 'absolute', top: -4, right: -4,
@@ -119,13 +114,10 @@ function ItemTile({ item, groupEquipment, iconMap }) {
           background: 'var(--bg-root)', borderRadius: 'var(--radius)',
           border: `1px solid ${isWorn ? '#4caf5033' : 'var(--border)'}`,
         }}>
-          {iconMap?.get(item.name)
-            ? <ItemIcon name={item.name} iconMap={iconMap} size={30} />
-            : <span style={{ fontSize: 20 }}>💎</span>
-          }
+          <ItemIcon name={item.name} iconMap={iconMap} size={30} />
         </div>
 
-        {/* Item name */}
+        {/* Name */}
         <span style={{
           fontSize: 9, fontWeight: 600, color: 'var(--text-bright)',
           textAlign: 'center', lineHeight: 1.25,
@@ -137,7 +129,7 @@ function ItemTile({ item, groupEquipment, iconMap }) {
           {totalQty > 1 && <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}> ×{totalQty}</span>}
         </span>
 
-        {/* Owner(s) or Free */}
+        {/* Owner / Free */}
         {isWorn ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%' }}>
             {wornBy.map((e, i) => (
@@ -160,7 +152,7 @@ function ItemTile({ item, groupEquipment, iconMap }) {
         ) : null}
       </div>
 
-      {/* Expand panel — full-width row break inside the flex-wrap grid */}
+      {/* Expand panel */}
       {expanded && (
         <div style={{ flexBasis: '100%', width: '100%' }}>
           <ExpandedTileDetail item={item} wornBy={wornBy} isWorn={isWorn} isDupe={isDupe} onClose={() => setExpanded(false)} />
@@ -170,7 +162,6 @@ function ItemTile({ item, groupEquipment, iconMap }) {
   );
 }
 
-// Full-width detail panel that appears below the tile row when expanded
 function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
   return (
     <div
@@ -189,14 +180,13 @@ function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
         <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>click to close ▲</span>
       </div>
 
-      {/* Per-drop rows */}
       {item.drops.map((drop, i) => (
         <div key={i} style={{
           display: 'flex', flexWrap: 'wrap', gap: '3px 10px',
           padding: '5px 8px', background: 'var(--bg-panel)',
           borderRadius: 'var(--radius)', fontSize: 11,
         }}>
-          <span style={{ color: 'var(--gold)', fontWeight: 600 }}>👤 {drop.rsn}</span>
+          <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{drop.rsn}</span>
           {drop.dropped_at && (
             <span style={{ color: 'var(--text-dim)' }}>
               Acquired {new Date(drop.dropped_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -205,37 +195,35 @@ function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
           {drop.boss_name && <span style={{ color: 'var(--text-dim)' }}>· {drop.boss_name}</span>}
           {drop.quantity > 1 && <span style={{ color: 'var(--text-dim)' }}>· ×{drop.quantity}</span>}
           {drop.value_gp > 0 && <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>{fmtGp(drop.value_gp)}</span>}
-          {drop.notes && drop.notes !== 'Auto-added from goal completion' && (
+          {drop.notes && drop.notes !== 'Auto-added from goal completion' && drop.notes !== 'Manual entry' && (
             <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>"{drop.notes}"</span>
           )}
         </div>
       ))}
 
-      {/* Dupe callout */}
       {isDupe && (
         <div style={{
           padding: '4px 8px', background: 'rgba(200,168,75,0.08)',
           border: '1px solid var(--gold-dark)', borderRadius: 'var(--radius)', fontSize: 11,
           color: 'var(--gold)',
         }}>
-          ⚠️ {item.players.length} members have this item — potential duplicate
+          {item.players.length} members have this item — potential duplicate
         </div>
       )}
 
-      {/* Worn slots */}
       {isWorn ? wornBy.map(e => (
         <div key={e.rsn + e.slot} style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '5px 8px', background: 'rgba(76,175,80,0.07)',
           border: '1px solid #4caf5033', borderRadius: 'var(--radius)', fontSize: 11,
         }}>
-          <span style={{ color: '#4caf50', fontWeight: 700 }}>⚔️ Worn by {e.rsn}</span>
+          <span style={{ color: '#4caf50', fontWeight: 700 }}>Worn by {e.rsn}</span>
           <span style={{ color: 'var(--text-dim)' }}>· {e.slot} slot</span>
           {e.updated_at && <span style={{ color: 'var(--text-dim)' }}>· since {fmtDate(e.updated_at)}</span>}
         </div>
       )) : (
         <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: '3px 4px' }}>
-          🔓 Not currently worn by anyone — free to claim
+          Not currently worn by anyone — free to claim
         </div>
       )}
     </div>
@@ -243,17 +231,9 @@ function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose }) {
 }
 
 
-// ── Vaulted goal card ─────────────────────────────────────────────────────────
+// ── Vaulted achievement card ──────────────────────────────────────────────────
 
 function AchievementCard({ goal }) {
-  const details = goal.details_json
-    ? (typeof goal.details_json === 'string'
-        ? (() => { try { return JSON.parse(goal.details_json); } catch { return null; } })()
-        : goal.details_json)
-    : null;
-  const typeIcon = details?.goalType === 'quest' ? '📜'
-    : details?.goalType === 'level' ? '⭐'
-    : details?.goalType === 'item'  ? '📦' : '🎯';
   const completedAt = goal.completed_at
     ? new Date(goal.completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     : null;
@@ -264,17 +244,11 @@ function AchievementCard({ goal }) {
       borderRadius: 'var(--radius-lg)', padding: '12px 14px',
       display: 'flex', gap: 10, alignItems: 'flex-start',
     }}>
-      <div style={{
-        width: 34, height: 34, borderRadius: '50%',
-        background: 'rgba(200,168,75,0.15)', border: '1px solid var(--gold-dark)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18, flexShrink: 0,
-      }}>{typeIcon}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)', marginBottom: 2 }}>{goal.title}</div>
-        {goal.owner_rsn && <div style={{ fontSize: 11, color: 'var(--gold)', marginBottom: 1 }}>👤 {goal.owner_rsn}</div>}
+        {goal.owner_rsn && <div style={{ fontSize: 11, color: 'var(--gold)', marginBottom: 1 }}>{goal.owner_rsn}</div>}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 10, color: 'var(--green-bright)', fontWeight: 600 }}>✓ Completed</span>
+          <span style={{ fontSize: 10, color: 'var(--green-bright)', fontWeight: 600 }}>Completed</span>
           {completedAt && <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>{completedAt}</span>}
         </div>
       </div>
@@ -287,15 +261,163 @@ function AchievementCard({ goal }) {
   );
 }
 
+
+// ── Add Item modal ────────────────────────────────────────────────────────────
+
+function AddItemModal({ players, groupId, onClose, onAdded, onToast }) {
+  const [query, setQuery]               = useState('');
+  const [results, setResults]           = useState([]);
+  const [searching, setSearching]       = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [playerId, setPlayerId]         = useState(players[0]?.id ?? '');
+  const [source, setSource]             = useState('');
+  const [saving, setSaving]             = useState(false);
+  const debounceRef                     = useRef(null);
+
+  function handleQueryChange(val) {
+    setQuery(val);
+    setSelectedItem(null);
+    clearTimeout(debounceRef.current);
+    if (val.trim().length < 2) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try   { setResults(await api.searchRs3Items(val.trim())); }
+      catch { setResults([]); }
+      finally { setSearching(false); }
+    }, 300);
+  }
+
+  async function handleAdd() {
+    const name = selectedItem?.name || query.trim();
+    if (!name)     return onToast?.('Enter an item name', 'error');
+    if (!playerId) return onToast?.('Select a player', 'error');
+    setSaving(true);
+    try {
+      await api.addDrop({
+        player_id: Number(playerId),
+        item_name: name,
+        boss_name: source.trim() || null,
+        notes: 'Manual entry',
+      });
+      onAdded();
+      onClose();
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 480 }}>
+        <div className="modal-header">
+          <span className="modal-title">Add Item to Vault</span>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* Item search */}
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Item</label>
+            <input
+              className="form-input"
+              value={query}
+              onChange={e => handleQueryChange(e.target.value)}
+              placeholder="Search any RS3 item…"
+              autoFocus
+            />
+            {searching && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>Searching…</div>}
+          </div>
+
+          {/* Search results dropdown */}
+          {results.length > 0 && !selectedItem && (
+            <div style={{
+              maxHeight: 200, overflowY: 'auto', marginTop: -8,
+              border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+              background: 'var(--bg-panel)',
+            }}>
+              {results.map((it, i) => (
+                <button key={i} type="button"
+                  onClick={() => { setSelectedItem(it); setQuery(it.name); setResults([]); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '7px 10px', background: 'transparent',
+                    border: 'none', borderBottom: i < results.length - 1 ? '1px solid var(--border)' : 'none',
+                    cursor: 'pointer', fontSize: 12, color: 'var(--text)', textAlign: 'left',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <img src={it.icon_url} alt="" width={24} height={24}
+                    style={{ imageRendering: 'crisp-edges', flexShrink: 0 }}
+                    onError={e => { e.currentTarget.style.display = 'none'; }} />
+                  <span>{it.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Selected item confirmation */}
+          {selectedItem && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10, marginTop: -8,
+              padding: '7px 10px',
+              background: 'rgba(200,168,75,0.08)', border: '1px solid var(--gold-dark)',
+              borderRadius: 'var(--radius)', fontSize: 12,
+            }}>
+              <img src={selectedItem.icon_url} alt="" width={24} height={24}
+                style={{ imageRendering: 'crisp-edges', flexShrink: 0 }}
+                onError={e => { e.currentTarget.style.display = 'none'; }} />
+              <span style={{ color: 'var(--gold)', fontWeight: 600, flex: 1 }}>{selectedItem.name}</span>
+              <button onClick={() => { setSelectedItem(null); setQuery(''); setResults([]); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, lineHeight: 1 }}>✕</button>
+            </div>
+          )}
+
+          {/* Player */}
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Obtained by</label>
+            <select className="form-select" value={playerId} onChange={e => setPlayerId(e.target.value)}>
+              {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
+            </select>
+          </div>
+
+          {/* Source */}
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">
+              Source <span style={{ fontWeight: 400, color: 'var(--text-dim)' }}>(optional)</span>
+            </label>
+            <input className="form-input" value={source} onChange={e => setSource(e.target.value)}
+              placeholder="e.g. Nex, Crafting, Dungeoneering…" />
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn btn-primary"
+            disabled={saving || (!selectedItem && !query.trim())}
+            onClick={handleAdd}>
+            {saving ? 'Adding…' : 'Add to Vault'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 // ── Group Vault panel ─────────────────────────────────────────────────────────
 
 function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEquipment, onReloadDrops, iconMap }) {
-  const [drops, setDrops]           = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [sortBy, setSortBy]         = useState('recent');
-  const [filterBoss, setFilterBoss] = useState('all');
+  const [drops, setDrops]               = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [sortBy, setSortBy]             = useState('recent');
+  const [filterBoss, setFilterBoss]     = useState('all');
   const [filterPlayer, setFilterPlayer] = useState('all');
   const [searchQuery, setSearchQuery]   = useState('');
+  const [showAddItem, setShowAddItem]   = useState(false);
 
   async function loadDrops() {
     setLoading(true);
@@ -331,23 +453,39 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
     else if (sortBy === 'dupes')  items.sort((a, b) => b.players.length - a.players.length || (b.latestDate || '').localeCompare(a.latestDate || ''));
     else if (sortBy === 'name')   items.sort((a, b) => a.name.localeCompare(b.name));
     return items;
-  }, [drops, sortBy, filterBoss, filterPlayer]);
+  }, [drops, sortBy, filterBoss, filterPlayer, searchQuery]);
 
   const dupeCount    = vaultItems.filter(i => i.players.length > 1).length;
   const achievements = goals.filter(g => g.status === 'vaulted');
 
   function handleRefreshAll() {
     loadDrops();
-    onReloadDrops(); // also refreshes groupEquipment in parent
+    onReloadDrops();
+  }
+
+  function handleItemAdded() {
+    loadDrops();
+    onReloadDrops();
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+      {showAddItem && (
+        <AddItemModal
+          players={players}
+          groupId={groupId}
+          onClose={() => setShowAddItem(false)}
+          onAdded={handleItemAdded}
+          onToast={onToast}
+        />
+      )}
+
       {/* Title row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
         <div>
           <div className="section-title" style={{ marginBottom: 2 }}>
-            💎 Group Vault
+            Group Vault
             {dupeCount > 0 && (
               <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--gold)', marginLeft: 8 }}>
                 · {dupeCount} dupe{dupeCount !== 1 ? 's' : ''}
@@ -356,10 +494,17 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{vaultItems.length} item{vaultItems.length !== 1 ? 's' : ''} logged</div>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={handleRefreshAll}>↻</button>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {canWrite && (
+            <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => setShowAddItem(true)}>
+              + Add Item
+            </button>
+          )}
+          <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={handleRefreshAll}>↻</button>
+        </div>
       </div>
 
-      {/* Sort buttons */}
+      {/* Sort */}
       <div className="flex gap-4" style={{ flexWrap: 'wrap' }}>
         {[{ id: 'recent', label: 'Recent' }, { id: 'dupes', label: 'Dupes' }, { id: 'value', label: 'Value' }, { id: 'name', label: 'A–Z' }].map(s => (
           <button key={s.id} onClick={() => setSortBy(s.id)}
@@ -373,7 +518,7 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
         <input
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="🔍 Search items…"
+          placeholder="Search items…"
           style={{
             width: '100%', padding: '6px 30px 6px 10px',
             background: 'var(--bg-root)', border: '1px solid var(--border)',
@@ -392,9 +537,8 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
         )}
       </div>
 
-      {/* Player chips filter */}
+      {/* Player chips */}
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* "All" chip */}
         <button
           onClick={() => setFilterPlayer('all')}
           style={{
@@ -403,7 +547,6 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
             border: `1px solid ${filterPlayer === 'all' ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
             color: filterPlayer === 'all' ? 'var(--gold)' : 'var(--text-dim)',
             cursor: 'pointer', fontSize: 11, fontWeight: filterPlayer === 'all' ? 600 : 400,
-            transition: 'all 0.12s',
           }}>All members</button>
 
         {players.map(p => {
@@ -413,21 +556,15 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
               key={p.id}
               onClick={() => setFilterPlayer(active ? 'all' : p.rsn)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 5,
                 padding: '4px 10px', borderRadius: 'var(--radius-lg)',
                 background: active ? 'rgba(200,168,75,0.15)' : 'var(--bg-panel-alt)',
                 border: `1px solid ${active ? 'rgba(200,168,75,0.6)' : 'var(--border)'}`,
-                color: active ? 'var(--gold)' : 'var(--text-dim)',
+                color: active ? 'var(--text-bright)' : 'var(--text-dim)',
                 cursor: 'pointer', fontSize: 11, fontWeight: active ? 600 : 400,
-                transition: 'all 0.12s',
-              }}>
-              <span style={{ fontSize: 10, opacity: 0.7 }}>👤</span>
-              <span style={{ color: active ? 'var(--text-bright)' : 'var(--text)' }}>{p.rsn}</span>
-            </button>
+              }}>{p.rsn}</button>
           );
         })}
 
-        {/* Boss filter — only shown when bosses exist */}
         {bosses.length > 0 && (
           <select
             className="form-select"
@@ -440,13 +577,14 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
         )}
       </div>
 
-      {/* Vault tile grid */}
+      {/* Tile grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 32 }}><span className="spinner" /></div>
       ) : vaultItems.length === 0 ? (
         <div className="empty-state" style={{ padding: '24px 0' }}>
-          <div className="icon" style={{ fontSize: 28 }}>💎</div>
-          <p style={{ fontSize: 12 }}>No drops logged yet. Add them in the Items &amp; Drops tab.</p>
+          <p style={{ fontSize: 12 }}>
+            {canWrite ? 'No items yet — use + Add Item or sync your activity feed.' : 'No items logged yet.'}
+          </p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
@@ -464,7 +602,7 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
       {/* Vaulted achievements */}
       {achievements.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <div className="section-title" style={{ marginBottom: 10, fontSize: 12 }}>🏆 Achievements</div>
+          <div className="section-title" style={{ marginBottom: 10, fontSize: 12 }}>Achievements</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {achievements.map(g => <AchievementCard key={g.id} goal={g} />)}
           </div>
@@ -474,13 +612,13 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
   );
 }
 
+
 // ── Root VaultTab ─────────────────────────────────────────────────────────────
 
 export default function VaultTab({ players, groupId, goals = [], onToast, canWrite, myRsn }) {
   const iconMap        = useItemIconMap();
   const [groupEquipment, setGroupEquip] = useState([]);
 
-  // Central fetch for group equipment — shared by VaultPanel and GearLoadouts
   const loadEquipment = useCallback(async () => {
     try { setGroupEquip(await api.getGroupEquipment(groupId)); }
     catch { /* silently ignore */ }
@@ -490,8 +628,6 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
 
   return (
     <div style={{ position: 'relative' }}>
-
-      {/* Side-by-side: Vault (left) + Gear (right) */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
         {/* LEFT — Group Vault */}
@@ -516,7 +652,6 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
               />
             : (
               <div className="empty-state">
-                <div className="icon">💎</div>
                 <p>Add players first to use the vault.</p>
               </div>
             )
@@ -531,7 +666,7 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
           borderRadius: 'var(--radius-lg)',
           padding: '20px 18px',
         }}>
-          <div className="section-title" style={{ marginBottom: 14 }}>⚔️ Gear Loadouts</div>
+          <div className="section-title" style={{ marginBottom: 14 }}>Gear Loadouts</div>
           {players.length > 0
             ? <GearLoadouts
                 players={players}
@@ -543,7 +678,6 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
               />
             : (
               <div className="empty-state">
-                <div className="icon">⚔️</div>
                 <p>Add players to track gear loadouts.</p>
               </div>
             )
