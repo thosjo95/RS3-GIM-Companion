@@ -30,23 +30,63 @@ const ALL_SKILLS = [
 // skillCheck: fn(player)       – fallback: check current skill data
 
 const PREDEFINED_FIRSTS = [
-  // ── PvM ───────────────────────────────────────────────────────────────────
+  // ── PvM — Fight Caves / Kiln ─────────────────────────────────────────────
   {
     key: 'fire_cape', label: 'Fire Cape', sub: 'TzTok-Jad', cat: 'PvM', icon: '🔥',
     actMatch: t => /fire cape/i.test(t) || /tztok.jad/i.test(t) || /\bjad\b.*defeat/i.test(t),
     dropMatch: t => /fire cape/i.test(t),
   },
   {
-    key: 'infernal_cape', label: 'Infernal Cape', sub: 'TzKal-Zuk · Inferno', cat: 'PvM', icon: '🌋',
+    key: 'har_aken', label: 'Har-Aken Kill', sub: 'Fight Kiln — required for Kiln cape', cat: 'PvM', icon: '🦑',
+    actMatch: t => /har.aken/i.test(t),
+  },
+  {
+    key: 'infernal_cape', label: 'Infernal Cape', sub: 'TzKal-Zuk · Fight Cauldron', cat: 'PvM', icon: '🌋',
     actMatch: t => /infernal cape/i.test(t) || /tzkal.zuk/i.test(t) || /\bzuk\b/i.test(t),
     dropMatch: t => /infernal cape/i.test(t),
   },
+
+  // ── PvM — God Wars Dungeon 1 ─────────────────────────────────────────────
   {
-    key: 'araxxi', label: 'Araxxi Kill', sub: "Araxxor's Lair", cat: 'PvM', icon: '🕷️',
-    actMatch: t => /\baraxxi\b/i.test(t),
+    key: 'gwd_graardor', label: 'General Graardor', sub: 'GWD — Bandos', cat: 'PvM', icon: '🛡️',
+    actMatch: t => /general graardor/i.test(t),
   },
   {
-    key: 'telos', label: 'First Telos Kill', sub: 'Heart of Gielinor', cat: 'PvM', icon: '🌿',
+    key: 'gwd_kril', label: "K'ril Tsutsaroth", sub: 'GWD — Zamorak', cat: 'PvM', icon: '🔺',
+    actMatch: t => /k.?ril tsutsaroth/i.test(t),
+  },
+  {
+    key: 'gwd_zilyana', label: 'Commander Zilyana', sub: 'GWD — Saradomin', cat: 'PvM', icon: '🌟',
+    actMatch: t => /commander zilyana/i.test(t),
+  },
+  {
+    key: 'gwd_kreearra', label: "Kree'arra", sub: 'GWD — Armadyl', cat: 'PvM', icon: '🦅',
+    actMatch: t => /kree.?arra/i.test(t),
+  },
+  {
+    key: 'nex', label: 'Nex Kill', sub: 'GWD — Ancient Prison', cat: 'PvM', icon: '❄️',
+    actMatch: t => /\bnex\b/i.test(t) && !/nexus/i.test(t) && !/next/i.test(t),
+  },
+
+  // ── PvM — Heart of Gielinor (GWD2) ──────────────────────────────────────
+  {
+    key: 'helwyr', label: 'Helwyr', sub: "Heart of Gielinor — Seren's Realm", cat: 'PvM', icon: '🌿',
+    actMatch: t => /\bhelwyr\b/i.test(t),
+  },
+  {
+    key: 'vindicta', label: 'Vindicta & Gorvek', sub: 'Heart of Gielinor — Zaros', cat: 'PvM', icon: '🐉',
+    actMatch: t => /\bvindicta\b/i.test(t),
+  },
+  {
+    key: 'gregorovic', label: 'Gregorovic', sub: 'Heart of Gielinor — Sliske', cat: 'PvM', icon: '💀',
+    actMatch: t => /\bgregorovic\b/i.test(t),
+  },
+  {
+    key: 'twin_furies', label: 'Twin Furies', sub: 'Heart of Gielinor — Zamorak', cat: 'PvM', icon: '⚡',
+    actMatch: t => /twin furies/i.test(t),
+  },
+  {
+    key: 'telos', label: 'First Telos Kill', sub: 'Heart of Gielinor', cat: 'PvM', icon: '🍃',
     actMatch: t => /\btelos\b/i.test(t),
   },
   {
@@ -54,27 +94,41 @@ const PREDEFINED_FIRSTS = [
     actMatch: t => /\btelos\b/i.test(t) && /100[%+]/i.test(t),
   },
   {
-    key: 'vorago', label: 'Vorago Kill', sub: 'Burthorpe', cat: 'PvM', icon: '🪨',
-    actMatch: t => /\bvorago\b/i.test(t),
+    key: 'aod', label: 'Nex: Angel of Death', sub: 'Heart of Gielinor', cat: 'PvM', icon: '⚗️',
+    actMatch: t => /angel of death/i.test(t),
   },
-  {
-    key: 'nex', label: 'Nex Kill', sub: 'God Wars Dungeon', cat: 'PvM', icon: '❄️',
-    actMatch: t => /\bnex\b/i.test(t) && !/nexus/i.test(t) && !/next/i.test(t),
-  },
+
+  // ── PvM — Other notable bosses ───────────────────────────────────────────
   {
     key: 'kk', label: 'Kalphite King Kill', sub: 'Exiled Kalphite Hive', cat: 'PvM', icon: '🦂',
     actMatch: t => /kalphite king/i.test(t),
   },
   {
-    key: 'aod', label: 'Nex: Angel of Death', sub: 'Heart of Gielinor', cat: 'PvM', icon: '⚗️',
-    actMatch: t => /angel of death/i.test(t),
+    key: 'dagannoth_kings', label: 'Dagannoth Kings', sub: 'Waterbirth Island', cat: 'PvM', icon: '👑',
+    actMatch: t => /dagannoth (rex|prime|supreme)/i.test(t),
+  },
+  {
+    key: 'vorago', label: 'Vorago Kill', sub: 'Burthorpe', cat: 'PvM', icon: '🪨',
+    actMatch: t => /\bvorago\b/i.test(t),
+  },
+  {
+    key: 'araxxi', label: 'Araxxi Kill', sub: "Araxxor's Lair", cat: 'PvM', icon: '🕷️',
+    actMatch: t => /\baraxxi\b/i.test(t),
   },
   {
     key: 'solak', label: 'Solak Kill', sub: 'Lost Grove', cat: 'PvM', icon: '🌳',
     actMatch: t => /\bsolak\b/i.test(t),
   },
   {
-    key: 'zammy_loe', label: 'Zamorak (Lord of Erebus)', sub: 'Zamorak boss fight', cat: 'PvM', icon: '🔺',
+    key: 'legiones', label: 'Legio (Ascension)', sub: 'Ascension Dungeon', cat: 'PvM', icon: '🏹',
+    actMatch: t => /legio (primus|secundus|tertius|quartus|quintus|sextus)/i.test(t),
+  },
+  {
+    key: 'magister', label: 'The Magister', sub: 'Kharidian Catacombs', cat: 'PvM', icon: '🏺',
+    actMatch: t => /\bthe magister\b/i.test(t) || (/\bmagister\b/i.test(t) && !/grandmaster/i.test(t)),
+  },
+  {
+    key: 'zammy_loe', label: 'Zamorak (Lord of Erebus)', sub: 'City of Senntisten', cat: 'PvM', icon: '🔥',
     actMatch: t => /lord of erebus/i.test(t) || /zamorak.*boss/i.test(t),
   },
   {
@@ -82,8 +136,18 @@ const PREDEFINED_FIRSTS = [
     actMatch: t => /\brasial\b/i.test(t),
   },
   {
+    key: 'osseous_rex', label: 'Osseous Rex', sub: 'Senntisten Asylum', cat: 'PvM', icon: '🦴',
+    actMatch: t => /osseous rex/i.test(t),
+  },
+
+  // ── PvM — Elite Dungeons ─────────────────────────────────────────────────
+  {
     key: 'ed1', label: 'Temple of Aminishi (ED1)', sub: 'Elite Dungeon 1', cat: 'PvM', icon: '🐉',
     actMatch: t => /temple of aminishi/i.test(t) || /\bseiryu\b/i.test(t),
+  },
+  {
+    key: 'ed2', label: 'Dragonkin Lab (ED2)', sub: 'Elite Dungeon 2', cat: 'PvM', icon: '🐲',
+    actMatch: t => /dragonkin lab/i.test(t) || /black stone dragon/i.test(t) || /\bverak lith\b/i.test(t) || /\bastellarn\b/i.test(t),
   },
   {
     key: 'ed3', label: 'Shadow Reef (ED3)', sub: 'Elite Dungeon 3', cat: 'PvM', icon: '🦑',
@@ -91,6 +155,18 @@ const PREDEFINED_FIRSTS = [
   },
 
   // ── Notable Drops / Items ─────────────────────────────────────────────────
+  {
+    key: 'quest_cape', label: 'Quest Cape', sub: 'All RS3 quests complete — Wise Old Man', cat: 'Item', icon: '🎓',
+    dropMatch: t => /quest (?:point )?cape/i.test(t),
+  },
+  {
+    key: 'comp_cape', label: 'Completionist Cape', sub: 'Ultimate achievement cape', cat: 'Item', icon: '🌟',
+    dropMatch: t => /completionist cape/i.test(t),
+  },
+  {
+    key: 'ekzekkil', label: 'Ek-ZekKil', sub: 'T92 melee — TzKal-Zuk', cat: 'Item', icon: '🌋',
+    dropMatch: t => /ek.?zekkil/i.test(t),
+  },
   {
     key: 'drygore', label: 'First Drygore Weapon', sub: 'T90 melee — Kalphite King', cat: 'Item', icon: '⚔️',
     dropMatch: t => /drygore/i.test(t),
@@ -108,11 +184,19 @@ const PREDEFINED_FIRSTS = [
     dropMatch: t => /noxious scythe/i.test(t) || /noxious longbow/i.test(t) || /noxious staff/i.test(t),
   },
   {
+    key: 'tectonic', label: 'First Tectonic Armour', sub: 'T90 magic — Vorago', cat: 'Item', icon: '🌀',
+    dropMatch: t => /tectonic/i.test(t),
+  },
+  {
+    key: 'sirenic', label: 'First Sirenic Armour', sub: 'T90 ranged — Legiones', cat: 'Item', icon: '🐚',
+    dropMatch: t => /sirenic/i.test(t),
+  },
+  {
     key: 'zaros_gs', label: 'Zaros Godsword', sub: 'T92 melee — Nex: AoD', cat: 'Item', icon: '🗡️',
     dropMatch: t => /zaros godsword/i.test(t),
   },
   {
-    key: 'eldritch_xbow', label: 'Eldritch Crossbow', sub: 'T92 ranged — Seiryu', cat: 'Item', icon: '🏹',
+    key: 'eldritch_xbow', label: 'Eldritch Crossbow', sub: 'T92 ranged — Ambassador (ED3)', cat: 'Item', icon: '🏹',
     dropMatch: t => /eldritch crossbow/i.test(t),
   },
   {
@@ -120,12 +204,23 @@ const PREDEFINED_FIRSTS = [
     dropMatch: t => /seren godbow/i.test(t),
   },
   {
-    key: 'tectonic', label: 'First Tectonic Armour', sub: 'T90 magic — Vorago', cat: 'Item', icon: '🌀',
-    dropMatch: t => /tectonic/i.test(t),
+    key: 'praesul_wand', label: 'Praesul Wand', sub: 'T92 magic — Nex: AoD', cat: 'Item', icon: '🔮',
+    dropMatch: t => /praesul wand/i.test(t),
   },
   {
-    key: 'sirenic', label: 'First Sirenic Armour', sub: 'T90 ranged — Legiones', cat: 'Item', icon: '🐚',
-    dropMatch: t => /sirenic/i.test(t),
+    key: 'cinderbane', label: 'Cinderbane Gloves', sub: 'BiS gloves for poisoning — ED1', cat: 'Item', icon: '🧤',
+    dropMatch: t => /cinderbane/i.test(t),
+  },
+  // Count-based: first player to accumulate ≥N T90+ drops in the activity log
+  {
+    key: 'first_t90_unique', label: 'First T90+ Unique Drop', sub: 'Any T90+ weapon or armour piece', cat: 'Item', icon: '💎',
+    countMatch: t => /drygore|ascension crossbow|seismic wand|seismic singularity|noxious scythe|noxious longbow|noxious staff|zaros godsword|eldritch crossbow|seren godbow|tectonic|sirenic|ek.?zekkil|praesul wand|cinderbane/i.test(t),
+    countThreshold: 1,
+  },
+  {
+    key: 'five_t90_uniques', label: 'First 5 T90+ Unique Drops', sub: '5 high-tier unique drops total', cat: 'Item', icon: '💎',
+    countMatch: t => /drygore|ascension crossbow|seismic wand|seismic singularity|noxious scythe|noxious longbow|noxious staff|zaros godsword|eldritch crossbow|seren godbow|tectonic|sirenic|ek.?zekkil|praesul wand|cinderbane/i.test(t),
+    countThreshold: 5,
   },
 
   // ── Quests ────────────────────────────────────────────────────────────────
@@ -177,12 +272,63 @@ const PREDEFINED_FIRSTS = [
     key: 'extinction', label: 'Extinction', sub: 'Elder God Wars finale', cat: 'Quest', icon: '💀',
     actMatch: t => /\bextinction\b/i.test(t),
   },
+  {
+    key: 'azzanadras_quest', label: "Azzanadra's Quest", sub: 'Master quest — Elder God Wars', cat: 'Quest', icon: '📜',
+    actMatch: t => /azzanadra.s quest/i.test(t),
+  },
+  {
+    key: 'city_senntisten', label: 'City of Senntisten', sub: 'Master quest — Elder God Wars', cat: 'Quest', icon: '🏛️',
+    actMatch: t => /city of senntisten/i.test(t),
+  },
+  {
+    key: 'needle_skips', label: 'The Needle Skips', sub: 'Master quest — Elder God Wars', cat: 'Quest', icon: '🧵',
+    actMatch: t => /needle skips/i.test(t),
+  },
+  {
+    key: 'daughter_chaos', label: 'Daughter of Chaos', sub: 'Master quest — Elder God Wars', cat: 'Quest', icon: '🔥',
+    actMatch: t => /daughter of chaos/i.test(t),
+  },
+  {
+    key: 'twilight_of_gods', label: 'Twilight of the Gods', sub: 'Grandmaster quest — Elder God Wars', cat: 'Quest', icon: '🌌',
+    actMatch: t => /twilight of the gods/i.test(t),
+  },
 
   // ── Skills ────────────────────────────────────────────────────────────────
   {
     key: 'max_cape', label: 'Max Cape', sub: 'All skills 99+', cat: 'Skill', icon: '🎓',
     actMatch: t => /max cape/i.test(t),
     skillCheck: p => (p.skills?.filter(s => s.skill_name !== 'Overall' && s.level >= 99).length ?? 0) >= 29,
+  },
+  // ── 99s
+  {
+    key: 'first99_attack', label: 'First 99 Attack', sub: '', cat: 'Skill', skillIcon: 'Attack',
+    actMatch: t => /maximum level in attack/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Attack')?.level ?? 0) >= 99,
+  },
+  {
+    key: 'first99_strength', label: 'First 99 Strength', sub: '', cat: 'Skill', skillIcon: 'Strength',
+    actMatch: t => /maximum level in strength/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Strength')?.level ?? 0) >= 99,
+  },
+  {
+    key: 'first99_defence', label: 'First 99 Defence', sub: '', cat: 'Skill', skillIcon: 'Defence',
+    actMatch: t => /maximum level in defence/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Defence')?.level ?? 0) >= 99,
+  },
+  {
+    key: 'first99_ranged', label: 'First 99 Ranged', sub: '', cat: 'Skill', skillIcon: 'Ranged',
+    actMatch: t => /maximum level in ranged/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Ranged')?.level ?? 0) >= 99,
+  },
+  {
+    key: 'first99_magic', label: 'First 99 Magic', sub: '', cat: 'Skill', skillIcon: 'Magic',
+    actMatch: t => /maximum level in magic/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Magic')?.level ?? 0) >= 99,
+  },
+  {
+    key: 'first99_prayer', label: 'First 99 Prayer', sub: '', cat: 'Skill', skillIcon: 'Prayer',
+    actMatch: t => /maximum level in prayer/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Prayer')?.level ?? 0) >= 99,
   },
   {
     key: 'first99_slayer', label: 'First 99 Slayer', sub: '', cat: 'Skill', skillIcon: 'Slayer',
@@ -195,9 +341,9 @@ const PREDEFINED_FIRSTS = [
     skillCheck: p => (p.skills?.find(s => s.skill_name === 'Herblore')?.level ?? 0) >= 99,
   },
   {
-    key: 'first99_invention', label: 'First 99 Invention', sub: '', cat: 'Skill', skillIcon: 'Invention',
-    actMatch: t => /maximum level in invention/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Invention')?.level ?? 0) >= 99,
+    key: 'first99_farming', label: 'First 99 Farming', sub: '', cat: 'Skill', skillIcon: 'Farming',
+    actMatch: t => /maximum level in farming/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Farming')?.level ?? 0) >= 99,
   },
   {
     key: 'first99_summoning', label: 'First 99 Summoning', sub: '', cat: 'Skill', skillIcon: 'Summoning',
@@ -205,29 +351,85 @@ const PREDEFINED_FIRSTS = [
     skillCheck: p => (p.skills?.find(s => s.skill_name === 'Summoning')?.level ?? 0) >= 99,
   },
   {
+    key: 'first99_archaeology', label: 'First 99 Archaeology', sub: '', cat: 'Skill', skillIcon: 'Archaeology',
+    actMatch: t => /maximum level in archaeology/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Archaeology')?.level ?? 0) >= 99,
+  },
+  {
     key: 'first99_dungeoneering', label: 'First 99 Dungeoneering', sub: '', cat: 'Skill', skillIcon: 'Dungeoneering',
     actMatch: t => /maximum level in dungeoneering/i.test(t),
     skillCheck: p => (p.skills?.find(s => s.skill_name === 'Dungeoneering')?.level ?? 0) >= 99,
   },
   {
-    key: 'first120_slayer', label: 'First 120 Slayer', sub: 'Requires 104M XP', cat: 'Skill', skillIcon: 'Slayer',
+    key: 'first99_invention', label: 'First 99 Invention', sub: '', cat: 'Skill', skillIcon: 'Invention',
+    actMatch: t => /maximum level in invention/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Invention')?.level ?? 0) >= 99,
+  },
+  // ── 120s
+  {
+    key: 'first120_slayer', label: 'First 120 Slayer', sub: 'True 120', cat: 'Skill', skillIcon: 'Slayer',
     actMatch: t => /maximum level in slayer/i.test(t) && /120/i.test(t),
     skillCheck: p => (p.skills?.find(s => s.skill_name === 'Slayer')?.level ?? 0) >= 120,
   },
   {
-    key: 'first120_dung', label: 'First 120 Dungeoneering', sub: '', cat: 'Skill', skillIcon: 'Dungeoneering',
+    key: 'first120_dung', label: 'First 120 Dungeoneering', sub: 'True 120', cat: 'Skill', skillIcon: 'Dungeoneering',
     actMatch: t => /maximum level in dungeoneering/i.test(t) && /120/i.test(t),
     skillCheck: p => (p.skills?.find(s => s.skill_name === 'Dungeoneering')?.level ?? 0) >= 120,
   },
   {
-    key: 'first120_nec', label: 'First 120 Necromancy', sub: '', cat: 'Skill', skillIcon: 'Necromancy',
+    key: 'first120_herblore', label: 'First 120 Herblore', sub: 'True 120', cat: 'Skill', skillIcon: 'Herblore',
+    actMatch: t => /maximum level in herblore/i.test(t) && /120/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Herblore')?.level ?? 0) >= 120,
+  },
+  {
+    key: 'first120_farming', label: 'First 120 Farming', sub: 'True 120', cat: 'Skill', skillIcon: 'Farming',
+    actMatch: t => /maximum level in farming/i.test(t) && /120/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Farming')?.level ?? 0) >= 120,
+  },
+  {
+    key: 'first120_archaeology', label: 'First 120 Archaeology', sub: 'True 120', cat: 'Skill', skillIcon: 'Archaeology',
+    actMatch: t => /maximum level in archaeology/i.test(t) && /120/i.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Archaeology')?.level ?? 0) >= 120,
+  },
+  {
+    key: 'first120_nec', label: 'First 120 Necromancy', sub: 'True 120', cat: 'Skill', skillIcon: 'Necromancy',
     actMatch: t => /maximum level in necromancy/i.test(t),
     skillCheck: p => (p.skills?.find(s => s.skill_name === 'Necromancy')?.level ?? 0) >= 120,
   },
   {
-    key: 'first120_invention', label: 'First 120 Invention', sub: '', cat: 'Skill', skillIcon: 'Invention',
+    key: 'first120_invention', label: 'First 120 Invention', sub: 'True 120', cat: 'Skill', skillIcon: 'Invention',
     actMatch: t => /maximum level in invention/i.test(t) && /120/i.test(t),
     skillCheck: p => (p.skills?.find(s => s.skill_name === 'Invention')?.level ?? 0) >= 120,
+  },
+
+  // ── Clue Scrolls — count milestones (from hiscores, date unknown) ─────────
+  {
+    key: 'clue_easy_50', label: 'First 50 Easy Clues', sub: 'Clue scroll milestone', cat: 'Clue', icon: '🟢',
+    skillCheck: p => (parseStats(p.stats_json)?.activities?.['Clue Scrolls Easy'] ?? 0) >= 50,
+  },
+  {
+    key: 'clue_medium_25', label: 'First 25 Medium Clues', sub: 'Clue scroll milestone', cat: 'Clue', icon: '🔵',
+    skillCheck: p => (parseStats(p.stats_json)?.activities?.['Clue Scrolls Medium'] ?? 0) >= 25,
+  },
+  {
+    key: 'clue_hard_50', label: 'First 50 Hard Clues', sub: 'Clue scroll milestone', cat: 'Clue', icon: '🟠',
+    skillCheck: p => (parseStats(p.stats_json)?.activities?.['Clue Scrolls Hard'] ?? 0) >= 50,
+  },
+  {
+    key: 'clue_elite_10', label: 'First 10 Elite Clues', sub: 'Clue scroll milestone', cat: 'Clue', icon: '🟣',
+    skillCheck: p => (parseStats(p.stats_json)?.activities?.['Clue Scrolls Elite'] ?? 0) >= 10,
+  },
+  {
+    key: 'clue_elite_50', label: 'First 50 Elite Clues', sub: 'Clue scroll milestone', cat: 'Clue', icon: '🟣',
+    skillCheck: p => (parseStats(p.stats_json)?.activities?.['Clue Scrolls Elite'] ?? 0) >= 50,
+  },
+  {
+    key: 'clue_master_5', label: 'First 5 Master Clues', sub: 'Clue scroll milestone', cat: 'Clue', icon: '🔴',
+    skillCheck: p => (parseStats(p.stats_json)?.activities?.['Clue Scrolls Master'] ?? 0) >= 5,
+  },
+  {
+    key: 'clue_master_25', label: 'First 25 Master Clues', sub: 'Clue scroll milestone', cat: 'Clue', icon: '🔴',
+    skillCheck: p => (parseStats(p.stats_json)?.activities?.['Clue Scrolls Master'] ?? 0) >= 25,
   },
 ];
 
@@ -236,6 +438,7 @@ const CAT_STYLE = {
   Quest: { badge: 'Quest', bg: 'rgba(74,136,184,0.15)',   border: 'var(--blue)',     color: '#7eb8f7' },
   Skill: { badge: 'Skill', bg: 'rgba(200,168,75,0.12)',   border: 'var(--gold-dark)',color: 'var(--gold)' },
   Item:  { badge: 'Item',  bg: 'rgba(90,154,80,0.12)',    border: 'var(--green)',    color: 'var(--green-bright)' },
+  Clue:  { badge: 'Clue',  bg: 'rgba(160,100,200,0.12)', border: 'rgba(160,100,200,0.5)', color: '#c07ef7' },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -272,49 +475,67 @@ function FirstsBoard({ players, colorMap }) {
 
   const results = useMemo(() => {
     return PREDEFINED_FIRSTS.map(def => {
-      // Scan each player's activity feed for this milestone
       const candidates = [];
 
       for (const p of players) {
         const acts = parseActivities(p.activities_json);
-        for (const act of acts) {
-          const actText    = (act.text    || '').trim();
-          const actDetails = (act.details || '').trim();
-          const combined   = (actText + ' ' + actDetails).trim();
-          const ts = parseRMDate(act.date);
 
-          let matched = false;
-          if (def.actMatch) {
-            // For PvM milestones only test against the activity text field (not details),
-            // so quest cutscene flavour text that names a boss doesn't create false positives.
-            // Also require a kill verb in the text when the milestone category is PvM.
-            const testStr = def.cat === 'PvM' ? actText : combined;
-            if (def.cat === 'PvM' && !/defeat|kill|slay|vanquish/i.test(actText)) {
-              // no-op: not a kill activity
-            } else if (def.actMatch(testStr)) {
-              matched = true;
+        if (def.countMatch && def.countThreshold) {
+          // ── Count-based milestone ──────────────────────────────────────────
+          // Walk ALL activities oldest-first, count matches; push when Nth match found.
+          const sorted = [...acts].sort((a, b) => parseRMDate(a.date) - parseRMDate(b.date));
+          let cnt = 0;
+          for (const act of sorted) {
+            const combined = ((act.text || '') + ' ' + (act.details || '')).trim();
+            if (def.countMatch(combined)) {
+              cnt++;
+              if (cnt >= def.countThreshold) {
+                const ts = parseRMDate(act.date);
+                if (ts > 0) candidates.push({ rsn: p.rsn, playerId: p.id, ts, date: act.date });
+                break;
+              }
             }
           }
-          if (!matched && def.dropMatch) {
-            const isDropText = /I (?:found|received) (?:a |an )/i.test(combined);
-            if (isDropText && def.dropMatch(combined)) matched = true;
-          }
+        } else {
+          // ── Regular single-event milestone ────────────────────────────────
+          for (const act of acts) {
+            const actText    = (act.text    || '').trim();
+            const actDetails = (act.details || '').trim();
+            const combined   = (actText + ' ' + actDetails).trim();
+            const ts = parseRMDate(act.date);
 
-          if (matched && ts > 0) {
-            candidates.push({ rsn: p.rsn, playerId: p.id, ts, date: act.date });
-            break; // earliest match per player is enough for now
+            let matched = false;
+            if (def.actMatch) {
+              // For PvM milestones only test against the activity text field (not details),
+              // so quest cutscene flavour text that names a boss doesn't create false positives.
+              // Also require a kill verb in the text when the milestone category is PvM.
+              const testStr = def.cat === 'PvM' ? actText : combined;
+              if (def.cat === 'PvM' && !/defeat|kill|slay|vanquish/i.test(actText)) {
+                // no-op: not a kill activity
+              } else if (def.actMatch(testStr)) {
+                matched = true;
+              }
+            }
+            if (!matched && def.dropMatch) {
+              const isDropText = /I (?:found|received) (?:a |an )/i.test(combined);
+              if (isDropText && def.dropMatch(combined)) matched = true;
+            }
+
+            if (matched && ts > 0) {
+              candidates.push({ rsn: p.rsn, playerId: p.id, ts, date: act.date });
+              break; // earliest match per player
+            }
           }
         }
       }
 
       if (candidates.length > 0) {
-        // Pick the player with the smallest (earliest) timestamp
         candidates.sort((a, b) => a.ts - b.ts);
         const winner = candidates[0];
         return { ...def, status: 'achieved', winner, allCandidates: candidates };
       }
 
-      // Fallback: check current skill data (no date available)
+      // Fallback: check current skill/stats data (no date available)
       if (def.skillCheck) {
         const holders = players.filter(def.skillCheck);
         if (holders.length > 0) {
@@ -329,7 +550,7 @@ function FirstsBoard({ players, colorMap }) {
     });
   }, [players]);
 
-  const cats = ['All', 'PvM', 'Quest', 'Skill', 'Item'];
+  const cats = ['All', 'PvM', 'Quest', 'Skill', 'Item', 'Clue'];
   const visible = results.filter(r => catFilter === 'All' || r.cat === catFilter);
   const achieved = visible.filter(r => r.status !== 'pending');
   const pending  = visible.filter(r => r.status === 'pending');
@@ -397,7 +618,7 @@ function FirstsBoard({ players, colorMap }) {
       )}
 
       <div style={{ marginTop: 16, fontSize: 10, color: 'var(--text-dim)', textAlign: 'center' }}>
-        Firsts are detected from RuneMetrics activity feeds (last 20 entries, auto-synced every 5 min). Skill milestones without a date come from current hiscores data.
+        PvM / Quest / Item firsts detected from RuneMetrics activity feed (last 50 entries per player). Skill &amp; Clue milestones use current hiscores data (date shown as unknown). Drop count milestones count across all stored activities.
       </div>
     </div>
   );

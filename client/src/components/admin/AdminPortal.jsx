@@ -376,6 +376,308 @@ function TableBrowser({ pushToast, initialTable }) {
   );
 }
 
+// ── Maintenance tab ───────────────────────────────────────────────────────────
+function MaintenanceTab({ pushToast }) {
+  // Each tool has: id, emoji, title, desc, destructive?, fields[], action
+  const TOOLS = [
+    {
+      id: 'list_groups',
+      emoji: '📋',
+      title: 'Browse Groups',
+      desc: 'List all groups with their IDs, player counts, and claim status. Useful for finding IDs before running other fixes.',
+      fields: [],
+    },
+    {
+      id: 'list_players',
+      emoji: '👤',
+      title: 'Browse Players in Group',
+      desc: 'Show all players in a group with their IDs and RSNs. Use this to get player IDs needed for Fix Player RSN.',
+      fields: [
+        { key: 'group_id', label: 'Group ID', placeholder: 'e.g. 12' },
+      ],
+    },
+    {
+      id: 'move_players',
+      emoji: '🔀',
+      title: 'Move Players Between Groups',
+      desc: 'Fixes the "Group shows 0 members" bug — moves all players from the old unclaimed group to the claimed one, then you can delete the orphan.',
+      fields: [
+        { key: 'from_group_id', label: 'From Group ID (old/orphan)', placeholder: 'e.g. 5' },
+        { key: 'to_group_id',   label: 'To Group ID (claimed)',      placeholder: 'e.g. 7' },
+      ],
+    },
+    {
+      id: 'delete_orphan',
+      emoji: '🗑️',
+      title: 'Delete Empty Group',
+      desc: 'Removes a group that has 0 players. Will refuse with an error if any players are still attached — move them first.',
+      fields: [
+        { key: 'group_id', label: 'Group ID', placeholder: 'e.g. 5' },
+      ],
+    },
+    {
+      id: 'reset_secret',
+      emoji: '🔓',
+      title: 'Reset Group Secret',
+      desc: 'Clears the password hash so the group becomes unclaimed. The owner can then re-claim it via "🔒 Claim group" in the app.',
+      fields: [
+        { key: 'group_id', label: 'Group ID', placeholder: 'e.g. 12' },
+      ],
+    },
+    {
+      id: 'delete_group',
+      emoji: '💀',
+      title: 'Permanently Delete Group',
+      desc: '⚠ DESTRUCTIVE — deletes the group and ALL its players, goals, drops, gear, and notes. This cannot be undone.',
+      destructive: true,
+      fields: [
+        { key: 'group_id', label: 'Group ID', placeholder: 'e.g. 99' },
+      ],
+    },
+    {
+      id: 'fix_rsn',
+      emoji: '✏️',
+      title: 'Fix Player RSN',
+      desc: 'Overwrites the stored RSN for a player and clears their sync error. Use this to fix non-breaking spaces, typos, or casing issues. Get the player ID from "Browse Players in Group" above.',
+      fields: [
+        { key: 'player_id', label: 'Player ID', placeholder: 'e.g. 256' },
+        { key: 'rsn',       label: 'Correct RSN', placeholder: 'e.g. Actual Faen' },
+      ],
+    },
+    {
+      id: 'sync_activities',
+      emoji: '🔄',
+      title: 'Trigger Activity Sync',
+      desc: 'Manually runs the RuneMetrics activity fetch for all players in a group — same as the 2-hour background cron, but on demand. May take a while for large groups.',
+      fields: [
+        { key: 'group_id', label: 'Group ID', placeholder: 'e.g. 12' },
+      ],
+    },
+    {
+      id: 'sync_player',
+      emoji: '⟳',
+      title: 'Sync Individual Player',
+      desc: 'Re-runs the hiscores sync for a single player and clears their sync error. Equivalent to clicking ↻ on the member card.',
+      fields: [
+        { key: 'player_id', label: 'Player ID', placeholder: 'e.g. 256' },
+      ],
+    },
+  ];
+
+  const [activeTool, setActiveTool] = useState(null);
+  const [values, setValues] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null); // { ok: bool, message: string, rows?: [] }
+  const [confirmed, setConfirmed] = useState(false);
+
+  function openTool(toolId) {
+    setActiveTool(toolId);
+    setValues({});
+    setResult(null);
+    setConfirmed(false);
+  }
+
+  function closeTool() {
+    setActiveTool(null);
+    setValues({});
+    setResult(null);
+    setBusy(false);
+    setConfirmed(false);
+  }
+
+  async function runTool(tool) {
+    setBusy(true);
+    setResult(null);
+    try {
+      let data;
+      if (tool.id === 'list_groups') {
+        data = await adminApi.maintenance.listGroups();
+        setResult({ ok: true, rows: data, columns: ['id','name','type','size','claimed','player_count','created_at'] });
+      } else if (tool.id === 'list_players') {
+        data = await adminApi.maintenance.listPlayers(values.group_id);
+        setResult({ ok: true, rows: data, columns: ['id','rsn','combat_level','last_synced_at','sync_error'] });
+      } else if (tool.id === 'move_players') {
+        data = await adminApi.maintenance.movePlayers({ from_group_id: values.from_group_id, to_group_id: values.to_group_id });
+        setResult({ ok: true, message: data.message });
+        pushToast(data.message, 'success');
+      } else if (tool.id === 'delete_orphan') {
+        data = await adminApi.maintenance.deleteOrphanGroup({ group_id: values.group_id });
+        setResult({ ok: true, message: data.message });
+        pushToast(data.message, 'success');
+      } else if (tool.id === 'reset_secret') {
+        data = await adminApi.maintenance.resetSecret({ group_id: values.group_id });
+        setResult({ ok: true, message: data.message });
+        pushToast(data.message, 'success');
+      } else if (tool.id === 'delete_group') {
+        data = await adminApi.maintenance.deleteGroup({ group_id: values.group_id });
+        setResult({ ok: true, message: data.message });
+        pushToast(data.message, 'success');
+      } else if (tool.id === 'fix_rsn') {
+        data = await adminApi.maintenance.fixRsn({ player_id: values.player_id, rsn: values.rsn });
+        setResult({ ok: true, message: data.message });
+        pushToast(data.message, 'success');
+      } else if (tool.id === 'sync_activities') {
+        data = await adminApi.maintenance.syncActivities(values.group_id);
+        const newCount = Array.isArray(data) ? data.reduce((s, r) => s + (r.new ?? 0), 0) : 0;
+        const msg = Array.isArray(data)
+          ? `Synced ${data.length} player(s). ${newCount} new activities found.`
+          : 'Activity sync completed.';
+        setResult({ ok: true, message: msg, rows: Array.isArray(data) ? data : null, columns: ['rsn','success','new','error'] });
+        pushToast(msg, 'success');
+      } else if (tool.id === 'sync_player') {
+        data = await adminApi.maintenance.syncPlayer(values.player_id);
+        const msg = data.rsn ? `Synced "${data.rsn}" — total level ${data.total_level ?? '?'}` : 'Player synced.';
+        setResult({ ok: true, message: msg });
+        pushToast(msg, 'success');
+      }
+    } catch (err) {
+      setResult({ ok: false, message: err.message });
+      pushToast(err.message, 'error');
+    } finally {
+      setBusy(false);
+      setConfirmed(false);
+    }
+  }
+
+  const tool = TOOLS.find(t => t.id === activeTool);
+  const allFilled = tool && tool.fields.every(f => (values[f.key] ?? '').trim() !== '');
+
+  return (
+    <div>
+      {/* Tool cards grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12, marginBottom: 20 }}>
+        {TOOLS.map(t => (
+          <div key={t.id}
+            style={{
+              padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
+              background: activeTool === t.id ? (t.destructive ? 'rgba(192,64,64,0.12)' : 'rgba(200,168,75,0.1)') : 'var(--bg-panel-alt)',
+              border: `1px solid ${activeTool === t.id ? (t.destructive ? 'rgba(192,64,64,0.5)' : 'rgba(200,168,75,0.5)') : 'var(--border)'}`,
+              transition: 'all 0.15s',
+            }}
+            onClick={() => activeTool === t.id ? closeTool() : openTool(t.id)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 18 }}>{t.emoji}</span>
+              <span style={{ fontWeight: 700, fontSize: 13, color: t.destructive ? 'var(--red-bright)' : 'var(--text-bright)' }}>{t.title}</span>
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)' }}>{activeTool === t.id ? '▲' : '▼'}</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>{t.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Active tool form */}
+      {tool && (
+        <div style={{
+          padding: '20px 24px', borderRadius: 10,
+          background: tool.destructive ? 'rgba(192,64,64,0.06)' : 'var(--bg-panel-alt)',
+          border: `1px solid ${tool.destructive ? 'rgba(192,64,64,0.3)' : 'var(--border)'}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <span style={{ fontSize: 22 }}>{tool.emoji}</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: tool.destructive ? 'var(--red-bright)' : 'var(--text-bright)' }}>{tool.title}</span>
+            <button onClick={closeTool}
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+          </div>
+
+          {/* Input fields */}
+          {tool.fields.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+              {tool.fields.map(f => (
+                <div key={f.key} style={{ flex: '1 1 200px' }}>
+                  <label style={{ fontSize: 11, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>{f.label}</label>
+                  <input
+                    value={values[f.key] ?? ''}
+                    onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    disabled={busy}
+                    style={{
+                      width: '100%', padding: '8px 10px', borderRadius: 6, boxSizing: 'border-box',
+                      background: 'var(--bg-input)', border: '1px solid var(--border)',
+                      color: 'var(--text-bright)', fontSize: 13,
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Destructive confirmation checkbox */}
+          {tool.destructive && allFilled && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer', fontSize: 12 }}>
+              <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} disabled={busy} />
+              <span style={{ color: 'var(--red-bright)', fontWeight: 600 }}>I understand this is permanent and cannot be undone</span>
+            </label>
+          )}
+
+          {/* Run button */}
+          <button
+            onClick={() => runTool(tool)}
+            disabled={busy || (tool.fields.length > 0 && !allFilled) || (tool.destructive && !confirmed)}
+            style={{
+              padding: '9px 20px', borderRadius: 7, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+              background: tool.destructive ? 'rgba(192,64,64,0.2)' : 'rgba(200,168,75,0.15)',
+              border: `1px solid ${tool.destructive ? 'rgba(192,64,64,0.5)' : 'rgba(200,168,75,0.5)'}`,
+              color: tool.destructive ? 'var(--red-bright)' : 'var(--gold)',
+              opacity: busy || (tool.fields.length > 0 && !allFilled) || (tool.destructive && !confirmed) ? 0.45 : 1,
+              transition: 'opacity 0.15s',
+            }}>
+            {busy ? '⏳ Running…' : `▶ Run: ${tool.title}`}
+          </button>
+
+          {/* Result */}
+          {result && (
+            <div style={{ marginTop: 16 }}>
+              {result.message && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 7, fontSize: 12, lineHeight: 1.6, marginBottom: result.rows ? 10 : 0,
+                  background: result.ok ? 'rgba(90,154,80,0.1)' : 'rgba(192,64,64,0.1)',
+                  border: `1px solid ${result.ok ? 'rgba(90,154,80,0.3)' : 'rgba(192,64,64,0.3)'}`,
+                  color: result.ok ? 'var(--green-bright)' : 'var(--red-bright)',
+                }}>
+                  {result.ok ? '✓ ' : '✗ '}{result.message}
+                </div>
+              )}
+              {result.rows && result.rows.length > 0 && (
+                <div style={{ overflowX: 'auto', borderRadius: 7, border: '1px solid var(--border)', marginTop: 8 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                    <thead>
+                      <tr style={{ background: 'var(--bg-panel)' }}>
+                        {result.columns.map(c => (
+                          <th key={c} style={{ textAlign: 'left', padding: '7px 10px', color: 'var(--text-dim)', fontWeight: 600, borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{c}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.rows.map((row, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          {result.columns.map(c => {
+                            const v = row[c];
+                            const isErr = c === 'sync_error' && v;
+                            const isBool = c === 'success' || c === 'claimed';
+                            return (
+                              <td key={c} style={{ padding: '5px 10px', color: isErr ? 'var(--red-bright)' : isBool ? (v ? 'var(--green-bright)' : 'var(--text-dim)') : 'var(--text-bright)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {v == null ? <span style={{ opacity: 0.3 }}>—</span> : isBool ? (v ? '✓' : '✗') : String(v)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ padding: '6px 12px', fontSize: 11, color: 'var(--text-dim)' }}>{result.rows.length} row(s)</div>
+                </div>
+              )}
+              {result.rows && result.rows.length === 0 && (
+                <div style={{ padding: '14px', fontSize: 12, color: 'var(--text-dim)', textAlign: 'center' }}>No rows returned.</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Audit log ─────────────────────────────────────────────────────────────────
 function AuditLog({ pushToast }) {
   const [rows, setRows] = useState([]);
@@ -436,9 +738,10 @@ function AdminDashboard({ username, onLogout, pushToast }) {
   const actionColor = { create: 'var(--green-bright)', update: 'var(--gold)', delete: 'var(--red-bright)' };
 
   const TABS = [
-    { id: 'queue',   label: `📥 Queue${stats?.pending ? ` (${stats.pending})` : ''}` },
-    { id: 'tables',  label: '📊 Browse Tables' },
-    { id: 'audit',   label: '📜 Audit Log' },
+    { id: 'queue',       label: `📥 Queue${stats?.pending ? ` (${stats.pending})` : ''}` },
+    { id: 'tables',      label: '📊 Browse Tables' },
+    { id: 'maintenance', label: '🔧 Maintenance' },
+    { id: 'audit',       label: '📜 Audit Log' },
   ];
 
   return (
@@ -546,8 +849,9 @@ function AdminDashboard({ username, onLogout, pushToast }) {
           </div>
         )}
 
-        {tab === 'tables' && <TableBrowser pushToast={pushToast} initialTable={jumpTable} />}
-        {tab === 'audit'  && <AuditLog pushToast={pushToast} />}
+        {tab === 'tables'      && <TableBrowser pushToast={pushToast} initialTable={jumpTable} />}
+        {tab === 'maintenance' && <MaintenanceTab pushToast={pushToast} />}
+        {tab === 'audit'       && <AuditLog pushToast={pushToast} />}
       </div>
 
       {/* Review modal */}

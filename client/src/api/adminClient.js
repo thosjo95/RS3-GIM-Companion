@@ -53,6 +53,19 @@ export const adminApi = {
   rejectSubmission:   (id, note)   => request(`/submissions/${id}/reject`,  { method: 'POST', body: { review_note: note } }),
   getTable:           (name, params={}) => request(`/table/${name}${toQS(params)}`),
   getAudit:           ()           => request('/audit'),
+
+  // Maintenance operations
+  maintenance: {
+    listGroups:        ()           => request('/maintenance/groups'),
+    listPlayers:       (groupId)    => request(`/maintenance/groups/${groupId}/players`),
+    movePlayers:       (body)       => request('/maintenance/move-players',      { method: 'POST', body }),
+    deleteOrphanGroup: (body)       => request('/maintenance/delete-orphan-group', { method: 'POST', body }),
+    resetSecret:       (body)       => request('/maintenance/reset-secret',      { method: 'POST', body }),
+    deleteGroup:       (body)       => request('/maintenance/delete-group',      { method: 'POST', body }),
+    fixRsn:            (body)       => request('/maintenance/fix-rsn',           { method: 'POST', body }),
+    syncActivities:    (groupId)    => fetch(`/api/players/sync-activities/${groupId}`, { method: 'POST' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || `Status ${r.status}`); return d; }),
+    syncPlayer:        (playerId)   => fetch(`/api/players/${playerId}/sync`,    { method: 'POST' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || `Status ${r.status}`); return d; }),
+  },
 };
 
 function toQS(params) {

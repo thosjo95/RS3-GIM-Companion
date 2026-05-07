@@ -5,6 +5,7 @@ const {
   hashPassword, verifyPassword, issueToken,
   checkRateLimit, recordFailedAttempt, clearRateLimit, requireAdmin,
 } = require('../utils/adminAuth');
+const { sanitizeRSN } = require('../services/runescape');
 
 // ── POST /api/admin/login ─────────────────────────────────────────────────────
 router.post('/login', (req, res) => {
@@ -199,5 +200,82 @@ function safeParse(val) {
   if (typeof val === 'object') return val;
   try { return JSON.parse(val); } catch { return val; }
 }
+
+// ── Maintenance operations ─────────────────────────────────────────────────────
+
+// GET /api/admin/maintenance/groups — list all groups with player counts
+router.get('/maintenance/groups', requireAdmin, (req, res) => {
+  const groups = db.prepare(`
+    SELECT g.id, g.name, g.type, g.size,
+           CASE WHEN g.password_hash IS NOT NULL THEN 1 ELSE 0 END AS claimed,
+           (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS player_count,
+           g.created_at
+    FROM groups g ORDER BY g.id DESC
+  `).all();
+  res.json(groups);
+});
+
+// GET /api/admin/maintenance/groups/:id/players — list players in a group
+router.get('/maintenance/groups/:id/players', requireAdmin, (req, res) => {
+  const players = db.prepare(
+    'SELECT id, rsn, combat_level, last_synced_at, sync_error FROM players WHERE group_id = ? ORDER BY rsn'
+  ).all(req.params.id);
+  res.json(players);
+});
+
+// POST /api/admin/maintenance/move-players — move all players from one group to another
+router.post('/maintenance/move-players', requireAdmin, (req, res) => {
+  const { from_group_id, to_group_id } = req.body;
+  if (!from_group_id || !to_group_id) return res.status(400).json({ error: 'from_group_id and to_group_id required' });
+  const moved = db.prepare('UPDATE players SET group_id = ? WHERE group_id = ?').run(Number(to_group_id), Number(from_group_id));
+  res.json({ success: true, moved: moved.changes, message: `Moved ${moved.changes} player(s) from group #${from_group_id} → #${to_group_id}` });
+});
+
+// POST /api/admin/maintenance/delete-orphan-group — delete a group that has 0 players
+router.post('/maintenance/delete-orphan-group', requireAdmin, (req, res) => {
+  const { group_id } = req.body;
+  if (!group_id) return res.status(400).json({ error: 'group_id required' });
+  const gid = Number(group_id);
+  const playerCount = db.prepare('SELECT COUNT(*) as n FROM players WHERE group_id = ?').get(gid).n;
+  if (playerCount > 0) return res.status(409).json({ error: `Group ${gid} still has ${playerCount} player(s). Move or delete them first.` });
+  const deleted = db.prepare('DELETE FROM groups WHERE id = ?').run(gid);
+  if (!deleted.changes) return res.status(404).json({ error: `Group ${gid} not found` });
+  res.json({ success: true, message: `Deleted empty group #${gid}` });
+});
+
+// POST /api/admin/maintenance/reset-secret — clear a group's password so they can re-claim
+router.post('/maintenance/reset-secret', requireAdmin, (req, res) => {
+  const { group_id } = req.body;
+  if (!group_id) return res.status(400).json({ error: 'group_id required' });
+  const gid = Number(group_id);
+  const group = db.prepare('SELECT id, name FROM groups WHERE id = ?').get(gid);
+  if (!group) return res.status(404).json({ error: `Group ${gid} not found` });
+  db.prepare('UPDATE groups SET password_hash = NULL WHERE id = ?').run(gid);
+  res.json({ success: true, message: `Secret cleared for "${group.name}" (id ${gid}). They can now re-claim.` });
+});
+
+// POST /api/admin/maintenance/delete-group — permanently delete a group and all its players
+router.post('/maintenance/delete-group', requireAdmin, (req, res) => {
+  const { group_id } = req.body;
+  if (!group_id) return res.status(400).json({ error: 'group_id required' });
+  const gid = Number(group_id);
+  const group = db.prepare('SELECT id, name FROM groups WHERE id = ?').get(gid);
+  if (!group) return res.status(404).json({ error: `Group ${gid} not found` });
+  const playerCount = db.prepare('SELECT COUNT(*) as n FROM players WHERE group_id = ?').get(gid).n;
+  db.prepare('DELETE FROM players WHERE group_id = ?').run(gid);
+  db.prepare('DELETE FROM groups WHERE id = ?').run(gid);
+  res.json({ success: true, message: `Deleted group "${group.name}" (id ${gid}) and ${playerCount} player(s). All related data cascaded.` });
+});
+
+// POST /api/admin/maintenance/fix-rsn — overwrite a player's RSN and clear their sync error
+router.post('/maintenance/fix-rsn', requireAdmin, (req, res) => {
+  const { player_id, rsn } = req.body;
+  if (!player_id || !rsn) return res.status(400).json({ error: 'player_id and rsn required' });
+  const clean = sanitizeRSN(rsn.trim());
+  const player = db.prepare('SELECT id, rsn FROM players WHERE id = ?').get(Number(player_id));
+  if (!player) return res.status(404).json({ error: `Player ${player_id} not found` });
+  db.prepare('UPDATE players SET rsn = ?, sync_error = NULL WHERE id = ?').run(clean, Number(player_id));
+  res.json({ success: true, old_rsn: player.rsn, new_rsn: clean, message: `Player #${player_id}: "${player.rsn}" → "${clean}". Sync error cleared.` });
+});
 
 module.exports = router;
