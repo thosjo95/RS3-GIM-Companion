@@ -278,11 +278,23 @@ function FirstsBoard({ players, colorMap }) {
       for (const p of players) {
         const acts = parseActivities(p.activities_json);
         for (const act of acts) {
-          const combined = ((act.text || '') + ' ' + (act.details || '')).trim();
+          const actText    = (act.text    || '').trim();
+          const actDetails = (act.details || '').trim();
+          const combined   = (actText + ' ' + actDetails).trim();
           const ts = parseRMDate(act.date);
 
           let matched = false;
-          if (def.actMatch && def.actMatch(combined)) matched = true;
+          if (def.actMatch) {
+            // For PvM milestones only test against the activity text field (not details),
+            // so quest cutscene flavour text that names a boss doesn't create false positives.
+            // Also require a kill verb in the text when the milestone category is PvM.
+            const testStr = def.cat === 'PvM' ? actText : combined;
+            if (def.cat === 'PvM' && !/defeat|kill|slay|vanquish/i.test(actText)) {
+              // no-op: not a kill activity
+            } else if (def.actMatch(testStr)) {
+              matched = true;
+            }
+          }
           if (!matched && def.dropMatch) {
             const isDropText = /I (?:found|received) (?:a |an )/i.test(combined);
             if (isDropText && def.dropMatch(combined)) matched = true;
@@ -483,11 +495,13 @@ function MilestonesFeed({ players, colorMap }) {
     for (const p of players) {
       const acts = parseActivities(p.activities_json);
       for (const act of acts) {
-        const text = ((act.text || '') + ' ' + (act.details || '')).trim();
+        const actText    = (act.text    || '').trim();
+        const actDetails = (act.details || '').trim();
+        const combined   = (actText + ' ' + actDetails).trim();
 
         // 99 / 120 skill achievement
-        const maxMatch = text.match(/I achieved the maximum level in ([\w\s]+?)!?\.?$/i)
-          ?? text.match(/I (?:levelled|reached) (?:my )?([\w\s]+?) to (99|1[01]\d|120)\b/i);
+        const maxMatch = combined.match(/I achieved the maximum level in ([\w\s]+?)!?\.?$/i)
+          ?? combined.match(/I (?:levelled|reached) (?:my )?([\w\s]+?) to (99|1[01]\d|120)\b/i);
         if (maxMatch) {
           const skillName = maxMatch[1].trim();
           if (ALL_SKILLS.includes(skillName)) {
@@ -503,8 +517,9 @@ function MilestonesFeed({ players, colorMap }) {
           }
         }
 
-        // Quest completion
-        const questMatch = text.match(/I completed the quest[: ]+(.+?)\.?\s*$/i);
+        // Quest completion — also catches "Quest complete: X" style entries
+        const questMatch = combined.match(/I completed the quest[: ]+(.+?)\.?\s*$/i)
+          ?? actText.match(/^Quest complete[d]?[:\s]+(.+?)\.?\s*$/i);
         if (questMatch) {
           found.push({
             id: `${p.id}_quest_${questMatch[1]}_${act.date}`,
@@ -514,9 +529,16 @@ function MilestonesFeed({ players, colorMap }) {
           continue;
         }
 
-        // Boss / notable activity
+        // Boss / notable PvM activity
+        // Guard: the activity TEXT (not details) must contain a kill verb.
+        // This prevents quest cutscenes / flavour text that merely names a boss
+        // (e.g. "Quest complete: Necromancy!" whose details mention Rasial) from
+        // being counted as a PvM milestone.
+        if (!/defeat|kill|slay|vanquish/i.test(actText)) continue;
+
         for (const def of ACTIVITY_MILESTONE_DEFS) {
-          if (def.patterns.some(rx => rx.test(text))) {
+          // Test against the text field only — details may name bosses in non-kill contexts
+          if (def.patterns.some(rx => rx.test(actText))) {
             found.push({
               id: `${p.id}_${def.key}_${act.date}`,
               cat: def.cat, icon: def.icon, label: def.label,
