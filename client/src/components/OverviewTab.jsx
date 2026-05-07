@@ -204,10 +204,17 @@ function EditRsnModal({ player, onClose, onSaved, onToast }) {
 
 // ── Member card ───────────────────────────────────────────────────────────────
 
-function MemberCard({ player, active, color, onClick, isMe, onEditRsn, canWrite }) {
+function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, canWrite }) {
   const [avatarError, setAvatarError] = useState(false);
+  const [syncing,     setSyncing]     = useState(false);
   const overall = player.skills?.find(s => s.skill_name === 'Overall');
   const hasSyncError = !!player.sync_error;
+
+  async function handleSync(e) {
+    e.stopPropagation();
+    setSyncing(true);
+    try { await onSync(player); } finally { setSyncing(false); }
+  }
   const borderColor = active ? color : hasSyncError ? 'var(--red-bright)' : isMe ? 'var(--gold)' : 'var(--border)';
   const avatarUrl = `https://secure.runescape.com/m=avatar-rs/${encodeURIComponent(player.rsn)}/chat.png`;
 
@@ -269,18 +276,34 @@ function MemberCard({ player, active, color, onClick, isMe, onEditRsn, canWrite 
         }}>YOU</div>
       )}
 
-      {/* Edit RSN button — always visible when there's a sync error, otherwise on hover */}
-      {canWrite && onEditRsn && (hasSyncError || active) && (
-        <button
-          title="Edit RSN"
-          onClick={e => { e.stopPropagation(); onEditRsn(player); }}
-          style={{
-            position: 'absolute', bottom: 6, right: 6,
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 13, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)',
-            padding: '2px 4px', borderRadius: 4,
-            lineHeight: 1,
-          }}>✎</button>
+      {/* Sync + Edit RSN buttons — visible when active or on sync error */}
+      {(hasSyncError || active) && (
+        <div style={{ position: 'absolute', bottom: 6, right: 6, display: 'flex', gap: 2 }}>
+          {onSync && (
+            <button
+              title="Sync hiscores"
+              onClick={handleSync}
+              disabled={syncing}
+              style={{
+                background: 'none', border: 'none', cursor: syncing ? 'default' : 'pointer',
+                fontSize: 13, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)',
+                padding: '2px 4px', borderRadius: 4, lineHeight: 1,
+                opacity: syncing ? 0.5 : 1,
+              }}>
+              {syncing ? <span className="spinner" style={{ width: 11, height: 11, display: 'inline-block' }} /> : '↻'}
+            </button>
+          )}
+          {canWrite && onEditRsn && (
+            <button
+              title="Edit RSN"
+              onClick={e => { e.stopPropagation(); onEditRsn(player); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 13, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)',
+                padding: '2px 4px', borderRadius: 4, lineHeight: 1,
+              }}>✎</button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -1005,6 +1028,17 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
   );
   const hasWeeklyData = players.some(p => p.weekly_xp_gain != null);
 
+  async function syncOnePlayer(player) {
+    try {
+      await api.syncPlayer(player.id);
+      onToast(`${player.rsn} synced`, 'success');
+      onRefresh();
+    } catch (err) {
+      onToast(err.message || 'Sync failed', 'error');
+      onRefresh(); // refresh anyway to show updated sync_error
+    }
+  }
+
   const selOverall = selectedPlayer?.skills?.find(s => s.skill_name === 'Overall');
   const selWeeklyXp = selectedPlayer?.weekly_xp_gain;
 
@@ -1052,6 +1086,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
               isMe={!!myRsn && normRsn(p.rsn) === normRsn(myRsn)}
               canWrite={canWrite}
               onEditRsn={setEditRsnPlayer}
+              onSync={syncOnePlayer}
             />
           ))}
         </div>
