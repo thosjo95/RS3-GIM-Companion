@@ -1,23 +1,42 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../api/client';
 import {
-  STYLES, EQUIPMENT_SLOTS, GEAR_SUGGESTIONS,
+  STYLES, EQUIPMENT_SLOTS,
   canWear, getMissingReqs, getBestAndNext, levelToXp,
 } from '../data/gearSuggestions';
 
-// ── Item icon hook — fetches /api/rs3/items once and builds name→icon_url map ──
-// Returns a Map<string, string> (item name → wiki icon URL).
-// Falls back gracefully: if an item has no DB record, the img just fails silently.
-function useItemIconMap() {
+// ── Combined hook — fetches /api/rs3/items once, builds icon map + gear DB ───
+// gearDb[style][slot] = items[] sorted tier desc (DB is authoritative source).
+// style:'all' items (rings, necks, pocket, cape) are merged into every style.
+function useRs3Gear() {
   const [iconMap, setIconMap] = useState(new Map());
+  const [gearDb,  setGearDb]  = useState({});
+
   useEffect(() => {
     api.getRs3Items().then(items => {
+      // ── icon map ──────────────────────────────────────────────────────────
       const m = new Map();
       for (const it of items) if (it.icon_url) m.set(it.name, it.icon_url);
       setIconMap(m);
+
+      // ── gear db ───────────────────────────────────────────────────────────
+      // API returns items sorted tier DESC, name — correct order for getBestAndNext
+      const db = {};
+      const ALL_STYLES = ['melee', 'ranged', 'magic', 'necromancy', 'hybrid'];
+      for (const it of items) {
+        const shaped = { name: it.name, reqs: it.reqs || null, quest: it.quest || null, tier: it.tier, icon_url: it.icon_url };
+        const targets = it.style === 'all' ? ALL_STYLES : (it.style ? [it.style] : []);
+        for (const s of targets) {
+          if (!db[s])           db[s] = {};
+          if (!db[s][it.slot])  db[s][it.slot] = [];
+          db[s][it.slot].push(shaped);
+        }
+      }
+      setGearDb(db);
     }).catch(() => {});
   }, []);
-  return iconMap;
+
+  return { iconMap, gearDb };
 }
 
 // Small component: shows a 24×24 RS3 item icon from the wiki, falls back to nothing
@@ -239,7 +258,7 @@ function SlotButton({ slotDef, entry, active, canWrite, onClick, styleColor, ico
 
 // ── Recommendations panel (no slot selected) ──────────────────────────────────
 
-function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skillLevels, loadout, canWrite, onSlotClick, onQuickFill, groupId, playerId, onToast }) {
+function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skillLevels, loadout, canWrite, onSlotClick, onQuickFill, groupId, playerId, onToast, gearDb }) {
   return (
     <div style={{
       flex: 1, minWidth: 240, maxWidth: 360,
@@ -285,7 +304,7 @@ function RecommendationsPanel({ styleKey, styleColor, styleBg, activeStyle, skil
       )}
 
       {EQUIPMENT_SLOTS.map(slotDef => {
-        const { best, next } = getBestAndNext(styleKey, slotDef.slot, skillLevels);
+        const { best, next } = getBestAndNext(gearDb?.[styleKey]?.[slotDef.slot] ?? [], skillLevels);
         const entry = loadout[slotDef.slot];
         if (!best && !next) return null;
 
@@ -421,7 +440,7 @@ function LockedItemRow({ item, skillLevels, styleColor, addingGoal, onAddGoal })
 
 // ── Item picker panel ─────────────────────────────────────────────────────────
 
-function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, playerId, onToast, iconMap }) {
+function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, playerId, onToast, iconMap, gearDb }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -429,7 +448,7 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
 
   if (!slotDef) return null;
 
-  const allItems = GEAR_SUGGESTIONS[styleKey]?.[slotDef.slot] ?? [];
+  const allItems = gearDb?.[styleKey]?.[slotDef.slot] ?? [];
   const filtered = query.trim()
     ? allItems.filter(it => it.name.toLowerCase().includes(query.toLowerCase()))
     : allItems;
@@ -612,8 +631,8 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
 // ── Main GearLoadouts component ───────────────────────────────────────────────
 
 export default function GearLoadouts({ players, groupId, canWrite, onToast, myRsn, onEquipmentChanged }) {
-  // Item icon map loaded once from /api/rs3/items
-  const iconMap = useItemIconMap();
+  // Gear data loaded once from /api/rs3/items (icon map + slot suggestions by style)
+  const { iconMap, gearDb } = useRs3Gear();
 
   // Resolve logged-in player — normalise both sides so NBSP / case differences never break the lookup
   const _normMyRsn = (myRsn || '').replace(/\s/g, ' ').trim().toLowerCase();
@@ -720,7 +739,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
   async function handleQuickFill() {
     const updates = {};
     for (const slotDef of EQUIPMENT_SLOTS) {
-      const { best } = getBestAndNext(style, slotDef.slot, skillLevels);
+      const { best } = getBestAndNext(gearDb[style]?.[slotDef.slot] ?? [], skillLevels);
       if (best && !loadout[slotDef.slot]) updates[slotDef.slot] = best.name;
     }
     if (!Object.keys(updates).length) {
@@ -863,6 +882,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
               playerId={selectedPlayerId}
               onToast={onToast}
               iconMap={iconMap}
+              gearDb={gearDb}
             />
           ) : (
             <RecommendationsPanel
@@ -878,6 +898,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
               groupId={groupId}
               playerId={selectedPlayerId}
               onToast={onToast}
+              gearDb={gearDb}
             />
           ))}
         </div>

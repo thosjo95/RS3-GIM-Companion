@@ -81,8 +81,9 @@ export function getMissingReqs(item, skillLevels) {
   return missing;
 }
 
-export function getBestAndNext(styleKey, slot, skillLevels) {
-  const items = GEAR_SUGGESTIONS[styleKey]?.[slot] ?? [];
+// items = already-filtered array for a specific style+slot, sorted best→worst (tier desc)
+export function getBestAndNext(items, skillLevels) {
+  if (!Array.isArray(items)) items = [];
   let bestIdx = -1;
   for (let i = 0; i < items.length; i++) {
     if (canWear(items[i], skillLevels)) { bestIdx = i; break; }
