@@ -987,6 +987,85 @@ for (const g of GEAR_ITEMS) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// 7. SLAYER CREATURES
+// ══════════════════════════════════════════════════════════════════════════════
+function upsertSlayerCreature(c) {
+  db.prepare(`INSERT OR REPLACE INTO rs3_slayer_creatures
+    (id, name, slayer_level_req, combat_level, location, notable_drops, is_boss, wiki_url, icon_url)
+    VALUES (?,?,?,?,?,?,?,?,?)`).run(
+    c.id, c.name, c.slayer_level_req ?? 1, c.combat_level ?? 1,
+    c.location ?? null, j(c.notable_drops ?? []), c.is_boss ?? 0,
+    c.wiki_url ?? null, c.icon_url ?? null
+  );
+}
+
+// Auto-generate icon URL from monster name (RS Wiki image convention)
+const swi = name => `https://runescape.wiki/images/${name.replace(/ /g, '_').replace(/'/g, '%27')}.png`;
+
+const SLAYER_CREATURES = [
+  // ── Slayer level 1–59 (Early game) ─────────────────────────────────────────
+  { id: 'crawling_hand',      name: 'Crawling Hand',       slayer_level_req: 5,  combat_level: 8,   location: 'Slayer Tower (Morytania)',        notable_drops: ['Crawling hand (item)'],                           is_boss: 0, wiki_url: 'https://runescape.wiki/w/Crawling_hand' },
+  { id: 'banshee',            name: 'Banshee',             slayer_level_req: 15, combat_level: 24,  location: 'Slayer Tower (Morytania)',        notable_drops: ['Dark mystic gloves'],                             is_boss: 0, wiki_url: 'https://runescape.wiki/w/Banshee' },
+  { id: 'cockatrice',         name: 'Cockatrice',          slayer_level_req: 25, combat_level: 31,  location: 'Fremennik Slayer Dungeon',        notable_drops: ['Cockatrice head', 'Light mystic boots'],          is_boss: 0, wiki_url: 'https://runescape.wiki/w/Cockatrice' },
+  { id: 'mogre',              name: 'Mogre',               slayer_level_req: 32, combat_level: 45,  location: 'Mudskipper Point',               notable_drops: ['Flippers', 'Mudskipper hat'],                     is_boss: 0, wiki_url: 'https://runescape.wiki/w/Mogre' },
+  { id: 'basilisk',           name: 'Basilisk',            slayer_level_req: 40, combat_level: 49,  location: 'Fremennik Slayer Dungeon',        notable_drops: ['Basilisk boots', 'Basilisk head'],                is_boss: 0, wiki_url: 'https://runescape.wiki/w/Basilisk' },
+  { id: 'infernal_mage',      name: 'Infernal Mage',       slayer_level_req: 45, combat_level: 70,  location: 'Slayer Tower (Morytania)',        notable_drops: ['Dark mystic hat', 'Lava battlestaff'],            is_boss: 0, wiki_url: 'https://runescape.wiki/w/Infernal_mage' },
+  { id: 'bloodveld',          name: 'Bloodveld',           slayer_level_req: 50, combat_level: 52,  location: 'Slayer Tower / God Wars Dungeon', notable_drops: [],                                                is_boss: 0, wiki_url: 'https://runescape.wiki/w/Bloodveld' },
+  { id: 'turoth',             name: 'Turoth',              slayer_level_req: 55, combat_level: 64,  location: 'Fremennik Slayer Dungeon',        notable_drops: ['Leaf-bladed sword', 'Turoth boots'],              is_boss: 0, wiki_url: 'https://runescape.wiki/w/Turoth' },
+  { id: 'cave_horror',        name: 'Cave Horror',         slayer_level_req: 58, combat_level: 80,  location: "Mos Le'Harmless Caves",           notable_drops: ['Black mask (→ Slayer helmet)'],                   is_boss: 0, wiki_url: 'https://runescape.wiki/w/Cave_horror' },
+
+  // ── Slayer level 60–89 (Mid game) ──────────────────────────────────────────
+  { id: 'aberrant_spectre',   name: 'Aberrant Spectre',    slayer_level_req: 60, combat_level: 75,  location: 'Slayer Tower / Pollnivneach',     notable_drops: ['Lava battlestaff'],                               is_boss: 0, wiki_url: 'https://runescape.wiki/w/Aberrant_spectre' },
+  { id: 'dust_devil',         name: 'Dust Devil',          slayer_level_req: 65, combat_level: 90,  location: 'Smoke Dungeon / Chaos Tunnels',   notable_drops: ['Dragon chainbody'],                               is_boss: 0, wiki_url: 'https://runescape.wiki/w/Dust_devil' },
+  { id: 'automaton_guardian', name: 'Automaton Guardian',  slayer_level_req: 67, combat_level: 115, location: "Guthix's Resting Place (Karamja)", notable_drops: ['Static gloves', 'Tracking gloves', 'Pneumatic gloves', 'Cresbot'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Automaton_Guardian' },
+  { id: 'kurask',             name: 'Kurask',              slayer_level_req: 70, combat_level: 78,  location: 'Fremennik Slayer Dungeon',        notable_drops: ['Leaf-bladed sword', 'Kurask boots'],              is_boss: 0, wiki_url: 'https://runescape.wiki/w/Kurask' },
+  { id: 'skeletal_wyvern',    name: 'Skeletal Wyvern',     slayer_level_req: 72, combat_level: 109, location: 'Asgarnian Ice Dungeon',           notable_drops: ['Granite legs', 'Wyvern bones'],                   is_boss: 0, wiki_url: 'https://runescape.wiki/w/Skeletal_wyvern' },
+  { id: 'gargoyle',           name: 'Gargoyle',            slayer_level_req: 75, combat_level: 100, location: "Slayer Tower / Kuradal's Dungeon", notable_drops: ['Granite maul', 'Dark mystic robe top'],           is_boss: 0, wiki_url: 'https://runescape.wiki/w/Gargoyle' },
+  { id: 'aquanite',           name: 'Aquanite',            slayer_level_req: 78, combat_level: 100, location: 'Fremennik Slayer Dungeon',        notable_drops: ['Amulet of ranging'],                              is_boss: 0, wiki_url: 'https://runescape.wiki/w/Aquanite' },
+  { id: 'nechryael',          name: 'Nechryael',           slayer_level_req: 80, combat_level: 100, location: "Slayer Tower / Kuradal's Dungeon", notable_drops: ['Death talisman', 'Rune boots'],                   is_boss: 0, wiki_url: 'https://runescape.wiki/w/Nechryael' },
+  { id: 'rorarius',           name: 'Rorarius',            slayer_level_req: 81, combat_level: 84,  location: 'Monastery of Ascension',          notable_drops: ['Ascension Keystone Prima', 'Ascension Keystone Secunda', 'Ascension Keystone Tertia', 'Ascension Keystone Quartus', 'Ascension Keystone Quintus', 'Ascension Keystone Sextus'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Rorarius' },
+  { id: 'spiritual_mage',     name: 'Spiritual Mage',      slayer_level_req: 83, combat_level: 98,  location: 'God Wars Dungeon',                notable_drops: ['Dragon boots', 'Dragon gauntlets'],               is_boss: 0, wiki_url: 'https://runescape.wiki/w/Spiritual_mage' },
+  { id: 'abyssal_demon',      name: 'Abyssal Demon',       slayer_level_req: 85, combat_level: 100, location: "Slayer Tower / Kuradal's Dungeon", notable_drops: ['Abyssal whip', 'Abyssal wand', 'Abyssal orb', 'Abyssal head'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Abyssal_demon' },
+  { id: 'jadinko_guard',      name: 'Mutated Jadinko Guard', slayer_level_req: 86, combat_level: 96, location: 'Jadinko Lair',                   notable_drops: ['Whip vine'],                                      is_boss: 0, wiki_url: 'https://runescape.wiki/w/Mutated_Jadinko_Guard' },
+  { id: 'corrupted_scorpion', name: 'Corrupted Scorpion',  slayer_level_req: 88, combat_level: 98,  location: 'Sophanem Slayer Dungeon',         notable_drops: ['Vital spark', 'Key to the Crossing'],             is_boss: 0, wiki_url: 'https://runescape.wiki/w/Corrupted_scorpion' },
+
+  // ── Slayer level 90–95 (Mid-High / Early End) ───────────────────────────────
+  { id: 'dark_beast',         name: 'Dark Beast',          slayer_level_req: 90, combat_level: 105, location: "Underground Pass / Kuradal's",     notable_drops: ['Dark bow'],                                       is_boss: 0, wiki_url: 'https://runescape.wiki/w/Dark_beast' },
+  { id: 'edimmu',             name: 'Edimmu',              slayer_level_req: 90, combat_level: 122, location: 'Daemonheim resource dungeon',      notable_drops: ['Blood necklace shard'],                           is_boss: 0, wiki_url: 'https://runescape.wiki/w/Edimmu' },
+  { id: 'feral_dinosaur',     name: 'Feral Dinosaur',      slayer_level_req: 90, combat_level: 160, location: 'Northern Anachronia',              notable_drops: ['Laceration boots', 'Blowpipe chisel', 'Blowpipe feather', 'Blowpipe shaft'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Feral_dinosaur' },
+  { id: 'airut',              name: 'Airut',               slayer_level_req: 92, combat_level: 122, location: 'Piscatoris / Mazcab',              notable_drops: ['Razorback gauntlets', 'Tuska mask piece'],        is_boss: 0, wiki_url: 'https://runescape.wiki/w/Airut' },
+  { id: 'ice_strykewyrm',     name: 'Ice Strykewyrm',      slayer_level_req: 93, combat_level: 106, location: 'Ice Strykewyrm cave',              notable_drops: ['Staff of light', 'Glacyte boots'],                is_boss: 0, wiki_url: 'https://runescape.wiki/w/Ice_strykewyrm' },
+  { id: 'lava_strykewyrm',    name: 'Lava Strykewyrm',     slayer_level_req: 94, combat_level: 115, location: 'Lava Maze (Wilderness)',           notable_drops: ['Wyrm spike', 'Wyrm heart', 'Wyrm scalp'],         is_boss: 0, wiki_url: 'https://runescape.wiki/w/Lava_strykewyrm' },
+
+  // ── Slayer level 95+ (End game) ─────────────────────────────────────────────
+  { id: 'dragonstone_dragon', name: 'Dragonstone Dragon',  slayer_level_req: 95, combat_level: 119, location: 'Gemstone cavern (Shilo Village)', notable_drops: ['Gemstone gauntlets', 'Gemstone boots'],           is_boss: 0, wiki_url: 'https://runescape.wiki/w/Dragonstone_dragon' },
+  { id: 'ganodermic_runt',    name: 'Ganodermic Runt',     slayer_level_req: 95, combat_level: 112, location: 'Polypore Dungeon',                notable_drops: ['Ganodermic boots', 'Ganodermic gloves'],          is_boss: 0, wiki_url: 'https://runescape.wiki/w/Ganodermic_runt' },
+  { id: 'legiones',           name: 'Legiones',            slayer_level_req: 95, combat_level: 304, location: 'Monastery of Ascension',           notable_drops: ['Ascension Keystone Prima', 'Ascension Keystone Secunda', 'Ascension Keystone Tertia', 'Ascension Keystone Quartus', 'Ascension Keystone Quintus', 'Ascension Keystone Sextus', 'Ascension crossbow (T90)'], is_boss: 1, wiki_url: 'https://runescape.wiki/w/Legiones' },
+  { id: 'wyvern',             name: 'Wyvern',              slayer_level_req: 96, combat_level: 125, location: 'Asgarnian Ice Dungeon / Frozen Waste', notable_drops: ['Wyvern crossbow', 'Raptor key part 1'],       is_boss: 0, wiki_url: 'https://runescape.wiki/w/Wyvern' },
+  { id: 'ripper_demon',       name: 'Ripper Demon',        slayer_level_req: 96, combat_level: 131, location: 'Ripper Demon cave (Wilderness)',   notable_drops: ['Ripper claw', 'Raptor key part 2'],               is_boss: 0, wiki_url: 'https://runescape.wiki/w/Ripper_demon' },
+  { id: 'camel_warrior',      name: 'Camel Warrior',       slayer_level_req: 96, combat_level: 132, location: 'Camel Warriors island',            notable_drops: ['Camel staff', 'Raptor key part 3'],               is_boss: 0, wiki_url: 'https://runescape.wiki/w/Camel_warrior' },
+  { id: 'acheron_mammoth',    name: 'Acheron Mammoth',     slayer_level_req: 96, combat_level: 131, location: 'Mammoth iceberg (Wilderness)',     notable_drops: ['Mammoth tusk', 'Raptor key part 4'],              is_boss: 0, wiki_url: 'https://runescape.wiki/w/Acheron_mammoth' },
+  { id: 'onyx_dragon',        name: 'Onyx Dragon',         slayer_level_req: 98, combat_level: 126, location: 'Gemstone cavern / Wilderness',     notable_drops: ['Gemstone helm', 'Gemstone greaves'],              is_boss: 0, wiki_url: 'https://runescape.wiki/w/Onyx_dragon' },
+  { id: 'soulgazer',          name: 'Soulgazer',           slayer_level_req: 99, combat_level: 130, location: "Daemonheim / Stalker's dungeon",   notable_drops: ['Hexhunter bow', "Soulgazer's charm"],             is_boss: 0, wiki_url: 'https://runescape.wiki/w/Soulgazer' },
+  { id: 'brutish_dinosaur',   name: 'Brutish Dinosaur',    slayer_level_req: 99, combat_level: 164, location: 'Anachronia',                      notable_drops: ['Laceration boots', 'Blowpipe chisel', 'Blowpipe feather', 'Blowpipe shaft'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Brutish_dinosaur' },
+  { id: 'hydrix_dragon',      name: 'Hydrix Dragon',       slayer_level_req: 101, combat_level: 133, location: 'Gemstone cavern / Deep Wilderness', notable_drops: ['Gemstone hauberk', 'Gemstone amulet'],          is_boss: 0, wiki_url: 'https://runescape.wiki/w/Hydrix_dragon' },
+  { id: 'vinecrawler',        name: 'Vinecrawler',         slayer_level_req: 104, combat_level: 140, location: 'The Lost Grove',                  notable_drops: ['Cinderbane gloves', 'Ancient ritual shard'],      is_boss: 0, wiki_url: 'https://runescape.wiki/w/Vinecrawler' },
+  { id: 'bulbous_crawler',    name: 'Bulbous Crawler',     slayer_level_req: 106, combat_level: 140, location: 'The Lost Grove',                  notable_drops: ['Cinderbane gloves', 'Ancient ritual shard'],      is_boss: 0, wiki_url: 'https://runescape.wiki/w/Bulbous_crawler' },
+  { id: 'moss_golem',         name: 'Moss Golem',          slayer_level_req: 108, combat_level: 140, location: 'The Lost Grove',                  notable_drops: ['Cinderbane gloves', 'Ancient ritual shard'],      is_boss: 0, wiki_url: 'https://runescape.wiki/w/Moss_golem' },
+  { id: 'abyssal_beast',      name: 'Abyssal Beast',       slayer_level_req: 105, combat_level: 119, location: "Senntisten Asylum / Wilderness",  notable_drops: ['Jaws of the Abyss'],                              is_boss: 0, wiki_url: 'https://runescape.wiki/w/Abyssal_beast' },
+  { id: 'venomous_dinosaur',  name: 'Venomous Dinosaur',   slayer_level_req: 105, combat_level: 172, location: 'Anachronia',                      notable_drops: ['Laceration boots', 'Blowpipe chisel', 'Blowpipe feather', 'Blowpipe shaft'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Venomous_dinosaur' },
+  { id: 'ganodermic_beast',   name: 'Ganodermic Beast',    slayer_level_req: 112, combat_level: 112, location: 'Polypore Dungeon',                notable_drops: ['Ganodermic boots', 'Ganodermic gloves', 'Polypore stick'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Ganodermic_beast' },
+  { id: 'ripper_dinosaur',    name: 'Ripper Dinosaur',     slayer_level_req: 114, combat_level: 176, location: 'Anachronia',                      notable_drops: ['Laceration boots', 'Blowpipe chisel', 'Blowpipe feather', 'Blowpipe shaft'], is_boss: 0, wiki_url: 'https://runescape.wiki/w/Ripper_dinosaur' },
+  { id: 'abyssal_lord',       name: 'Abyssal Lord',        slayer_level_req: 115, combat_level: 133, location: 'Senntisten Asylum',               notable_drops: ['Abyssal scourge'],                                is_boss: 0, wiki_url: 'https://runescape.wiki/w/Abyssal_lord' },
+  { id: 'the_magister',       name: 'The Magister',        slayer_level_req: 115, combat_level: 899, location: 'Sophanem Slayer Dungeon',          notable_drops: ['Vital spark', 'Key to the Crossing', 'Heart of rebirth (pet)'], is_boss: 1, wiki_url: 'https://runescape.wiki/w/The_Magister' },
+];
+
+// Auto-fill icon_url from monster name
+for (const c of SLAYER_CREATURES) {
+  if (!c.icon_url) c.icon_url = swi(c.name);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // SEED — run everything
 // ══════════════════════════════════════════════════════════════════════════════
 console.log('🌱 Seeding RS3 reference data...\n');
@@ -1036,6 +1115,12 @@ console.log(`\n⚔️  Seeding ${GEAR_ITEMS.length} gear items...`);
 let giCount = 0;
 for (const g of GEAR_ITEMS) { upsertGearItem(g); giCount++; }
 console.log(`   ${giCount} gear items inserted/updated`);
+
+// Slayer creatures
+console.log(`\n🦎 Seeding ${SLAYER_CREATURES.length} slayer creatures...`);
+let scCount = 0;
+for (const c of SLAYER_CREATURES) { upsertSlayerCreature(c); scCount++; }
+console.log(`   ${scCount} slayer creatures inserted/updated`);
 
 console.log('\n✅ Seed complete!\n');
 console.log('═══════════════════════════════════════════════════════');

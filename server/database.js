@@ -311,6 +311,8 @@ try { db.exec('ALTER TABLE rs3_gear_items ADD COLUMN untradeable INTEGER DEFAULT
 // rs3_bosses + rs3_milestone_items: wiki image URL for display in Goals tab
 try { db.exec('ALTER TABLE rs3_bosses ADD COLUMN icon_url TEXT'); } catch {}
 try { db.exec('ALTER TABLE rs3_milestone_items ADD COLUMN icon_url TEXT'); } catch {}
+// rs3_slayer_creatures: wiki image URL
+try { db.exec('ALTER TABLE rs3_slayer_creatures ADD COLUMN icon_url TEXT'); } catch {}
 // goals: group_id scopes group-type goals so they don't bleed across groups
 try { db.exec('ALTER TABLE goals ADD COLUMN group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE'); } catch {}
 // Back-fill group_id for existing goals that have an owner_id
