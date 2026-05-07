@@ -256,7 +256,7 @@ router.get('/maintenance/groups', requireAdmin, (req, res) => {
 // GET /api/admin/maintenance/groups/:id/players — list players in a group
 router.get('/maintenance/groups/:id/players', requireAdmin, (req, res) => {
   const players = db.prepare(
-    'SELECT id, rsn, combat_level, last_synced_at, sync_error FROM players WHERE group_id = ? ORDER BY rsn'
+    'SELECT id, rsn, combat_level, last_synced AS last_synced_at, sync_error FROM players WHERE group_id = ? ORDER BY rsn'
   ).all(req.params.id);
   res.json(players);
 });
