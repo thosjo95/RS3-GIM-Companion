@@ -1675,6 +1675,8 @@ const TYPE_PATCHES = [
   [null, 'crafting',      'deathdealer_robe_bottom_t70'],
   [null, 'crafting',      'deathdealer_gloves_t70'],
   [null, 'crafting',      'deathdealer_boots_t70'],
+  // Amulet of strength: crafted (gold bar + sapphire/topaz on furnace)
+  [null, 'crafting',      'amulet_of_strength'],
 ];
 
 for (const [source_id, acq, id] of TYPE_PATCHES) {
