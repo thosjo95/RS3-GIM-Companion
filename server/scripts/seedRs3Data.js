@@ -612,6 +612,7 @@ const MILESTONES = [
 const SKILL_MILESTONES = [
 
   // ── ATTACK (max 99) ───────────────────────────────────────────────────────
+  { id: 'attack_50',  skill: 'Attack',  level: 50,  description: 'Rune weapons usable (T50) — best weapons before Dragon; significant early milestone', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Rune_scimitar' },
   { id: 'attack_60',  skill: 'Attack',  level: 60,  description: 'Dragon weapons usable (Dragon scimitar, longsword, etc.) — significant mid-early upgrade', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Dragon_scimitar' },
   { id: 'attack_70',  skill: 'Attack',  level: 70,  description: 'T70 weapons: Abyssal whip (85 Slayer), Godsword variants, Saradomin sword', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Abyssal_whip' },
   { id: 'attack_80',  skill: 'Attack',  level: 80,  description: 'Chaotic rapier/longsword/maul (80 Dungeoneering) — best pre-GWD2 melee weapons', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Chaotic_rapier' },
@@ -624,6 +625,7 @@ const SKILL_MILESTONES = [
   { id: 'strength_80', skill: 'Strength', level: 80, description: 'Access to Strength-requirement T80 melee weapons and armour effects', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Strength' },
 
   // ── DEFENCE (max 99) ──────────────────────────────────────────────────────
+  { id: 'defence_50',  skill: 'Defence',  level: 50,  description: 'Rune armour usable (T50) — full Rune set; significant early defence upgrade', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Rune_platebody' },
   { id: 'defence_60',  skill: 'Defence',  level: 60,  description: 'Dragon armour usable (full dragon set)', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Dragon_platebody' },
   { id: 'defence_70',  skill: 'Defence',  level: 70,  description: 'T70 power armour: Bandos (melee), Armadyl (ranged), Subjugation (magic) — core GWD1 armour tier', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Bandos_chestplate' },
   { id: 'defence_80',  skill: 'Defence',  level: 80,  description: 'Anima core armour (GWD2) — T80 power armour from Zaros/Seren/Zaros bosses', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Anima_core_of_Zaros' },
