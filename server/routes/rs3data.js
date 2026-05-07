@@ -219,7 +219,7 @@ router.get('/item-search', async (req, res) => {
   try {
     const url = `https://runescape.wiki/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=15&namespace=0&format=json`;
     const r = await fetch(url, {
-      headers: { 'User-Agent': 'RS3-GIM-Companion/1.0 (github.com/thosjo95)' },
+      headers: { 'User-Agent': 'RS3-GIM-Companion/1.0 (rs3-group-ironman-companion-wiki-search; github.com/thosjo95)' },
       signal: AbortSignal.timeout(5000),
     });
     if (!r.ok) return res.json([]);

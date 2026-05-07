@@ -351,7 +351,7 @@ router.get('/maintenance/wiki-scan', requireAdmin, async (req, res) => {
       if (cmcontinue) params.set('cmcontinue', cmcontinue);
 
       const resp = await fetch(`https://runescape.wiki/api.php?${params}`, {
-        headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
+        headers: { 'User-Agent': 'RS3-GIM-Companion/1.0 (rs3-group-ironman-companion-wiki-scanner; github.com/thosjo95)' },
         signal: AbortSignal.timeout(12000),
       });
       if (!resp.ok) throw new Error(`RS Wiki API returned ${resp.status}`);
