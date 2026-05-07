@@ -884,7 +884,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
               selectedPlayers={selectedPlayers}
               alreadyAdded={activeKeys.has(s.title)}
               onAdd={(suggestion, status) => onAdd(suggestion, status, selected)}
-              onDismiss={dismissed.has(s.id) ? undefined : dismissSuggestion}
+              onDismiss={canWrite && !dismissed.has(s.id) ? dismissSuggestion : undefined}
               canWrite={canWrite}
               adding={addingId === s.id}
             />
