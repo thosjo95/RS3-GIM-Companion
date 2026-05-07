@@ -462,13 +462,37 @@ function MaintenanceTab({ pushToast }) {
         { key: 'player_id', label: 'Player ID', placeholder: 'e.g. 256' },
       ],
     },
+    {
+      id: 'reseed',
+      emoji: '🌱',
+      title: 'Re-run Seed Data',
+      desc: 'Re-applies the full reference data seed script (quests, bosses, gear, milestones, slayer, etc.). All inserts are idempotent — safe to run at any time without losing custom edits.',
+      fields: [],
+    },
+    {
+      id: 'wiki_scan_quests',
+      emoji: '📜',
+      title: 'Scan Wiki for New Quests',
+      desc: 'Fetches the RS Wiki quest list and diffs it against the local database. Returns any quests present on the wiki but missing from the DB — click "Add stub" to insert a placeholder entry.',
+      fields: [],
+      wikiType: 'quests',
+    },
+    {
+      id: 'wiki_scan_bosses',
+      emoji: '⚔️',
+      title: 'Scan Wiki for New Bosses',
+      desc: 'Fetches the RS Wiki boss list and diffs it against the local database. Returns any bosses present on the wiki but missing from the DB — click "Add stub" to insert a placeholder entry.',
+      fields: [],
+      wikiType: 'bosses',
+    },
   ];
 
   const [activeTool, setActiveTool] = useState(null);
   const [values, setValues] = useState({});
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState(null); // { ok: bool, message: string, rows?: [] }
+  const [result, setResult] = useState(null); // { ok: bool, message: string, rows?: [], wikiItems?: [], wikiType?: string, output?: string }
   const [confirmed, setConfirmed] = useState(false);
+  const [addingItem, setAddingItem] = useState(null); // wiki item currently being added
 
   function openTool(toolId) {
     setActiveTool(toolId);
@@ -483,6 +507,7 @@ function MaintenanceTab({ pushToast }) {
     setResult(null);
     setBusy(false);
     setConfirmed(false);
+    setAddingItem(null);
   }
 
   async function runTool(tool) {
@@ -529,6 +554,17 @@ function MaintenanceTab({ pushToast }) {
         const msg = data.rsn ? `Synced "${data.rsn}" — total level ${data.total_level ?? '?'}` : 'Player synced.';
         setResult({ ok: true, message: msg });
         pushToast(msg, 'success');
+      } else if (tool.id === 'reseed') {
+        data = await adminApi.maintenance.reseed();
+        const msg = data.message || 'Seed data re-applied.';
+        setResult({ ok: true, message: msg, output: data.output });
+        pushToast(msg, 'success');
+      } else if (tool.id === 'wiki_scan_quests' || tool.id === 'wiki_scan_bosses') {
+        const type = tool.wikiType;
+        data = await adminApi.maintenance.wikiScan(type);
+        const msg = `Wiki: ${data.total_wiki} entries · DB: ${data.total_db} entries · ${data.new_items?.length ?? 0} new found`;
+        setResult({ ok: true, message: msg, wikiItems: data.new_items ?? [], wikiType: type });
+        pushToast(msg, data.new_items?.length > 0 ? 'success' : 'success');
       }
     } catch (err) {
       setResult({ ok: false, message: err.message });
@@ -536,6 +572,20 @@ function MaintenanceTab({ pushToast }) {
     } finally {
       setBusy(false);
       setConfirmed(false);
+    }
+  }
+
+  async function addWikiStub(item) {
+    setAddingItem(item.name);
+    try {
+      await adminApi.maintenance.wikiAdd({ type: result.wikiType, name: item.name, wiki_url: item.wiki_url });
+      pushToast(`Added stub: ${item.name}`, 'success');
+      // Remove from the displayed list
+      setResult(r => ({ ...r, wikiItems: r.wikiItems.filter(x => x.name !== item.name) }));
+    } catch (err) {
+      pushToast(err.message, 'error');
+    } finally {
+      setAddingItem(null);
     }
   }
 
@@ -669,6 +719,63 @@ function MaintenanceTab({ pushToast }) {
               )}
               {result.rows && result.rows.length === 0 && (
                 <div style={{ padding: '14px', fontSize: 12, color: 'var(--text-dim)', textAlign: 'center' }}>No rows returned.</div>
+              )}
+
+              {/* Seed script output */}
+              {result.output && (
+                <details style={{ marginTop: 10 }}>
+                  <summary style={{ fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', userSelect: 'none' }}>▶ Script output</summary>
+                  <pre style={{
+                    marginTop: 6, padding: '10px 12px', borderRadius: 6,
+                    background: 'var(--bg-root)', border: '1px solid var(--border)',
+                    color: 'var(--text-dim)', fontSize: 10, lineHeight: 1.5,
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 300, overflowY: 'auto',
+                  }}>{result.output}</pre>
+                </details>
+              )}
+
+              {/* Wiki scan results */}
+              {result.wikiItems != null && (
+                <div style={{ marginTop: 10 }}>
+                  {result.wikiItems.length === 0 ? (
+                    <div style={{ padding: '14px', fontSize: 12, color: 'var(--text-dim)', textAlign: 'center' }}>
+                      ✓ No new {result.wikiType} found — database is up to date.
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>
+                        {result.wikiItems.length} new {result.wikiType} found on the wiki — add stubs to the database:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 400, overflowY: 'auto' }}>
+                        {result.wikiItems.map(item => (
+                          <div key={item.name} style={{
+                            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                            borderRadius: 7, background: 'var(--bg-panel)', border: '1px solid var(--border)',
+                          }}>
+                            <span style={{ flex: 1, fontSize: 12, color: 'var(--text-bright)', fontWeight: 600 }}>{item.name}</span>
+                            <span style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>{item.suggested_id}</span>
+                            {item.wiki_url && (
+                              <a href={item.wiki_url} target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize: 11, color: 'var(--gold)', textDecoration: 'none' }}>Wiki →</a>
+                            )}
+                            <button
+                              onClick={() => addWikiStub(item)}
+                              disabled={addingItem != null}
+                              style={{
+                                padding: '4px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontWeight: 600,
+                                background: 'rgba(90,154,80,0.15)', border: '1px solid rgba(90,154,80,0.4)',
+                                color: 'var(--green-bright)',
+                                opacity: addingItem != null ? 0.5 : 1,
+                                flexShrink: 0,
+                              }}>
+                              {addingItem === item.name ? '⏳' : '+ Add stub'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           )}

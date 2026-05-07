@@ -65,6 +65,9 @@ export const adminApi = {
     fixRsn:            (body)       => request('/maintenance/fix-rsn',           { method: 'POST', body }),
     syncActivities:    (groupId)    => fetch(`/api/players/sync-activities/${groupId}`, { method: 'POST' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || `Status ${r.status}`); return d; }),
     syncPlayer:        (playerId)   => fetch(`/api/players/${playerId}/sync`,    { method: 'POST' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || `Status ${r.status}`); return d; }),
+    reseed:            ()           => request('/maintenance/reseed',  { method: 'POST' }),
+    wikiScan:          (type)       => request(`/maintenance/wiki-scan${toQS({ type })}`),
+    wikiAdd:           (body)       => request('/maintenance/wiki-add', { method: 'POST', body }),
   },
 };
 

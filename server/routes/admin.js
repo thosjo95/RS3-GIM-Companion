@@ -1,11 +1,24 @@
-const express  = require('express');
-const router   = express.Router();
-const db       = require('../database');
+const express      = require('express');
+const router       = express.Router();
+const path         = require('path');
+const { execFile } = require('child_process');
+const db           = require('../database');
 const {
   hashPassword, verifyPassword, issueToken,
   checkRateLimit, recordFailedAttempt, clearRateLimit, requireAdmin,
 } = require('../utils/adminAuth');
 const { sanitizeRSN } = require('../services/runescape');
+
+// Helpers for wiki scan
+function normalizeForDiff(s) {
+  return (s ?? '').toLowerCase()
+    .replace(/[',\-().!:]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function slugify(s) {
+  return (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
 
 // ── POST /api/admin/login ─────────────────────────────────────────────────────
 router.post('/login', (req, res) => {
@@ -276,6 +289,103 @@ router.post('/maintenance/fix-rsn', requireAdmin, (req, res) => {
   if (!player) return res.status(404).json({ error: `Player ${player_id} not found` });
   db.prepare('UPDATE players SET rsn = ?, sync_error = NULL WHERE id = ?').run(clean, Number(player_id));
   res.json({ success: true, old_rsn: player.rsn, new_rsn: clean, message: `Player #${player_id}: "${player.rsn}" → "${clean}". Sync error cleared.` });
+});
+
+// ── Database refresh / wiki scan ──────────────────────────────────────────────
+
+// POST /api/admin/maintenance/reseed — re-run the seed script (all upserts are idempotent)
+router.post('/maintenance/reseed', requireAdmin, (req, res) => {
+  const scriptPath = path.resolve(__dirname, '../scripts/seedRs3Data.js');
+  execFile('node', [scriptPath], { cwd: path.resolve(__dirname, '..'), timeout: 30000 },
+    (err, stdout, stderr) => {
+      const output = (stdout + '\n' + stderr).trim().slice(-1200);
+      if (err) return res.status(500).json({ error: err.message, output });
+      res.json({ success: true, message: 'Seed data re-applied successfully.', output });
+    }
+  );
+});
+
+// GET /api/admin/maintenance/wiki-scan?type=quests|bosses
+// Fetches the RS Wiki category and returns items not yet in the DB.
+router.get('/maintenance/wiki-scan', requireAdmin, async (req, res) => {
+  const { type } = req.query;
+  const CATEGORIES = { quests: 'Quests', bosses: 'Bosses' };
+  const TABLES     = { quests: 'rs3_quests', bosses: 'rs3_bosses' };
+  if (!CATEGORIES[type]) return res.status(400).json({ error: 'type must be quests or bosses' });
+
+  try {
+    // Paginate through the wiki category (up to 1500 entries = 3 pages of 500)
+    const allTitles = [];
+    let cmcontinue  = '';
+    for (let page = 0; page < 3; page++) {
+      const params = new URLSearchParams({
+        action: 'query', list: 'categorymembers',
+        cmtitle: `Category:${CATEGORIES[type]}`,
+        cmlimit: '500', cmtype: 'page', format: 'json',
+      });
+      if (cmcontinue) params.set('cmcontinue', cmcontinue);
+
+      const resp = await fetch(`https://runescape.wiki/api.php?${params}`, {
+        headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!resp.ok) throw new Error(`RS Wiki API returned ${resp.status}`);
+      const data = await resp.json();
+
+      (data.query?.categorymembers ?? []).forEach(m => allTitles.push(m.title));
+      if (!data.continue?.cmcontinue) break;
+      cmcontinue = data.continue.cmcontinue;
+    }
+
+    // Load current DB names for diff
+    const dbRows   = db.prepare(`SELECT id, name FROM ${TABLES[type]}`).all();
+    const dbNorms  = dbRows.map(r => normalizeForDiff(r.name));
+
+    // Items on wiki but not matched in DB (fuzzy: DB name contains wiki name or vice versa)
+    const newItems = allTitles
+      .filter(title => {
+        const wn = normalizeForDiff(title);
+        // Skip obvious non-entries (redirect pages, disambiguation, etc.)
+        if (wn.length < 2) return false;
+        return !dbNorms.some(dn => dn === wn || dn.includes(wn) || wn.includes(dn));
+      })
+      .map(name => ({
+        name,
+        wiki_url: `https://runescape.wiki/w/${encodeURIComponent(name.replace(/ /g, '_'))}`,
+        suggested_id: slugify(name),
+      }));
+
+    res.json({ total_wiki: allTitles.length, total_db: dbRows.length, new_items: newItems });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/maintenance/wiki-add — add a stub record from a wiki scan result
+router.post('/maintenance/wiki-add', requireAdmin, (req, res) => {
+  const { type, name, wiki_url } = req.body;
+  const TABLES = { quests: 'rs3_quests', bosses: 'rs3_bosses' };
+  if (!TABLES[type] || !name?.trim()) return res.status(400).json({ error: 'type and name required' });
+
+  const id = slugify(name.trim());
+  if (!id) return res.status(400).json({ error: 'Could not derive an ID from the name' });
+
+  const existing = db.prepare(`SELECT id FROM ${TABLES[type]} WHERE id = ?`).get(id);
+  if (existing) return res.status(409).json({ error: `"${id}" already exists in ${TABLES[type]}` });
+
+  if (type === 'quests') {
+    db.prepare(`
+      INSERT INTO rs3_quests (id, name, wiki_url, requirements, rewards, last_verified_at)
+      VALUES (?, ?, ?, '{}', '[]', ?)
+    `).run(id, name.trim(), wiki_url ?? null, new Date().toISOString());
+  } else {
+    db.prepare(`
+      INSERT INTO rs3_bosses (id, name, difficulty, requirements, drops, wiki_url, last_verified_at)
+      VALUES (?, ?, 'unknown', '{}', '[]', ?, ?)
+    `).run(id, name.trim(), wiki_url ?? null, new Date().toISOString());
+  }
+
+  res.json({ success: true, id, message: `Added stub "${name}" (id: ${id}). Fill in details via Table Browser → ${TABLES[type]}.` });
 });
 
 module.exports = router;
