@@ -7,10 +7,12 @@ import {
 
 // ── Combined hook — fetches /api/rs3/items once, builds icon map + gear DB ───
 // gearDb[style][slot] = items[] sorted tier desc (DB is authoritative source).
-// style:'all' items (rings, necks, pocket, cape) are merged into every style.
+// style:'all' items (rings, necks, pocket, ammo) are merged into every style.
+// allItems = flat deduplicated list for cross-style search.
 function useRs3Gear() {
-  const [iconMap, setIconMap] = useState(new Map());
-  const [gearDb,  setGearDb]  = useState({});
+  const [iconMap,  setIconMap]  = useState(new Map());
+  const [gearDb,   setGearDb]   = useState({});
+  const [allItems, setAllItems] = useState([]);
 
   useEffect(() => {
     api.getRs3Items().then(items => {
@@ -18,6 +20,12 @@ function useRs3Gear() {
       const m = new Map();
       for (const it of items) if (it.icon_url) m.set(it.name, it.icon_url);
       setIconMap(m);
+
+      // ── flat list for cross-style search (unique by id) ───────────────────
+      setAllItems(items.map(it => ({
+        name: it.name, reqs: it.reqs || null, quest: it.quest || null,
+        tier: it.tier, icon_url: it.icon_url, style: it.style, slot: it.slot,
+      })));
 
       // ── gear db ───────────────────────────────────────────────────────────
       // API returns items sorted tier DESC, name — correct order for getBestAndNext
@@ -36,7 +44,7 @@ function useRs3Gear() {
     }).catch(() => {});
   }, []);
 
-  return { iconMap, gearDb };
+  return { iconMap, gearDb, allItems };
 }
 
 // Small component: shows a 24×24 RS3 item icon from the wiki, falls back to nothing
@@ -440,25 +448,56 @@ function LockedItemRow({ item, skillLevels, styleColor, addingGoal, onAddGoal })
 
 // ── Item picker panel ─────────────────────────────────────────────────────────
 
-function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, playerId, onToast, iconMap, gearDb }) {
-  const [query, setQuery] = useState('');
+const STYLE_LABEL = { melee: 'Melee', ranged: 'Ranged', magic: 'Magic', necromancy: 'Necromancy', all: 'All styles' };
+
+function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, onClear, onClose, styleColor, groupId, playerId, onToast, iconMap, gearDb, allItems }) {
+  const [query,       setQuery]       = useState('');
+  const [crossStyle,  setCrossStyle]  = useState(false);
   const inputRef = useRef(null);
 
-  useEffect(() => { inputRef.current?.focus(); setQuery(''); }, [slotDef?.slot]);
+  useEffect(() => { inputRef.current?.focus(); setQuery(''); setCrossStyle(false); }, [slotDef?.slot]);
 
   if (!slotDef) return null;
 
-  const allItems = gearDb?.[styleKey]?.[slotDef.slot] ?? [];
-  const filtered = query.trim()
-    ? allItems.filter(it => it.name.toLowerCase().includes(query.toLowerCase()))
-    : allItems;
-  const exactMatch = allItems.some(it => it.name.toLowerCase() === query.toLowerCase());
-  const showCustom = query.trim() && !exactMatch;
+  // Style-specific items for this slot (includes style:'all' items already merged in gearDb)
+  const styleItems = gearDb?.[styleKey]?.[slotDef.slot] ?? [];
+
+  // Cross-style items: all DB items for this slot that are NOT already in styleItems
+  const styleItemNames = new Set(styleItems.map(i => i.name));
+  const otherItems = (allItems ?? []).filter(it =>
+    it.slot === slotDef.slot &&
+    it.style !== 'all' &&
+    it.style !== styleKey &&
+    !styleItemNames.has(it.name)
+  );
+
+  const activeList  = crossStyle ? otherItems : styleItems;
+  const q           = query.trim().toLowerCase();
+  const filtered    = q ? activeList.filter(it => it.name.toLowerCase().includes(q)) : activeList;
+  const exactMatch  = activeList.some(it => it.name.toLowerCase() === q);
+  const showCustom  = query.trim() && !exactMatch;
 
   function handleKey(e) {
     if (e.key === 'Enter' && query.trim()) onSelect(query.trim());
     if (e.key === 'Escape') onClose();
   }
+
+  const pickerRow = (item) => (
+    <ItemPickerRow
+      key={item.name}
+      item={item}
+      isCurrent={item.name === currentEntry?.name}
+      currentConfirmed={currentEntry?.confirmed}
+      skillLevels={skillLevels}
+      styleColor={crossStyle ? 'var(--text-dim)' : styleColor}
+      groupId={groupId}
+      playerId={playerId}
+      onToast={onToast}
+      onSelect={() => onSelect(item.name)}
+      iconMap={iconMap}
+      slotDef={slotDef}
+    />
+  );
 
   return (
     <div style={{
@@ -469,6 +508,7 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
       padding: 14,
       display: 'flex', flexDirection: 'column', gap: 10,
     }}>
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontWeight: 700, fontSize: 13, color: styleColor }}>
           {slotDef.icon} {slotDef.label}
@@ -476,12 +516,37 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>✕</button>
       </div>
 
+      {/* Style toggle */}
+      <div style={{ display: 'flex', gap: 4 }}>
+        <button
+          onClick={() => { setCrossStyle(false); setQuery(''); }}
+          style={{
+            flex: 1, padding: '4px 8px', fontSize: 11, borderRadius: 'var(--radius)', cursor: 'pointer',
+            background: !crossStyle ? `${styleColor}22` : 'transparent',
+            border: `1px solid ${!crossStyle ? styleColor : 'var(--border)'}`,
+            color: !crossStyle ? styleColor : 'var(--text-dim)', fontWeight: !crossStyle ? 700 : 400,
+          }}>
+          {STYLE_LABEL[styleKey] ?? styleKey}
+        </button>
+        <button
+          onClick={() => { setCrossStyle(true); setQuery(''); }}
+          style={{
+            flex: 1, padding: '4px 8px', fontSize: 11, borderRadius: 'var(--radius)', cursor: 'pointer',
+            background: crossStyle ? 'rgba(150,150,150,0.15)' : 'transparent',
+            border: `1px solid ${crossStyle ? 'var(--text-dim)' : 'var(--border)'}`,
+            color: crossStyle ? 'var(--text-bright)' : 'var(--text-dim)', fontWeight: crossStyle ? 700 : 400,
+          }}>
+          🔍 All items
+        </button>
+      </div>
+
+      {/* Search */}
       <input
         ref={inputRef}
         value={query}
         onChange={e => setQuery(e.target.value)}
         onKeyDown={handleKey}
-        placeholder="Search or type custom item…"
+        placeholder={crossStyle ? 'Search all items for this slot…' : 'Search or type custom item…'}
         style={{
           width: '100%', padding: '6px 10px',
           background: 'var(--bg-root)', border: '1px solid var(--border)',
@@ -490,6 +555,7 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
         }}
       />
 
+      {/* Item list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 280, overflowY: 'auto', scrollbarWidth: 'thin' }}>
         {showCustom && (
           <button
@@ -503,26 +569,17 @@ function ItemPicker({ slotDef, currentEntry, styleKey, skillLevels, onSelect, on
           </button>
         )}
 
-        {filtered.map(item => (
-          <ItemPickerRow
-            key={item.name}
-            item={item}
-            isCurrent={item.name === currentEntry?.name}
-            currentConfirmed={currentEntry?.confirmed}
-            skillLevels={skillLevels}
-            styleColor={styleColor}
-            groupId={groupId}
-            playerId={playerId}
-            onToast={onToast}
-            onSelect={() => onSelect(item.name)}
-            iconMap={iconMap}
-            slotDef={slotDef}
-          />
-        ))}
+        {crossStyle && filtered.length > 0 && (
+          <div style={{ fontSize: 10, color: 'var(--text-dim)', padding: '2px 4px', marginBottom: 2 }}>
+            ⚠️ These items belong to other combat styles — no cross-style recommendations will be shown.
+          </div>
+        )}
+
+        {filtered.map(item => pickerRow(item))}
 
         {filtered.length === 0 && !showCustom && (
           <span style={{ fontSize: 12, color: 'var(--text-dim)', padding: '6px 10px' }}>
-            No suggestions matched. Press Enter to use your text.
+            {crossStyle ? 'No items from other styles found for this slot.' : 'No suggestions matched. Press Enter to use your text.'}
           </span>
         )}
       </div>
@@ -632,7 +689,7 @@ function ItemPickerRow({ item, isCurrent, currentConfirmed, skillLevels, styleCo
 
 export default function GearLoadouts({ players, groupId, canWrite, onToast, myRsn, onEquipmentChanged }) {
   // Gear data loaded once from /api/rs3/items (icon map + slot suggestions by style)
-  const { iconMap, gearDb } = useRs3Gear();
+  const { iconMap, gearDb, allItems } = useRs3Gear();
 
   // Resolve logged-in player — normalise both sides so NBSP / case differences never break the lookup
   const _normMyRsn = (myRsn || '').replace(/\s/g, ' ').trim().toLowerCase();
@@ -883,6 +940,7 @@ export default function GearLoadouts({ players, groupId, canWrite, onToast, myRs
               onToast={onToast}
               iconMap={iconMap}
               gearDb={gearDb}
+              allItems={allItems}
             />
           ) : (
             <RecommendationsPanel
