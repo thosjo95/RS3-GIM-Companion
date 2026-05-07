@@ -216,13 +216,38 @@ function safeParse(val) {
 
 // ── Maintenance operations ─────────────────────────────────────────────────────
 
+// GET /api/admin/groups — full group listing used by the Groups tab
+router.get('/groups', requireAdmin, (req, res) => {
+  const groups = db.prepare(`
+    SELECT
+      g.id,
+      g.name,
+      g.group_rsn,
+      g.gim_type,
+      g.gim_size,
+      CASE WHEN g.password_hash IS NOT NULL THEN 1 ELSE 0 END AS claimed,
+      CASE WHEN g.discord_webhook_url IS NOT NULL THEN 1 ELSE 0 END AS has_webhook,
+      g.last_activity,
+      g.created_at,
+      (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS player_count,
+      (SELECT COUNT(*) FROM players WHERE group_id = g.id AND sync_error IS NOT NULL) AS error_count
+    FROM groups g ORDER BY g.id DESC
+  `).all();
+  res.json(groups);
+});
+
 // GET /api/admin/maintenance/groups — list all groups with player counts
 router.get('/maintenance/groups', requireAdmin, (req, res) => {
   const groups = db.prepare(`
-    SELECT g.id, g.name, g.type, g.size,
-           CASE WHEN g.password_hash IS NOT NULL THEN 1 ELSE 0 END AS claimed,
-           (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS player_count,
-           g.created_at
+    SELECT
+      g.id,
+      g.name,
+      g.group_rsn,
+      g.gim_type,
+      g.gim_size,
+      CASE WHEN g.password_hash IS NOT NULL THEN 1 ELSE 0 END AS claimed,
+      (SELECT COUNT(*) FROM players WHERE group_id = g.id) AS player_count,
+      g.created_at
     FROM groups g ORDER BY g.id DESC
   `).all();
   res.json(groups);

@@ -46,6 +46,7 @@ export const adminApi = {
   }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error); return d; }),
 
   getStats:           ()           => request('/stats'),
+  getGroups:          ()           => request('/groups'),
   getSubmissions:     (params={})  => request(`/submissions${toQS(params)}`),
   getSubmission:      (id)         => request(`/submissions/${id}`),
   createSubmission:   (body)       => request('/submissions', { method: 'POST', body }),

@@ -376,6 +376,201 @@ function TableBrowser({ pushToast, initialTable }) {
   );
 }
 
+// ── Groups tab ────────────────────────────────────────────────────────────────
+function GroupsTab({ pushToast }) {
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedPlayers, setExpandedPlayers] = useState([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+
+  useEffect(() => {
+    adminApi.getGroups()
+      .then(setGroups)
+      .catch(err => pushToast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function toggleExpand(group) {
+    if (expandedId === group.id) { setExpandedId(null); setExpandedPlayers([]); return; }
+    setExpandedId(group.id);
+    setExpandedPlayers([]);
+    setLoadingPlayers(true);
+    try {
+      const players = await adminApi.maintenance.listPlayers(group.id);
+      setExpandedPlayers(players);
+    } catch (err) {
+      pushToast(err.message, 'error');
+    } finally {
+      setLoadingPlayers(false);
+    }
+  }
+
+  const filtered = groups.filter(g =>
+    !search || g.name.toLowerCase().includes(search.toLowerCase()) ||
+    String(g.id).includes(search) ||
+    (g.group_rsn ?? '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Aggregate stats
+  const total    = groups.length;
+  const claimed  = groups.filter(g => g.claimed).length;
+  const unclaimed = total - claimed;
+  const withWebhook = groups.filter(g => g.has_webhook).length;
+  const totalPlayers = groups.reduce((s, g) => s + (g.player_count ?? 0), 0);
+  const withErrors = groups.filter(g => g.error_count > 0).length;
+  const avgPlayers = total > 0 ? (totalPlayers / total).toFixed(1) : 0;
+
+  const statCards = [
+    { label: 'Total groups',    value: total,        color: 'var(--gold)' },
+    { label: 'Claimed',         value: claimed,      color: 'var(--green-bright)' },
+    { label: 'Unclaimed',       value: unclaimed,    color: 'var(--text-dim)' },
+    { label: 'Total players',   value: totalPlayers, color: 'var(--text-bright)' },
+    { label: 'Avg players/group', value: avgPlayers, color: 'var(--text-bright)' },
+    { label: '⚠ Sync errors',   value: withErrors,   color: withErrors > 0 ? 'var(--red-bright)' : 'var(--text-dim)' },
+    { label: '🔔 Discord wired', value: withWebhook,  color: withWebhook > 0 ? '#7289da' : 'var(--text-dim)' },
+  ];
+
+  function fmtDate(dt) {
+    if (!dt) return '—';
+    try { return new Date(dt).toLocaleDateString(); } catch { return dt; }
+  }
+
+  return (
+    <div>
+      {/* Stat cards */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+        {statCards.map(s => (
+          <div key={s.label} style={{
+            padding: '10px 16px', borderRadius: 8, flex: '1 1 120px', minWidth: 100,
+            background: 'var(--bg-panel-alt)', border: '1px solid var(--border)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--text-dim)', pointerEvents: 'none' }}>🔍</span>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Filter by name, ID, or group RSN…"
+            style={{ width: '100%', padding: '8px 10px 8px 32px', borderRadius: 6, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-bright)', fontSize: 12, boxSizing: 'border-box' }}
+          />
+        </div>
+        <span style={{ fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+          {loading ? '…' : `${filtered.length} / ${total} groups`}
+        </span>
+        {search && (
+          <button onClick={() => setSearch('')}
+            style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-dim)' }}>
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-dim)' }}>Loading…</div>
+      ) : (
+        <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid var(--border)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-panel-alt)' }}>
+                {['ID','Name','Group RSN','Type','Size','Players','Claimed','Errors','Discord','Last Activity','Created',''].map(h => (
+                  <th key={h} style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--text-dim)', fontWeight: 600, whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(g => (
+                <React.Fragment key={g.id}>
+                  <tr
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', transition: 'background 0.1s', background: expandedId === g.id ? 'rgba(200,168,75,0.06)' : 'transparent' }}
+                    onMouseEnter={e => { if (expandedId !== g.id) e.currentTarget.style.background = 'var(--bg-panel-alt)'; }}
+                    onMouseLeave={e => { if (expandedId !== g.id) e.currentTarget.style.background = 'transparent'; }}
+                    onClick={() => toggleExpand(g)}>
+                    <td style={{ padding: '7px 10px', color: 'var(--gold)', fontWeight: 700 }}>{g.id}</td>
+                    <td style={{ padding: '7px 10px', color: 'var(--text-bright)', fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</td>
+                    <td style={{ padding: '7px 10px', color: 'var(--text-dim)' }}>{g.group_rsn || <span style={{ opacity: 0.3 }}>—</span>}</td>
+                    <td style={{ padding: '7px 10px', color: 'var(--text-dim)' }}>{g.gim_type || 'regular'}</td>
+                    <td style={{ padding: '7px 10px', color: 'var(--text-dim)', textAlign: 'center' }}>{g.gim_size ?? 5}</td>
+                    <td style={{ padding: '7px 10px', fontWeight: 600, color: g.player_count > 0 ? 'var(--text-bright)' : 'var(--text-dim)', textAlign: 'center' }}>{g.player_count ?? 0}</td>
+                    <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                      {g.claimed
+                        ? <span style={{ color: 'var(--green-bright)', fontWeight: 700 }}>✓</span>
+                        : <span style={{ color: 'var(--text-dim)', opacity: 0.4 }}>—</span>}
+                    </td>
+                    <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                      {g.error_count > 0
+                        ? <span style={{ color: 'var(--red-bright)', fontWeight: 700 }}>{g.error_count}</span>
+                        : <span style={{ color: 'var(--text-dim)', opacity: 0.3 }}>0</span>}
+                    </td>
+                    <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                      {g.has_webhook
+                        ? <span title="Discord webhook active" style={{ color: '#7289da' }}>🔔</span>
+                        : <span style={{ color: 'var(--text-dim)', opacity: 0.3 }}>—</span>}
+                    </td>
+                    <td style={{ padding: '7px 10px', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{fmtDate(g.last_activity)}</td>
+                    <td style={{ padding: '7px 10px', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{fmtDate(g.created_at)}</td>
+                    <td style={{ padding: '7px 10px', color: 'var(--text-dim)', fontSize: 10 }}>{expandedId === g.id ? '▲' : '▼'}</td>
+                  </tr>
+
+                  {/* Expanded player list */}
+                  {expandedId === g.id && (
+                    <tr style={{ background: 'rgba(200,168,75,0.03)' }}>
+                      <td colSpan={12} style={{ padding: '0 0 8px 32px', borderBottom: '1px solid var(--border)' }}>
+                        {loadingPlayers ? (
+                          <div style={{ padding: '12px 0', color: 'var(--text-dim)', fontSize: 11 }}>Loading players…</div>
+                        ) : expandedPlayers.length === 0 ? (
+                          <div style={{ padding: '12px 0', color: 'var(--text-dim)', fontSize: 11 }}>No players in this group.</div>
+                        ) : (
+                          <table style={{ borderCollapse: 'collapse', fontSize: 11, marginTop: 8 }}>
+                            <thead>
+                              <tr>
+                                {['ID','RSN','Combat','Last synced','Sync error'].map(h => (
+                                  <th key={h} style={{ textAlign: 'left', padding: '4px 12px', color: 'var(--text-dim)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {expandedPlayers.map(p => (
+                                <tr key={p.id}>
+                                  <td style={{ padding: '4px 12px', color: 'var(--text-dim)' }}>{p.id}</td>
+                                  <td style={{ padding: '4px 12px', color: 'var(--text-bright)', fontWeight: 600 }}>{p.rsn}</td>
+                                  <td style={{ padding: '4px 12px', color: 'var(--text-dim)', textAlign: 'center' }}>{p.combat_level ?? '—'}</td>
+                                  <td style={{ padding: '4px 12px', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{p.last_synced_at ? new Date(p.last_synced_at).toLocaleString() : '—'}</td>
+                                  <td style={{ padding: '4px 12px', color: p.sync_error ? 'var(--red-bright)' : 'var(--text-dim)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {p.sync_error || <span style={{ opacity: 0.3 }}>—</span>}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-dim)', fontSize: 13 }}>
+              {search ? `No groups match "${search}"` : 'No groups yet.'}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Maintenance tab ───────────────────────────────────────────────────────────
 function MaintenanceTab({ pushToast }) {
   // Each tool has: id, emoji, title, desc, destructive?, fields[], action
@@ -517,7 +712,7 @@ function MaintenanceTab({ pushToast }) {
       let data;
       if (tool.id === 'list_groups') {
         data = await adminApi.maintenance.listGroups();
-        setResult({ ok: true, rows: data, columns: ['id','name','type','size','claimed','player_count','created_at'] });
+        setResult({ ok: true, rows: data, columns: ['id','name','group_rsn','gim_type','gim_size','claimed','player_count','created_at'] });
       } else if (tool.id === 'list_players') {
         data = await adminApi.maintenance.listPlayers(values.group_id);
         setResult({ ok: true, rows: data, columns: ['id','rsn','combat_level','last_synced_at','sync_error'] });
@@ -846,6 +1041,7 @@ function AdminDashboard({ username, onLogout, pushToast }) {
 
   const TABS = [
     { id: 'queue',       label: `📥 Queue${stats?.pending ? ` (${stats.pending})` : ''}` },
+    { id: 'groups',      label: '👥 Groups' },
     { id: 'tables',      label: '📊 Browse Tables' },
     { id: 'maintenance', label: '🔧 Maintenance' },
     { id: 'audit',       label: '📜 Audit Log' },
@@ -956,6 +1152,7 @@ function AdminDashboard({ username, onLogout, pushToast }) {
           </div>
         )}
 
+        {tab === 'groups'      && <GroupsTab pushToast={pushToast} />}
         {tab === 'tables'      && <TableBrowser pushToast={pushToast} initialTable={jumpTable} />}
         {tab === 'maintenance' && <MaintenanceTab pushToast={pushToast} />}
         {tab === 'audit'       && <AuditLog pushToast={pushToast} />}
