@@ -385,6 +385,76 @@ const BOSSES = [
       { name: "Vorkath's head (Dragonbone necklace component)" },
     ],
     wiki_url: 'https://runescape.wiki/w/Zemouregal_%26_Vorkath' },
+
+  // ── GWD2 individual bosses (Heart of Gielinor) ────────────────────────────
+  { id: 'vindicta',          name: 'Vindicta & Gorvek',         difficulty: 'mid', min_combat_level: 90,
+    requirements: { skills: { Attack: 80 }, quests: ['Azzanadra\'s Quest'] },
+    drops: [
+      { name: 'Dragon Rider lance (T85 melee stab)' },
+      { name: 'Anima core of Zaros armour (T80 ranged power)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Vindicta' },
+
+  { id: 'helwyr',            name: 'Helwyr',                    difficulty: 'mid', min_combat_level: 90,
+    requirements: { skills: { Magic: 80 }, quests: ['Azzanadra\'s Quest'] },
+    drops: [
+      { name: 'Wand of the Cywir Elders (T85 magic)' },
+      { name: 'Cywir orb (T85 magic offhand)' },
+      { name: 'Anima core of Seren armour (T80 magic power)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Helwyr' },
+
+  { id: 'twin_furies',       name: 'Twin Furies',               difficulty: 'mid', min_combat_level: 90,
+    requirements: { skills: { Ranged: 80 }, quests: ['Azzanadra\'s Quest'] },
+    drops: [
+      { name: 'Blade of Nymora (T85 melee main-hand)' },
+      { name: 'Blade of Avaryss (T85 melee off-hand)' },
+      { name: 'Anima core of Zamorak armour (T80 melee power)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Twin_Furies' },
+
+  { id: 'gregorovic',        name: 'Gregorovic',                difficulty: 'mid', min_combat_level: 90,
+    requirements: { skills: { Ranged: 80 }, quests: ['Azzanadra\'s Quest'] },
+    drops: [
+      { name: 'Shadow glaive (T75 ranged main-hand)' },
+      { name: 'Off-hand shadow glaive (T75 ranged off-hand)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Gregorovic' },
+
+  // ── Other sources ─────────────────────────────────────────────────────────
+  { id: 'barrows_rots',      name: 'Barrows: Rise of the Six',  difficulty: 'end', min_combat_level: 100,
+    requirements: { skills: { Attack: 80, Ranged: 80, Magic: 80 }, quests: ['Ritual of the Mahjarrat'] },
+    drops: [
+      { name: 'Malevolent energy (→ Malevolent armour T90 melee)' },
+      { name: 'Sirenic scales (→ Sirenic armour T90 ranged)' },
+      { name: 'Tectonic energy (→ Tectonic armour T90 magic) — via Vorago also' },
+      { name: 'Merciless kiteshield (T90 magic offhand)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Barrows:_Rise_of_the_Six' },
+
+  { id: 'rune_dragons',      name: 'Rune Dragons',              difficulty: 'end', min_combat_level: 100,
+    requirements: { skills: { Defence: 80, Slayer: 1 }, quests: ['Dragon Slayer'] },
+    drops: [
+      { name: 'Flarefrost boots (upgrade from Glaiven boots + Glaiven wing-tips)' },
+      { name: 'Steadfast scale (→ upgrades Steadfast boots)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Rune_dragon' },
+
+  { id: 'adamant_dragons',   name: 'Adamant Dragons',           difficulty: 'end', min_combat_level: 100,
+    requirements: { skills: { Defence: 80 }, quests: ['Dragon Slayer'] },
+    drops: [
+      { name: 'Dragon full helm (rare, 1/5000)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Adamant_dragon' },
+
+  { id: 'wilderness_slayer', name: 'Wilderness Slayer (Mandrith)', difficulty: 'end', min_combat_level: 80,
+    requirements: { skills: { Slayer: 1 }, quests: [] },
+    drops: [
+      { name: 'Decimation (T87 ranged bow) — Wilderness Slayer chest' },
+      { name: 'Obliteration (T87 melee whip) — Wilderness Slayer chest' },
+      { name: 'Annihilation (T87 magic staff) — Wilderness Slayer chest' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Wilderness_Slayer_chest' },
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -989,7 +1059,7 @@ const GEAR_ITEMS = [
   // ══ MELEE WEAPONS ══════════════════════════════════════════════════════════
   { id: 'zaros_godsword',         name: 'Zaros godsword',           tier: 92, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 92 },       acquisition_source: 'boss', source_id: 'telos',         wiki_url: 'https://runescape.wiki/w/Zaros_godsword' },
   { id: 'noxious_scythe',         name: 'Noxious scythe',           tier: 90, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 90 },       acquisition_source: 'boss', source_id: 'araxxi',        wiki_url: 'https://runescape.wiki/w/Noxious_scythe' },
-  { id: 'dragon_rider_lance',     name: 'Dragon Rider lance',        tier: 85, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 85 },       acquisition_source: 'boss', source_id: 'gwd2',          wiki_url: 'https://runescape.wiki/w/Dragon_Rider_lance' },
+  { id: 'dragon_rider_lance',     name: 'Dragon Rider lance',        tier: 85, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 85 },       acquisition_source: 'boss', source_id: 'vindicta',      wiki_url: 'https://runescape.wiki/w/Dragon_Rider_lance' },
   { id: 'drygore_rapier',         name: 'Drygore rapier',            tier: 90, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 90 },       acquisition_source: 'boss', source_id: 'kalphite_king', wiki_url: 'https://runescape.wiki/w/Drygore_rapier' },
   { id: 'drygore_longsword',      name: 'Drygore longsword',         tier: 90, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 90 },       acquisition_source: 'boss', source_id: 'kalphite_king', wiki_url: 'https://runescape.wiki/w/Drygore_longsword' },
   { id: 'drygore_mace',           name: 'Drygore mace',              tier: 90, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 90 },       acquisition_source: 'boss', source_id: 'kalphite_king', wiki_url: 'https://runescape.wiki/w/Drygore_mace' },
@@ -1002,14 +1072,14 @@ const GEAR_ITEMS = [
   { id: 'abyssal_vine_whip',      name: 'Abyssal vine whip',         tier: 75, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 75 },       acquisition_source: 'slayer', source_id: 'jadinko_guard',  wiki_url: 'https://runescape.wiki/w/Abyssal_vine_whip' },
   { id: 'abyssal_whip',           name: 'Abyssal whip',              tier: 70, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 70 },       acquisition_source: 'slayer', source_id: 'abyssal_demon',  wiki_url: 'https://runescape.wiki/w/Abyssal_whip' },
   { id: 'saradomin_sword',        name: 'Saradomin sword',           tier: 70, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 75 },       acquisition_source: 'boss', source_id: 'zilyana',       wiki_url: 'https://runescape.wiki/w/Saradomin_sword' },
-  { id: 'dragon_2h_sword',        name: 'Dragon 2H sword',           tier: 60, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 60 },       acquisition_source: 'boss',          wiki_url: 'https://runescape.wiki/w/Dragon_2H_sword' },
-  { id: 'malevolent_kiteshield',  name: 'Malevolent kiteshield',     tier: 90, style: 'melee', slot: 'offhand', is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Malevolent_kiteshield' },
+  { id: 'dragon_2h_sword',        name: 'Dragon 2H sword',           tier: 60, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 60 },       acquisition_source: 'boss', source_id: 'kril_tsutsaroth',  wiki_url: 'https://runescape.wiki/w/Dragon_2H_sword' },
+  { id: 'malevolent_kiteshield',  name: 'Malevolent kiteshield',     tier: 90, style: 'melee', slot: 'offhand', is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting', source_id: 'barrows_rots', wiki_url: 'https://runescape.wiki/w/Malevolent_kiteshield' },
   // T92/T95 from GWD2/Solak
   { id: 'khopesh_main',           name: 'Khopesh of the Kharidian',  tier: 82, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 82 },       acquisition_source: 'boss', source_id: 'magister',      wiki_url: 'https://runescape.wiki/w/Khopesh_of_the_Kharidian' },
   { id: 'khopesh_oh',             name: 'Off-hand Khopesh of the Kharidian', tier: 82, style: 'melee', slot: 'offhand', is_power_armour: 0, requirements_json: { Attack: 82 }, acquisition_source: 'boss', source_id: 'magister', wiki_url: 'https://runescape.wiki/w/Off-hand_Khopesh_of_the_Kharidian' },
   { id: 'hexhunter_bow',          name: 'Hexhunter bow',             tier: 80, style: 'ranged', slot: 'weapon', is_power_armour: 0, requirements_json: { Ranged: 80 },       acquisition_source: 'slayer', source_id: 'soulgazer',    wiki_url: 'https://runescape.wiki/w/Hexhunter_bow' },
-  { id: 'blade_of_nymora',        name: 'Blade of Nymora',           tier: 85, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 85 },       acquisition_source: 'boss',          wiki_url: 'https://runescape.wiki/w/Blade_of_Nymora' },
-  { id: 'blade_of_avaryss',       name: 'Blade of Avaryss',          tier: 85, style: 'melee', slot: 'offhand', is_power_armour: 0, requirements_json: { Attack: 85 },       acquisition_source: 'boss',          wiki_url: 'https://runescape.wiki/w/Blade_of_Avaryss' },
+  { id: 'blade_of_nymora',        name: 'Blade of Nymora',           tier: 85, style: 'melee', slot: 'weapon',  is_power_armour: 0, requirements_json: { Attack: 85 },       acquisition_source: 'boss', source_id: 'twin_furies',    wiki_url: 'https://runescape.wiki/w/Blade_of_Nymora' },
+  { id: 'blade_of_avaryss',       name: 'Blade of Avaryss',          tier: 85, style: 'melee', slot: 'offhand', is_power_armour: 0, requirements_json: { Attack: 85 },       acquisition_source: 'boss', source_id: 'twin_furies',    wiki_url: 'https://runescape.wiki/w/Blade_of_Avaryss' },
 
   // ══ MELEE ARMOUR ═══════════════════════════════════════════════════════════
   // Vestments of Havoc (T95, Zamorak Lord of Erebus)
@@ -1020,10 +1090,10 @@ const GEAR_ITEMS = [
   { id: 'tmw_helm',               name: 'Trimmed Masterwork helm',   tier: 92, style: 'melee', slot: 'head',   is_power_armour: 1, requirements_json: { Defence: 92 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Trimmed_Masterwork_helm' },
   { id: 'tmw_platebody',          name: 'Trimmed Masterwork platebody', tier: 92, style: 'melee', slot: 'body', is_power_armour: 1, requirements_json: { Defence: 92 },    acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Trimmed_Masterwork_platebody' },
   { id: 'tmw_platelegs',          name: 'Trimmed Masterwork platelegs', tier: 92, style: 'melee', slot: 'legs', is_power_armour: 1, requirements_json: { Defence: 92 },    acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Trimmed_Masterwork_platelegs' },
-  // Malevolent (T90)
-  { id: 'malevolent_helm',        name: 'Malevolent helm',           tier: 90, style: 'melee', slot: 'head',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Malevolent_helm' },
-  { id: 'malevolent_cuirass',     name: 'Malevolent cuirass',        tier: 90, style: 'melee', slot: 'body',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Malevolent_cuirass' },
-  { id: 'malevolent_greaves',     name: 'Malevolent greaves',        tier: 90, style: 'melee', slot: 'legs',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Malevolent_greaves' },
+  // Malevolent (T90, crafted from Barrows: Rise of the Six malevolent energy)
+  { id: 'malevolent_helm',        name: 'Malevolent helm',           tier: 90, style: 'melee', slot: 'head',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting', source_id: 'barrows_rots',   wiki_url: 'https://runescape.wiki/w/Malevolent_helm' },
+  { id: 'malevolent_cuirass',     name: 'Malevolent cuirass',        tier: 90, style: 'melee', slot: 'body',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting', source_id: 'barrows_rots',   wiki_url: 'https://runescape.wiki/w/Malevolent_cuirass' },
+  { id: 'malevolent_greaves',     name: 'Malevolent greaves',        tier: 90, style: 'melee', slot: 'legs',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting', source_id: 'barrows_rots',   wiki_url: 'https://runescape.wiki/w/Malevolent_greaves' },
   // Masterwork (T90)
   { id: 'masterwork_helm',        name: 'Masterwork helm',           tier: 90, style: 'melee', slot: 'head',   is_power_armour: 0, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Masterwork_helm' },
   { id: 'masterwork_platebody',   name: 'Masterwork platebody',      tier: 90, style: 'melee', slot: 'body',   is_power_armour: 0, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Masterwork_platebody' },
@@ -1047,7 +1117,7 @@ const GEAR_ITEMS = [
   { id: 'guthans_warspear',       name: "Guthan's warspear",         tier: 65, style: 'melee', slot: 'weapon', is_power_armour: 0, requirements_json: { Attack: 70 },       acquisition_source: 'boss', source_id: 'barrows',       wiki_url: "https://runescape.wiki/w/Guthan's_warspear" },
 
   // ══ RANGED WEAPONS ═════════════════════════════════════════════════════════
-  { id: 'bow_of_the_last_guardian', name: 'Bow of the Last Guardian', tier: 95, style: 'ranged', slot: 'weapon', is_power_armour: 0, requirements_json: { Ranged: 95 },    acquisition_source: 'boss',          wiki_url: 'https://runescape.wiki/w/Bow_of_the_Last_Guardian' },
+  { id: 'bow_of_the_last_guardian', name: 'Bow of the Last Guardian', tier: 95, style: 'ranged', slot: 'weapon', is_power_armour: 0, requirements_json: { Ranged: 95 },    acquisition_source: 'boss', source_id: 'zamorak_loe',   wiki_url: 'https://runescape.wiki/w/Bow_of_the_Last_Guardian' },
   { id: 'seren_godbow',           name: 'Seren godbow',              tier: 92, style: 'ranged', slot: 'weapon', is_power_armour: 0, requirements_json: { Ranged: 92 },       acquisition_source: 'boss', source_id: 'telos',         wiki_url: 'https://runescape.wiki/w/Seren_godbow' },
   { id: 'eldritch_crossbow',      name: 'Eldritch crossbow',         tier: 92, style: 'ranged', slot: 'offhand',is_power_armour: 0, requirements_json: { Ranged: 92 },       acquisition_source: 'boss', source_id: 'ambassador',    wiki_url: 'https://runescape.wiki/w/Eldritch_crossbow' },
   { id: 'blightbound_crossbow',   name: 'Blightbound crossbow',      tier: 82, style: 'ranged', slot: 'offhand',is_power_armour: 0, requirements_json: { Ranged: 82 },       acquisition_source: 'boss', source_id: 'solak',         wiki_url: 'https://runescape.wiki/w/Blightbound_crossbow' },
@@ -1088,8 +1158,8 @@ const GEAR_ITEMS = [
   { id: 'seismic_wand',           name: 'Seismic wand',              tier: 90, style: 'magic', slot: 'weapon', is_power_armour: 0, requirements_json: { Magic: 90 },         acquisition_source: 'boss', source_id: 'vorago',        wiki_url: 'https://runescape.wiki/w/Seismic_wand' },
   { id: 'seismic_singularity',    name: 'Seismic singularity',       tier: 90, style: 'magic', slot: 'offhand',is_power_armour: 0, requirements_json: { Magic: 90 },         acquisition_source: 'boss', source_id: 'vorago',        wiki_url: 'https://runescape.wiki/w/Seismic_singularity' },
   { id: 'noxious_staff',          name: 'Noxious staff',             tier: 90, style: 'magic', slot: 'weapon', is_power_armour: 0, requirements_json: { Magic: 90 },         acquisition_source: 'boss', source_id: 'araxxi',        wiki_url: 'https://runescape.wiki/w/Noxious_staff' },
-  { id: 'cywir_wand',             name: 'Wand of the Cywir Elders',  tier: 85, style: 'magic', slot: 'weapon', is_power_armour: 0, requirements_json: { Magic: 85 },         acquisition_source: 'boss', source_id: 'gwd2',          wiki_url: 'https://runescape.wiki/w/Wand_of_the_Cywir_Elders' },
-  { id: 'cywir_orb',              name: 'Cywir orb',                 tier: 85, style: 'magic', slot: 'offhand',is_power_armour: 0, requirements_json: { Magic: 85 },         acquisition_source: 'boss', source_id: 'gwd2',          wiki_url: 'https://runescape.wiki/w/Cywir_orb' },
+  { id: 'cywir_wand',             name: 'Wand of the Cywir Elders',  tier: 85, style: 'magic', slot: 'weapon', is_power_armour: 0, requirements_json: { Magic: 85 },         acquisition_source: 'boss', source_id: 'helwyr',        wiki_url: 'https://runescape.wiki/w/Wand_of_the_Cywir_Elders' },
+  { id: 'cywir_orb',              name: 'Cywir orb',                 tier: 85, style: 'magic', slot: 'offhand',is_power_armour: 0, requirements_json: { Magic: 85 },         acquisition_source: 'boss', source_id: 'helwyr',        wiki_url: 'https://runescape.wiki/w/Cywir_orb' },
   { id: 'chaotic_staff',          name: 'Chaotic staff',             tier: 80, style: 'magic', slot: 'weapon', is_power_armour: 0, requirements_json: { Magic: 80, Dungeoneering: 80 }, acquisition_source: 'dungeoneering', wiki_url: 'https://runescape.wiki/w/Chaotic_staff' },
   { id: 'virtus_wand',            name: 'Virtus wand',               tier: 80, style: 'magic', slot: 'weapon', is_power_armour: 0, requirements_json: { Magic: 80 },         acquisition_source: 'boss', source_id: 'nex',           wiki_url: 'https://runescape.wiki/w/Virtus_wand' },
   { id: 'virtus_book',            name: 'Virtus book',               tier: 80, style: 'magic', slot: 'offhand',is_power_armour: 0, requirements_json: { Magic: 80 },         acquisition_source: 'boss', source_id: 'nex',           wiki_url: 'https://runescape.wiki/w/Virtus_book' },
@@ -1097,10 +1167,10 @@ const GEAR_ITEMS = [
   { id: 'inquisitors_staff',      name: "Inquisitor's staff",        tier: 80, style: 'magic', slot: 'weapon', is_power_armour: 0, requirements_json: { Magic: 80 },         acquisition_source: 'boss', source_id: 'solak',         wiki_url: "https://runescape.wiki/w/Inquisitor's_staff" },
 
   // ══ MAGIC ARMOUR ═══════════════════════════════════════════════════════════
-  // Tectonic (T90, Vorago)
-  { id: 'tectonic_mask',          name: 'Tectonic mask',             tier: 90, style: 'magic', slot: 'head',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Tectonic_mask' },
-  { id: 'tectonic_robe_top',      name: 'Tectonic robe top',         tier: 90, style: 'magic', slot: 'body',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Tectonic_robe_top' },
-  { id: 'tectonic_robe_bottom',   name: 'Tectonic robe bottom',      tier: 90, style: 'magic', slot: 'legs',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting',      wiki_url: 'https://runescape.wiki/w/Tectonic_robe_bottom' },
+  // Tectonic (T90, crafted from Vorago tectonic scales)
+  { id: 'tectonic_mask',          name: 'Tectonic mask',             tier: 90, style: 'magic', slot: 'head',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting', source_id: 'vorago',         wiki_url: 'https://runescape.wiki/w/Tectonic_mask' },
+  { id: 'tectonic_robe_top',      name: 'Tectonic robe top',         tier: 90, style: 'magic', slot: 'body',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting', source_id: 'vorago',         wiki_url: 'https://runescape.wiki/w/Tectonic_robe_top' },
+  { id: 'tectonic_robe_bottom',   name: 'Tectonic robe bottom',      tier: 90, style: 'magic', slot: 'legs',   is_power_armour: 1, requirements_json: { Defence: 90 },     acquisition_source: 'crafting', source_id: 'vorago',         wiki_url: 'https://runescape.wiki/w/Tectonic_robe_bottom' },
   // Blight (T95, Nex AoD)
   { id: 'blight_robe_top',        name: 'Blight robe top',           tier: 95, style: 'magic', slot: 'body',   is_power_armour: 1, requirements_json: { Defence: 95 },     acquisition_source: 'boss', source_id: 'nex_aod', wiki_url: 'https://runescape.wiki/w/Blight_robe_top' },
   { id: 'blight_robe_bottom',     name: 'Blight robe bottom',        tier: 95, style: 'magic', slot: 'legs',   is_power_armour: 1, requirements_json: { Defence: 95 },     acquisition_source: 'boss', source_id: 'nex_aod', wiki_url: 'https://runescape.wiki/w/Blight_robe_bottom' },
@@ -1132,19 +1202,19 @@ const GEAR_ITEMS = [
   { id: 'fleeting_boots',         name: 'Fleeting boots',            tier: 90, style: 'ranged', slot: 'boots',  is_power_armour: 0, requirements_json: { Defence: 80 },     acquisition_source: 'boss', source_id: 'raksha',        wiki_url: 'https://runescape.wiki/w/Fleeting_boots' },
   { id: 'glaiven_boots',          name: 'Glaiven boots',             tier: 85, style: 'ranged', slot: 'boots',  is_power_armour: 0, requirements_json: { Defence: 85 },     acquisition_source: 'boss', source_id: 'glacors',       wiki_url: 'https://runescape.wiki/w/Glaiven_boots' },
   { id: 'ragefire_boots',         name: 'Ragefire boots',            tier: 85, style: 'magic',  slot: 'boots',  is_power_armour: 0, requirements_json: { Defence: 85 },     acquisition_source: 'boss', source_id: 'glacors',       wiki_url: 'https://runescape.wiki/w/Ragefire_boots' },
-  { id: 'dragon_boots',           name: 'Dragon boots',              tier: 60, style: 'melee',  slot: 'boots',  is_power_armour: 0, requirements_json: { Defence: 60 },     acquisition_source: 'boss',                             wiki_url: 'https://runescape.wiki/w/Dragon_boots' },
+  { id: 'dragon_boots',           name: 'Dragon boots',              tier: 60, style: 'melee',  slot: 'boots',  is_power_armour: 0, requirements_json: { Defence: 60 },     acquisition_source: 'slayer', source_id: 'spiritual_mage', wiki_url: 'https://runescape.wiki/w/Dragon_boots' },
   // Gloves
   { id: 'cinderbane_gloves',      name: 'Cinderbane gloves',         tier: 70, style: 'all',   slot: 'gloves', is_power_armour: 0, requirements_json: {},                  acquisition_source: 'boss', source_id: 'raksha',        wiki_url: 'https://runescape.wiki/w/Cinderbane_gloves' },
-  { id: 'goliath_gloves',         name: 'Goliath gloves',            tier: 80, style: 'melee', slot: 'gloves', is_power_armour: 0, requirements_json: { Attack: 80, Defence: 80 }, acquisition_source: 'minigame', wiki_url: 'https://runescape.wiki/w/Goliath_gloves' },
-  { id: 'swift_gloves',           name: 'Swift gloves',              tier: 80, style: 'ranged',slot: 'gloves', is_power_armour: 0, requirements_json: { Ranged: 80, Defence: 80 }, acquisition_source: 'minigame', wiki_url: 'https://runescape.wiki/w/Swift_gloves' },
-  { id: 'spellcaster_gloves',     name: 'Spellcaster gloves',        tier: 80, style: 'magic', slot: 'gloves', is_power_armour: 0, requirements_json: { Magic: 80, Defence: 80 }, acquisition_source: 'minigame', wiki_url: 'https://runescape.wiki/w/Spellcaster_gloves' },
+  { id: 'goliath_gloves',         name: 'Goliath gloves',            tier: 80, style: 'melee', slot: 'gloves', is_power_armour: 0, requirements_json: { Attack: 80, Defence: 80 }, acquisition_source: 'minigame', source_id: 'dominion_tower', wiki_url: 'https://runescape.wiki/w/Goliath_gloves' },
+  { id: 'swift_gloves',           name: 'Swift gloves',              tier: 80, style: 'ranged',slot: 'gloves', is_power_armour: 0, requirements_json: { Ranged: 80, Defence: 80 }, acquisition_source: 'minigame', source_id: 'dominion_tower', wiki_url: 'https://runescape.wiki/w/Swift_gloves' },
+  { id: 'spellcaster_gloves',     name: 'Spellcaster gloves',        tier: 80, style: 'magic', slot: 'gloves', is_power_armour: 0, requirements_json: { Magic: 80, Defence: 80 }, acquisition_source: 'minigame', source_id: 'dominion_tower', wiki_url: 'https://runescape.wiki/w/Spellcaster_gloves' },
   { id: 'kerapac_wrist_wraps',    name: "Kerapac's wrist wraps",     tier: 90, style: 'magic', slot: 'gloves', is_power_armour: 0, requirements_json: { Defence: 90 },     acquisition_source: 'boss', source_id: 'kerapac',       wiki_url: "https://runescape.wiki/w/Kerapac's_wrist_wraps" },
   // Amulets / neck
   { id: 'amulet_of_souls',        name: 'Amulet of souls',           tier: 80, style: 'all',  slot: 'neck',   is_power_armour: 0, requirements_json: {},                  acquisition_source: 'slayer', source_id: 'soulgazer',     wiki_url: 'https://runescape.wiki/w/Amulet_of_souls' },
   { id: 'amulet_of_fury',         name: 'Amulet of fury',            tier: 70, style: 'all',  slot: 'neck',   is_power_armour: 0, requirements_json: {},                  acquisition_source: 'crafting',                         wiki_url: 'https://runescape.wiki/w/Amulet_of_fury' },
   { id: 'reaper_necklace',        name: 'Reaper necklace',           tier: 90, style: 'all',  slot: 'neck',   is_power_armour: 0, requirements_json: {},                  acquisition_source: 'crafting',                         wiki_url: 'https://runescape.wiki/w/Reaper_necklace' },
   { id: 'salve_amulet_e',         name: 'Salve amulet (e)',          tier: 70, style: 'all',  slot: 'neck',   is_power_armour: 0, requirements_json: { Slayer: 40 },       acquisition_source: 'quest', quest: 'Lair of Tarn Razorlor', wiki_url: 'https://runescape.wiki/w/Salve_amulet_(e)' },
-  { id: 'arcane_stream',          name: 'Arcane stream necklace',    tier: 80, style: 'magic',slot: 'neck',   is_power_armour: 0, requirements_json: {},                  acquisition_source: 'boss',                             wiki_url: 'https://runescape.wiki/w/Arcane_stream_necklace' },
+  { id: 'arcane_stream',          name: 'Arcane stream necklace',    tier: 80, style: 'magic',slot: 'neck',   is_power_armour: 0, requirements_json: { Dungeoneering: 80 }, acquisition_source: 'dungeoneering',                    wiki_url: 'https://runescape.wiki/w/Arcane_stream_necklace' },
   // Rings
   { id: 'berserker_ring_i',       name: 'Berserker ring (i)',        tier: 70, style: 'melee', slot: 'ring',   is_power_armour: 0, requirements_json: {},                  acquisition_source: 'boss', source_id: 'dagannoth_kings', wiki_url: 'https://runescape.wiki/w/Berserker_ring_(i)' },
   { id: 'archers_ring_i',         name: "Archers' ring (i)",         tier: 70, style: 'ranged',slot: 'ring',   is_power_armour: 0, requirements_json: {},                  acquisition_source: 'boss', source_id: 'dagannoth_kings', wiki_url: 'https://runescape.wiki/w/Archers%27_ring_(i)' },
@@ -1371,6 +1441,127 @@ console.log(`\n🦎 Seeding ${SLAYER_CREATURES.length} slayer creatures...`);
 let scCount = 0;
 for (const c of SLAYER_CREATURES) { upsertSlayerCreature(c); scCount++; }
 console.log(`   ${scCount} slayer creatures inserted/updated`);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SOURCE-ID PATCHES — backfill source_id for items seeded by earlier runs
+// Safe to re-run: UPDATE only touches source_id / acquisition_source.
+// ══════════════════════════════════════════════════════════════════════════════
+console.log('\n🔗 Patching source_ids on existing gear items...');
+const patchSourceId = db.prepare('UPDATE rs3_gear_items SET source_id = ? WHERE id = ? AND source_id IS NULL');
+const patchSourceAndType = db.prepare('UPDATE rs3_gear_items SET source_id = ?, acquisition_source = ? WHERE id = ?');
+let patchCount = 0;
+
+const SOURCE_PATCHES = [
+  // ── GWD2 specific bosses (previously all used generic 'gwd2') ─────────────
+  ['vindicta',          'anima_core_helm_of_zaros'],
+  ['vindicta',          'anima_core_body_of_zaros'],
+  ['vindicta',          'anima_core_legs_of_zaros'],
+  ['helwyr',            'anima_core_helm_of_seren'],
+  ['helwyr',            'anima_core_body_of_seren'],
+  ['helwyr',            'anima_core_legs_of_seren'],
+  ['twin_furies',       'anima_core_helm_of_zamorak'],
+  ['twin_furies',       'anima_core_body_of_zamorak'],
+  ['twin_furies',       'anima_core_legs_of_zamorak'],
+  ['twin_furies',       'blade_of_nymora_avaryss'],
+  ['gregorovic',        'shadow_glaive'],
+  // ── Kalphite King ─────────────────────────────────────────────────────────
+  ['kalphite_king',     'dual_drygore_rapiers'],
+  ['kalphite_king',     'dual_drygore_longswords'],
+  ['kalphite_king',     'dual_drygore_maces'],
+  // ── Legiones ──────────────────────────────────────────────────────────────
+  ['legiones',          'ascension_crossbow_dual'],
+  // ── Araxxi / Araxxor ──────────────────────────────────────────────────────
+  ['araxxi',            'araxyte_arrows'],
+  ['araxxi',            'decimation'],
+  ['araxxi',            'obliteration'],
+  // ── Solak ─────────────────────────────────────────────────────────────────
+  ['solak',             'oh_blightbound_crossbow'],
+  ['solak',             'blightbound_crossbow_dual'],
+  // ── Rasial (First Necromancer) ────────────────────────────────────────────
+  ['rasial',            'crown_of_the_first_necromancer'],
+  ['rasial',            'robe_top_of_the_first_necromancer'],
+  ['rasial',            'robe_bottom_of_the_first_necromancer'],
+  ['rasial',            'hand_wraps_of_the_first_necromancer'],
+  ['rasial',            'foot_wraps_of_the_first_necromancer'],
+  ['rasial',            'omni_guard'],
+  ['rasial',            'deathwarden_nexus_t90'],
+  ['rasial',            'deathdealer_gloves_t90'],
+  ['rasial',            'deathdealer_boots_t90'],
+  ['rasial',            'death_guard_t90'],
+  ['rasial',            'skull_lantern_t90'],
+  ['rasial',            'deathdealer_robe_top_t80'],
+  ['rasial',            'deathdealer_robe_bottom_t80'],
+  ['rasial',            'deathdealer_gloves_t80'],
+  ['rasial',            'deathdealer_boots_t80'],
+  ['rasial',            'death_guard_t80'],
+  ['rasial',            'skull_lantern_t80'],
+  // ── Croesus ───────────────────────────────────────────────────────────────
+  ['croesus',           'cryptbloom_gloves'],
+  ['croesus',           'cryptbloom_boots'],
+  // ── Nex ───────────────────────────────────────────────────────────────────
+  ['nex',               'virtus_robe_bottom'],
+  ['nex',               'virtus_gloves'],
+  ['nex',               'virtus_boots'],
+  ['nex',               'pernix_gloves'],
+  ['nex',               'pernix_boots'],
+  // ── GWD1 bosses ───────────────────────────────────────────────────────────
+  ['kreearra',          'armadyl_gloves'],
+  ['kreearra',          'armadyl_boots'],
+  // ── Slayer creatures ──────────────────────────────────────────────────────
+  ['edimmu',            'blood_necklace'],
+  ['spiritual_mage',    'dragon_gauntlets'],
+  // ── Dragon sources ────────────────────────────────────────────────────────
+  ['adamant_dragons',   'dragon_full_helm'],
+  ['queen_black_dragon','dragon_kiteshield'],
+  ['king_black_dragon', 'dragonfire_shield'],
+  // ── Wilderness Slayer chest ───────────────────────────────────────────────
+  ['wilderness_slayer', 'decimation'],
+  ['wilderness_slayer', 'obliteration'],
+  // ── Barrows RoTS ──────────────────────────────────────────────────────────
+  ['barrows_rots',      'merciless_kiteshield'],
+  // ── Rune Dragons ──────────────────────────────────────────────────────────
+  ['rune_dragons',      'flarefrost_boots'],
+  // ── TokHaar ───────────────────────────────────────────────────────────────
+  ['har_aken',          'tokhaar_kal_mor'],
+];
+
+for (const [source_id, id] of SOURCE_PATCHES) {
+  const r = patchSourceId.run(source_id, id);
+  if (r.changes) patchCount++;
+}
+
+// Items that also need acquisition_source fixed
+const TYPE_PATCHES = [
+  // Arcane stream: crafted with DG tokens, not a direct boss drop
+  [null, 'dungeoneering', 'arcane_stream'],
+  // Farsight sniper necklace: same — DG token crafting
+  [null, 'dungeoneering', 'farsight_sniper_necklace'],
+  // Rune boots: smithable, not a boss drop
+  [null, 'crafting',      'rune_boots'],
+  // Ranger boots: clue scroll reward
+  [null, 'clue_scroll',   'ranger_boots'],
+  // Dragon arrows: fletched from arrowheads
+  [null, 'skilling',      'dragon_arrows'],
+  // Deathwarden nexus + lower-tier Necromancy weapons: quest/crafting chain
+  [null, 'crafting',      'deathwarden_nexus_t90'],
+  [null, 'crafting',      'deathwarden_hood_t80'],
+  [null, 'crafting',      'deathwarden_hood_t70'],
+  [null, 'crafting',      'death_guard_t60'],
+  [null, 'crafting',      'skull_lantern_t60'],
+  [null, 'crafting',      'death_guard_t70'],
+  [null, 'crafting',      'skull_lantern_t70'],
+  [null, 'crafting',      'deathdealer_robe_top_t70'],
+  [null, 'crafting',      'deathdealer_robe_bottom_t70'],
+  [null, 'crafting',      'deathdealer_gloves_t70'],
+  [null, 'crafting',      'deathdealer_boots_t70'],
+];
+
+for (const [source_id, acq, id] of TYPE_PATCHES) {
+  patchSourceAndType.run(source_id, acq, id);
+  patchCount++;
+}
+
+console.log(`   ${patchCount} items patched`);
 
 console.log('\n✅ Seed complete!\n');
 console.log('═══════════════════════════════════════════════════════');
