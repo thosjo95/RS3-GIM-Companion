@@ -47,7 +47,8 @@ function useRs3Gear() {
   return { iconMap, gearDb, allItems };
 }
 
-// Small component: shows a 24×24 RS3 item icon from the wiki, falls back to nothing
+// Small component: shows an RS3 item icon from the wiki, falls back to nothing.
+// Uses object-fit:contain so non-square sprites (helms, legs, etc.) are never distorted.
 function ItemIcon({ name, iconMap, size = 24, style: extraStyle = {} }) {
   const [failed, setFailed] = useState(false);
   const src = iconMap?.get(name);
@@ -56,10 +57,13 @@ function ItemIcon({ name, iconMap, size = 24, style: extraStyle = {} }) {
     <img
       src={src}
       alt={name}
-      width={size}
-      height={size}
       onError={() => setFailed(true)}
-      style={{ imageRendering: 'crisp-edges', flexShrink: 0, ...extraStyle }}
+      style={{
+        width: size, height: size,
+        objectFit: 'contain',
+        flexShrink: 0,
+        ...extraStyle,
+      }}
     />
   );
 }
@@ -194,9 +198,9 @@ function SlotIcon({ slotDef, size = 26, style: extraStyle = {} }) {
     return <span style={{ fontSize: Math.round(size * 0.7), lineHeight: 1, flexShrink: 0, ...extraStyle }}>{slotDef.icon}</span>;
   }
   return (
-    <img src={src} alt={slotDef.label} width={size} height={size}
+    <img src={src} alt={slotDef.label}
       onError={() => setImgFailed(true)}
-      style={{ flexShrink: 0, imageRendering: 'crisp-edges', ...extraStyle }} />
+      style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0, ...extraStyle }} />
   );
 }
 
@@ -239,7 +243,7 @@ function SlotButton({ slotDef, entry, active, canWrite, onClick, styleColor, ico
       }}>
       {/* Show item icon when filled, otherwise show slot placeholder icon */}
       {filled && iconMap?.get(name)
-        ? <ItemIcon name={name} iconMap={iconMap} size={32} />
+        ? <ItemIcon name={name} iconMap={iconMap} size={38} />
         : <SlotIcon slotDef={slotDef} />
       }
 
