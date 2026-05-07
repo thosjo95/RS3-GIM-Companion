@@ -76,6 +76,18 @@ const BOSS_KILLS = [
 const HISCORES_URL = 'https://secure.runescape.com/m=hiscore/index_lite.ws';
 const RUNEMETRICS_URL = 'https://apps.runescape.com/runemetrics/profile/profile';
 
+// RuneMetrics skill ID → skill name mapping (used as hiscores fallback for private profiles)
+const RUNEMETRICS_SKILL_IDS = {
+   0: 'Attack',       1: 'Defence',      2: 'Strength',    3: 'Constitution',
+   4: 'Ranged',       5: 'Prayer',       6: 'Magic',       7: 'Cooking',
+   8: 'Woodcutting',  9: 'Fletching',   10: 'Fishing',    11: 'Firemaking',
+  12: 'Crafting',    13: 'Smithing',    14: 'Mining',     15: 'Herblore',
+  16: 'Agility',     17: 'Thieving',    18: 'Slayer',     19: 'Farming',
+  20: 'Runecrafting', 21: 'Hunter',     22: 'Construction', 23: 'Summoning',
+  24: 'Dungeoneering', 25: 'Divination', 26: 'Invention', 27: 'Archaeology',
+  28: 'Necromancy',
+};
+
 /**
  * Sanitize an RSN before sending it to Jagex APIs.
  * RS3 names only allow letters, digits, spaces and hyphens.
@@ -102,11 +114,53 @@ async function fetchHiscores(rsn) {
     signal: AbortSignal.timeout(10000),
   });
 
-  if (response.status === 404) throw new Error(`Player "${cleanRSN}" not found on hiscores`);
+  if (response.status === 404) {
+    // Player has private hiscores — fall back to RuneMetrics skillvalues
+    console.log(`[sync] ${cleanRSN}: hiscores private, falling back to RuneMetrics`);
+    return fetchRuneMetricsAsHiscores(cleanRSN);
+  }
   if (!response.ok) throw new Error(`Hiscores API returned ${response.status}`);
 
   const text = await response.text();
   return parseHiscores(text);
+}
+
+/**
+ * Fetches skill data from the RuneMetrics profile API and returns it in the
+ * same shape as parseHiscores() so the rest of the sync pipeline is unchanged.
+ * Used as a fallback for players who have set their hiscores to private.
+ */
+async function fetchRuneMetricsAsHiscores(cleanRSN) {
+  const url = `${RUNEMETRICS_URL}?${new URLSearchParams({ user: cleanRSN, activities: 0 })}`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error(`RuneMetrics returned ${response.status} for "${cleanRSN}"`);
+  const data = await response.json();
+  if (data.error) throw new Error(`RuneMetrics error for "${cleanRSN}": ${data.error}`);
+  if (!Array.isArray(data.skillvalues) || data.skillvalues.length === 0) {
+    throw new Error(`"${cleanRSN}" not found on hiscores and RuneMetrics profile is private`);
+  }
+
+  const result = { skills: {}, activities: {}, bossKills: {}, totalXp: 0, totalLevel: 0, privateHiscores: true };
+
+  for (const sv of data.skillvalues) {
+    const name = RUNEMETRICS_SKILL_IDS[sv.id];
+    if (!name) continue;
+    // RuneMetrics stores XP * 10 — divide to get real XP
+    const xp = Math.floor((sv.xp ?? 0) / 10);
+    result.skills[name] = { rank: null, level: sv.level ?? 1, xp };
+  }
+
+  // Synthesise Overall from the individual skills (mirrors parseHiscores)
+  const totalLevel = Object.values(result.skills).reduce((s, sk) => s + (sk.level ?? 1), 0);
+  const totalXp    = Object.values(result.skills).reduce((s, sk) => s + (sk.xp   ?? 0), 0);
+  result.skills['Overall'] = { rank: null, level: totalLevel, xp: totalXp };
+  result.totalLevel = data.totalskill ?? totalLevel;
+  result.totalXp    = data.totalxp    ?? totalXp;
+
+  return result;
 }
 
 function parseHiscores(csv) {
