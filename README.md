@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.4.0-4caf50?style=flat-square" alt="v1.4.0"/>
+    <img src="https://img.shields.io/badge/version-1.5.0-4caf50?style=flat-square" alt="v1.5.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -30,7 +30,7 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Activity feed** — RuneMetrics feed showing recent drops, quests, milestones; entries are persisted permanently in the database and auto-refreshed every 2 hours in the background
 
 ### 🎯 Goals
-- **Goal Browser** — curated suggestion library organised into six categories: Quest Series, Skill Unlocks, Key Items, Item Requests, Achievement Diaries, Boss Kills
+- **Goal Browser** — curated suggestion library organised into seven categories: Quest Series, Skill Unlocks, Key Items, Item Requests, Achievement Diaries, Boss Kills, Slayer Drops
 - **Item Requests** — 35+ pre-loaded suggestions covering Dungeoneering cape & rewards (Chaotic weapons, Hex/Farsight, Stalker bow, Balmung), Archaeology artefacts (Pontifex ring, Inquisitor staff, Guildmaster's aura), Shattered Worlds codices (Double Surge, Double Escape, Bladed Dive, Natural Instinct, etc.), ports armour, boss drops and more
 - **Active Goals** — personal and group goals with status tracking (Not Started / In Progress / Blocked / Complete); filter by player, category, priority, or search by name
 - **Goal creation modal** — six types matching the browser categories; Quest type shows prerequisite quests + skill requirement checker with one-click "add missing prereqs" buttons; Skill type shows XP-to-go and progress bar
@@ -197,7 +197,7 @@ RS3-GIM-Companion/
 │           └── WebhookSettings.jsx  # Discord webhook config modal (URL + event toggles + test)
 │   └── data/
 │       ├── gearSuggestions.js       # Wiki-verified item requirements for all 5 combat styles
-│       ├── goalSuggestions.js       # Curated goal library: ~200 suggestions across 6 categories
+│       ├── goalSuggestions.js       # Curated goal library: 220+ suggestions across 7 categories
 │       └── bosses.js                # Boss requirements, tiers, and drop tables
 └── server/
     ├── database.js                  # SQLite schema + safe ALTER TABLE migrations
@@ -426,6 +426,20 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.5.0 — May 2026
+- 🦎 **Slayer Creatures database** — 48 RS3 slayer creatures seeded into `rs3_slayer_creatures` with slayer level, combat level, location, notable drops (JSON), boss flag, wiki URL, and icon URL (RS Wiki CDN). Covers every meaningful creature from Crawling Hand (5) through Abyssal Lord (115) and The Magister (115).
+- 🔪 **Slayer Drops goal category** — new `slayer` category in the Goal Browser with 20 goals covering all major slayer unique drops: Black mask → Slayer helm, Automaton gloves, Dragon boots, Abyssal whip, Granite legs/maul, Ascension crossbow (Legiones), Wyrm components, Ripper claw, Raptor Key set, Hexhunter bow, Cinderbane gloves, Jaws of the Abyss, Sophanem Khopesh, Anachronia laceration boots, Abyssal scourge, The Magister
+- 📈 **166 Skill Milestones** — expanded from 21 to 166 entries covering every RS3 skill with true 120 caps in detail. Highlights:
+  - **Archaeology relics** — Font of Life (5), Berserker's Fury (56), Death Ward (81), Fury of the Small (97), Persistent Rage (98), Heightened Senses (105), Conservation of Energy (118)
+  - **Prayer** — full unlock chain: Deflect curses (71–75), Soul Split (92), Turmoil tier (95), Malevolence tier (99), Prayer master cape (120)
+  - **Herblore** — Saradomin brew (81), Super antifire (85), Extreme potions (88–91), Overload (96), Supreme overload salve (98), Elder overload (106), Elder overload salve (107)
+  - **Necromancy** — full 2–120 chain: Conjure Skeleton Warrior → 4 conjures (84) → Conjure Undead Army (99) → master cape (120)
+  - **Slayer** — all creature unlocks (58–120) with correct sources
+  - **Dungeoneering** — Tome of frost (48), Ring of vigour (60), Demon horn necklace (75), Chaotic weapons (80), Primal set (120)
+  - Plus comprehensive entries for Attack, Defence, Strength, Ranged, Magic, Smithing, Crafting, Farming, Agility, Mining, Woodcutting, Fishing, Cooking, Runecrafting, Divination, Thieving, Hunter, Invention
+- 🎯 **22 new Skill Milestone goals** — added to Goal Browser across early/mid/end stages: Prayer 71–75 Deflect curses, Prayer 99 Malevolence tier, Herblore 85 Super antifire, Herblore 98 Supreme overload, Herblore 106 Elder overload, all 6 key Archaeology relics, DG Tome of frost, Ring of vigour, Demon horn necklace, Necromancy 84 (4 conjures), Runecrafting 77 Blood runes, Runecrafting 90 Soul runes, Smithing 99 Masterwork, Cooking 91 Rocktails, Farming 83 Spirit trees, Fishing 80 Rocktails
+- 🌐 **RS Wiki API compliance** — all API calls now send fully descriptive `User-Agent` headers per the RS Wiki guidelines (`rs3-group-ironman-companion-wiki-scanner` and `rs3-group-ironman-companion-wiki-search`)
 
 ### v1.4.0 — May 2026
 - 🎯 **Goals tab promoted** — Goals is now the 2nd tab (was dev-only); the Items & Drops tab has been removed entirely

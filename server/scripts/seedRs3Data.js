@@ -540,27 +540,220 @@ const MILESTONES = [
 // 3. SKILL MILESTONES (key levels per skill that unlock important content)
 // ══════════════════════════════════════════════════════════════════════════════
 const SKILL_MILESTONES = [
-  { id: 'herblore_96', skill: 'Herblore', level: 96, description: 'Overloads — massive combat stat boost, essential for all PvM', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Overload' },
-  { id: 'herblore_99', skill: 'Herblore', level: 99, description: 'Supreme overloads — stronger overload variant, best-in-slot combat potion', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Supreme_overload_potion' },
-  { id: 'prayer_92',   skill: 'Prayer',   level: 92, description: 'Soul Split — heal from damage dealt, enables near-infinite PvM sustain', unlock_type: 'ability',    wiki_url: 'https://runescape.wiki/w/Soul_Split' },
-  { id: 'prayer_95',   skill: 'Prayer',   level: 95, description: 'Turmoil / Anguish / Torment — powerful combat curses (+10–15% DPS)', unlock_type: 'ability',    wiki_url: 'https://runescape.wiki/w/Turmoil' },
-  { id: 'slayer_85',   skill: 'Slayer',   level: 85, description: 'Dark beasts — drops Dark bow, access to Mourner Tunnels', unlock_type: 'creature',   wiki_url: 'https://runescape.wiki/w/Dark_beast' },
-  { id: 'slayer_90',   skill: 'Slayer',   level: 90, description: 'Gargoyles — drops Granite maul, Marble block', unlock_type: 'creature',   wiki_url: 'https://runescape.wiki/w/Gargoyle' },
-  { id: 'slayer_92',   skill: 'Slayer',   level: 92, description: 'Araxxor / Araxxi access — T90 Noxious weapons', unlock_type: 'boss',      wiki_url: 'https://runescape.wiki/w/Araxxor' },
-  { id: 'slayer_95',   skill: 'Slayer',   level: 95, description: 'Legiones access — T90 Ascension crossbows', unlock_type: 'boss',      wiki_url: 'https://runescape.wiki/w/Legiones' },
-  { id: 'slayer_96',   skill: 'Slayer',   level: 96, description: 'Raksha access + Rex Matriarchs — Cinderbane gloves, Fleeting boots, codices', unlock_type: 'boss', wiki_url: 'https://runescape.wiki/w/Raksha,_the_Shadow_Colossus' },
-  { id: 'slayer_115',  skill: 'Slayer',   level: 115, description: 'The Magister — Khopesh of the Kharidian (T82 Melee)', unlock_type: 'boss', wiki_url: 'https://runescape.wiki/w/The_Magister' },
-  { id: 'magic_80',    skill: 'Magic',    level: 80,  description: 'Invention prerequisite + Glacors (T80 boots)', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Invention' },
-  { id: 'magic_92',    skill: 'Magic',    level: 92,  description: 'Animate Dead — powerful defensive ability from Croesus codex', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Animate_Dead' },
-  { id: 'dungeoneering_80', skill: 'Dungeoneering', level: 80, description: 'Chaotic weapons (T80) — best pre-GWD2 weapons; Demon horn necklace', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Chaotic_weapons' },
-  { id: 'dungeoneering_99', skill: 'Dungeoneering', level: 99, description: 'Dragonkin lamp, Gorajan trailblazer outfit, access to highest floors', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Dungeoneering' },
-  { id: 'invention_80', skill: 'Invention', level: 80, description: 'Inventor\'s outfit + Dragon trinkets — augmenting T80+ gear', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Invention' },
-  { id: 'crafting_90', skill: 'Crafting', level: 90, description: 'Onyx jewellery (Amulet of Fury, Berserker ring enchant)', unlock_type: 'item', wiki_url: 'https://runescape.wiki/w/Amulet_of_fury' },
-  { id: 'smithing_90', skill: 'Smithing', level: 90, description: 'Elder rune equipment (T80+) and Masterwork armour component smithing', unlock_type: 'item', wiki_url: 'https://runescape.wiki/w/Masterwork_armour' },
-  { id: 'farming_90',  skill: 'Farming',  level: 90, description: 'Croesus skilling boss access; crystal trees', unlock_type: 'boss', wiki_url: 'https://runescape.wiki/w/Croesus' },
-  { id: 'woodcutting_90', skill: 'Woodcutting', level: 90, description: 'Croesus skilling boss access; magic trees efficient XP', unlock_type: 'boss', wiki_url: 'https://runescape.wiki/w/Croesus' },
-  { id: 'mining_90',   skill: 'Mining',   level: 90, description: 'Croesus skilling boss access; runite ore', unlock_type: 'boss', wiki_url: 'https://runescape.wiki/w/Croesus' },
-  { id: 'fishing_90',  skill: 'Fishing',  level: 90, description: 'Croesus skilling boss access; cavefish for food', unlock_type: 'boss', wiki_url: 'https://runescape.wiki/w/Croesus' },
+
+  // ── ATTACK (max 99) ───────────────────────────────────────────────────────
+  { id: 'attack_60',  skill: 'Attack',  level: 60,  description: 'Dragon weapons usable (Dragon scimitar, longsword, etc.) — significant mid-early upgrade', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Dragon_scimitar' },
+  { id: 'attack_70',  skill: 'Attack',  level: 70,  description: 'T70 weapons: Abyssal whip (85 Slayer), Godsword variants, Saradomin sword', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Abyssal_whip' },
+  { id: 'attack_80',  skill: 'Attack',  level: 80,  description: 'Chaotic rapier/longsword/maul (80 Dungeoneering) — best pre-GWD2 melee weapons', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Chaotic_rapier' },
+  { id: 'attack_85',  skill: 'Attack',  level: 85,  description: 'Dragon Rider lance (T85, best-in-slot 2H melee before T90)', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Dragon_Rider_lance' },
+  { id: 'attack_90',  skill: 'Attack',  level: 90,  description: 'Drygore weapons (T90, Kalphite King) — top-tier melee until Zaros godsword', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Drygore_rapier' },
+  { id: 'attack_92',  skill: 'Attack',  level: 92,  description: 'Zaros godsword (T92, best-in-slot melee + powerful spec attack)', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Zaros_godsword' },
+
+  // ── STRENGTH (max 99) ─────────────────────────────────────────────────────
+  { id: 'strength_60', skill: 'Strength', level: 60, description: 'Dragon dagger special attack (poison+, high burst damage)', unlock_type: 'ability',  wiki_url: 'https://runescape.wiki/w/Dragon_dagger' },
+  { id: 'strength_80', skill: 'Strength', level: 80, description: 'Access to Strength-requirement T80 melee weapons and armour effects', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Strength' },
+
+  // ── DEFENCE (max 99) ──────────────────────────────────────────────────────
+  { id: 'defence_60',  skill: 'Defence',  level: 60,  description: 'Dragon armour usable (full dragon set)', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Dragon_platebody' },
+  { id: 'defence_70',  skill: 'Defence',  level: 70,  description: 'T70 power armour: Bandos (melee), Armadyl (ranged), Subjugation (magic) — core GWD1 armour tier', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Bandos_chestplate' },
+  { id: 'defence_80',  skill: 'Defence',  level: 80,  description: 'Anima core armour (GWD2) — T80 power armour from Zaros/Seren/Zaros bosses', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Anima_core_of_Zaros' },
+  { id: 'defence_90',  skill: 'Defence',  level: 90,  description: 'T90 power armour: Malevolent (melee), Sirenic (ranged), Tectonic (magic) via crafting', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Malevolent_armour' },
+
+  // ── RANGED (max 99) ───────────────────────────────────────────────────────
+  { id: 'ranged_70',  skill: 'Ranged',  level: 70,  description: 'Armadyl crossbow + armour (T70 ranged power armour from GWD1)', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Armadyl_crossbow' },
+  { id: 'ranged_80',  skill: 'Ranged',  level: 80,  description: 'Chaotic crossbow (T80, 80 Dungeoneering) — best pre-Ascension ranged weapon', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Chaotic_crossbow' },
+  { id: 'ranged_90',  skill: 'Ranged',  level: 90,  description: 'Ascension crossbow (T90, Legiones 95 Slayer) — premier ranged weapon', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Ascension_crossbow' },
+  { id: 'ranged_92',  skill: 'Ranged',  level: 92,  description: 'Sirenic armour (T90 power ranged armour via crafting)', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Sirenic_hauberk' },
+
+  // ── MAGIC (max 99) ────────────────────────────────────────────────────────
+  { id: 'magic_70',   skill: 'Magic',   level: 70,  description: 'Ancient Magicks (Desert Treasure) — Ice Barrage, Shadow Barrage; T70 magic weapons usable', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Ancient_Magicks' },
+  { id: 'magic_80',   skill: 'Magic',   level: 80,  description: 'Invention prerequisite (80 Attack + Defence + Magic); Polypore staff (T75)', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Invention' },
+  { id: 'magic_92',   skill: 'Magic',   level: 92,  description: 'Animate Dead — summon skeletal armour from worn equipment, powerful defensive proc', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Animate_Dead' },
+  { id: 'magic_99',   skill: 'Magic',   level: 99,  description: 'Magic cape (teleport to any altar once per day); max magic damage cap', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Magic_cape' },
+
+  // ── PRAYER (max 120) ──────────────────────────────────────────────────────
+  { id: 'prayer_70',  skill: 'Prayer',  level: 70,  description: 'Piety / Rigour / Augury — T2 combat prayers (boost stats by 8–10%); need Knight Waves quest', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Piety' },
+  { id: 'prayer_71',  skill: 'Prayer',  level: 71,  description: 'Deflect Melee — active melee protection curse (Ancient Curses)', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Deflect_Melee' },
+  { id: 'prayer_73',  skill: 'Prayer',  level: 73,  description: 'Deflect Ranged — active ranged protection curse', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Deflect_Ranged' },
+  { id: 'prayer_75',  skill: 'Prayer',  level: 75,  description: 'Deflect Magic — active magic protection curse; full protection set complete', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Deflect_Magic' },
+  { id: 'prayer_89',  skill: 'Prayer',  level: 89,  description: 'Wrath — on death, deal AoE damage proportional to your Prayer level (useful in group scenarios)', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Wrath' },
+  { id: 'prayer_92',  skill: 'Prayer',  level: 92,  description: 'Soul Split — heal from damage dealt; enables near-infinite sustain at most bosses', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Soul_Split' },
+  { id: 'prayer_95',  skill: 'Prayer',  level: 95,  description: 'Turmoil / Anguish / Torment — T3 curses that drain opponent stats; massive DPS gain over Piety', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Turmoil' },
+  { id: 'prayer_99',  skill: 'Prayer',  level: 99,  description: 'Malevolence (melee) / Affliction (ranged) / Desolation (magic) — strongest combat curses; significant upgrade over Turmoil tier', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Malevolence' },
+  { id: 'prayer_120', skill: 'Prayer',  level: 120, description: 'True skill mastery — Prayer master cape', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Prayer_master_cape' },
+
+  // ── SLAYER (max 120) ──────────────────────────────────────────────────────
+  { id: 'slayer_58',  skill: 'Slayer',  level: 58,  description: 'Cave Horror → Black mask — upgraded to Slayer helmet (+12.5% melee accuracy/damage on task)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Cave_horror' },
+  { id: 'slayer_67',  skill: 'Slayer',  level: 67,  description: 'Automatons → Static/Tracking/Pneumatic gloves (T70 BiS gloves all styles) + Cresbot', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Automaton_Guardian' },
+  { id: 'slayer_72',  skill: 'Slayer',  level: 72,  description: 'Skeletal Wyvern → Granite legs (T50 power armour legs)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Skeletal_wyvern' },
+  { id: 'slayer_75',  skill: 'Slayer',  level: 75,  description: 'Gargoyle → Granite maul (T50, popular fast special attack weapon)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Gargoyle' },
+  { id: 'slayer_83',  skill: 'Slayer',  level: 83,  description: 'Spiritual Mage (GWD) → Dragon boots — best-in-slot melee boots before T70 gloves', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Spiritual_mage' },
+  { id: 'slayer_85',  skill: 'Slayer',  level: 85,  description: 'Abyssal Demon → Abyssal whip/wand/orb (T70); access to Morvran slayer master (Prifddinas)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Abyssal_demon' },
+  { id: 'slayer_88',  skill: 'Slayer',  level: 88,  description: 'Sophanem Slayer Dungeon access — corrupted creatures drop Vital sparks for Khopesh (T82)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Sophanem_Slayer_Dungeon' },
+  { id: 'slayer_90',  skill: 'Slayer',  level: 90,  description: 'Dark Beast (Dark bow), Edimmu (Blood necklace shard); Laniakea slayer master (Anachronia)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Dark_beast' },
+  { id: 'slayer_92',  skill: 'Slayer',  level: 92,  description: 'Airut → Razorback gauntlets (T75); Araxxor/Araxxi fully accessible (T90 Noxious weapons)', unlock_type: 'boss',     wiki_url: 'https://runescape.wiki/w/Araxxor' },
+  { id: 'slayer_93',  skill: 'Slayer',  level: 93,  description: 'Ice Strykewyrm → Staff of light (T75 magic, halves melee damage special attack)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Ice_strykewyrm' },
+  { id: 'slayer_94',  skill: 'Slayer',  level: 94,  description: 'Lava Strykewyrm (Wilderness) → Wyrm spike/heart/scalp — used to upgrade T90 weapons', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Lava_strykewyrm' },
+  { id: 'slayer_95',  skill: 'Slayer',  level: 95,  description: 'Legiones → Ascension crossbow (T90 ranged main-hand); Morvran tasks now fully unlocked', unlock_type: 'boss',     wiki_url: 'https://runescape.wiki/w/Legiones' },
+  { id: 'slayer_96',  skill: 'Slayer',  level: 96,  description: 'Ripper Demon (claw), Wyvern (crossbow), Camel Warrior (staff), Acheron Mammoth (tusk) — Raptor Key set', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Ripper_demon' },
+  { id: 'slayer_99',  skill: 'Slayer',  level: 99,  description: 'Soulgazer → Hexhunter bow (T80, +dmg vs magic users); Slayer cape; Slayer codex souls', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Soulgazer' },
+  { id: 'slayer_104', skill: 'Slayer',  level: 104, description: 'Lost Grove creatures → Cinderbane gloves (BiS all-style gloves, passive poison) + Ancient ritual shard', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Cinderbane_gloves' },
+  { id: 'slayer_105', skill: 'Slayer',  level: 105, description: 'Abyssal Beast → Jaws of the Abyss (T85 melee helmet with passive)', unlock_type: 'creature', wiki_url: 'https://runescape.wiki/w/Abyssal_beast' },
+  { id: 'slayer_115', skill: 'Slayer',  level: 115, description: 'Abyssal Lord → Abyssal scourge (T92 melee off-hand, BiS); The Magister (Khopesh T82)', unlock_type: 'boss',     wiki_url: 'https://runescape.wiki/w/Abyssal_lord' },
+  { id: 'slayer_120', skill: 'Slayer',  level: 120, description: 'True mastery — Slayer master cape, doubled soul-capture chance in the Slayer Codex', unlock_type: 'reward',   wiki_url: 'https://runescape.wiki/w/Slayer_master_cape' },
+
+  // ── HERBLORE (max 120) ────────────────────────────────────────────────────
+  { id: 'herblore_81',  skill: 'Herblore', level: 81,  description: 'Saradomin brew — heal without losing combat levels (stat restore with super restore); enables safer learning at bosses', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Saradomin_brew' },
+  { id: 'herblore_85',  skill: 'Herblore', level: 85,  description: 'Super antifire potion — full protection from dragonfire without an antifire shield; frees up offhand slot for dragons', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Super_antifire' },
+  { id: 'herblore_88',  skill: 'Herblore', level: 88,  description: 'Extreme attack — ingredient for Overload; +14 Attack bonus', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Extreme_attack' },
+  { id: 'herblore_90',  skill: 'Herblore', level: 90,  description: 'Extreme defence — all three Extreme potions (88–91) are Overload prerequisites', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Extreme_defence' },
+  { id: 'herblore_91',  skill: 'Herblore', level: 91,  description: 'Extreme magic and Extreme ranging — complete the Overload prerequisite chain', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Extreme_magic' },
+  { id: 'herblore_96',  skill: 'Herblore', level: 96,  description: 'Overload — boosts all combat stats by 15% + 3 for 6 minutes; the most important bossing consumable', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Overload' },
+  { id: 'herblore_97',  skill: 'Herblore', level: 97,  description: 'Overload salve (prayer restore on drink) + Holy overload (add prayer renewal)', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Overload_salve' },
+  { id: 'herblore_98',  skill: 'Herblore', level: 98,  description: 'Supreme overload salve — strongest overload variant; adds Prayer renewal + bonus combat stats', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Supreme_overload_salve' },
+  { id: 'herblore_106', skill: 'Herblore', level: 106, description: 'Elder overload — +17% + 3 to combat stats; strongest possible combat potion in the game', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Elder_overload_potion' },
+  { id: 'herblore_107', skill: 'Herblore', level: 107, description: 'Elder overload salve — Elder overload + Prayer renewal + stat restore combined', unlock_type: 'consumable', wiki_url: 'https://runescape.wiki/w/Elder_overload_salve' },
+  { id: 'herblore_120', skill: 'Herblore', level: 120, description: 'True mastery — Herblore master cape; batch Elder overload creation via cape perk', unlock_type: 'reward',    wiki_url: 'https://runescape.wiki/w/Herblore_master_cape' },
+
+  // ── FARMING (max 120) ─────────────────────────────────────────────────────
+  { id: 'farming_75',  skill: 'Farming',  level: 75,  description: 'Harmony moss trees (Prifddinas pillars) — useful for combo farming runs', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Harmony_moss_seed' },
+  { id: 'farming_83',  skill: 'Farming',  level: 83,  description: 'Spirit trees (1 patch) — free teleport to any Spirit tree globally; expands travel options', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Spirit_tree_patch' },
+  { id: 'farming_85',  skill: 'Farming',  level: 85,  description: 'Torstol herb — required for Overloads; final standard herb tier', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Torstol' },
+  { id: 'farming_90',  skill: 'Farming',  level: 90,  description: 'Elder trees + Croesus skilling boss access; elder logs for elder rune smithing', unlock_type: 'boss',    wiki_url: 'https://runescape.wiki/w/Croesus' },
+  { id: 'farming_99',  skill: 'Farming',  level: 99,  description: 'Farming cape + Money tree seeds (passive GP via farming runs)', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Money_tree' },
+  { id: 'farming_110', skill: 'Farming',  level: 110, description: 'Plant Power tier 4 (Sydekix\'s Shop of Balance) — passive farming XP bonuses', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Farming' },
+  { id: 'farming_115', skill: 'Farming',  level: 115, description: '4th simultaneous Spirit tree patch (requires Plague\'s End + Prisoner of Glouphrie)', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Spirit_tree_patch' },
+  { id: 'farming_120', skill: 'Farming',  level: 120, description: 'True mastery — Farming master cape; triple Master farmer fragment collection', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Farming_master_cape' },
+
+  // ── DUNGEONEERING (max 120) ───────────────────────────────────────────────
+  { id: 'dungeoneering_48',  skill: 'Dungeoneering', level: 48,  description: 'Tome of frost — unlimited water runes for magic; massive magic cost reduction', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Tome_of_frost' },
+  { id: 'dungeoneering_60',  skill: 'Dungeoneering', level: 60,  description: 'Ring of vigour (saves 10% adrenaline after ultimates) + Scroll of life + Scroll of cleansing', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Ring_of_vigour' },
+  { id: 'dungeoneering_75',  skill: 'Dungeoneering', level: 75,  description: 'Demon horn necklace — prayer points restored on burying bones/ashes; near-infinite prayer', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Demon_horn_necklace' },
+  { id: 'dungeoneering_80',  skill: 'Dungeoneering', level: 80,  description: 'Chaotic weapons (T80) — rapier, longsword, maul, crossbow, staff; best pre-GWD2 weapons for all styles', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Chaotic_rapier' },
+  { id: 'dungeoneering_95',  skill: 'Dungeoneering', level: 95,  description: 'Warped floors — highest tier Dungeoneering floors; best tokens/XP per hour', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Dungeoneering' },
+  { id: 'dungeoneering_99',  skill: 'Dungeoneering', level: 99,  description: 'Full reward shop access (Bonecrusher, Blood necklace shard, Slayer cape reroll); DG cape', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Dungeoneering_cape' },
+  { id: 'dungeoneering_120', skill: 'Dungeoneering', level: 120, description: 'True mastery — bind 5 equipment pieces; Primal armour/weapons (highest in-dungeon tier); DG master cape', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Dungeoneering_master_cape' },
+
+  // ── INVENTION (max 120) ───────────────────────────────────────────────────
+  { id: 'invention_1',  skill: 'Invention', level: 1,   description: 'Disassemble + Charge pack — start converting gear into materials; unlock the augmentation system', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Invention' },
+  { id: 'invention_2',  skill: 'Invention', level: 2,   description: 'Augment weapons and armour — gear can now be levelled up for XP and eventually siphoned/disassembled for materials', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Augmentation' },
+  { id: 'invention_22', skill: 'Invention', level: 22,  description: 'First major DPS perks: Precise (improves minimum damage) and Equilibrium (flat damage range) available', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Precise' },
+  { id: 'invention_27', skill: 'Invention', level: 27,  description: 'Equipment siphon — extract XP from augmented gear at item level 12+ without destroying it', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Equipment_siphon' },
+  { id: 'invention_36', skill: 'Invention', level: 36,  description: 'Planted Feet perk (Aftershock base), Venomblood perk — core meta perks for PvM', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Planted_Feet' },
+  { id: 'invention_55', skill: 'Invention', level: 55,  description: 'Aftershock, Biting (25% chance to apply a critical hit modifier) — crucial DPS perks', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Biting' },
+  { id: 'invention_80', skill: 'Invention', level: 80,  description: 'Full perk system available; augment every gear slot; Crackling, Caroming, Devoted perks', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Crackling' },
+  { id: 'invention_99', skill: 'Invention', level: 99,  description: 'Max augmented item level 20 (maximum XP per siphon); Invention cape; triple material drops', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Invention_cape' },
+  { id: 'invention_120',skill: 'Invention', level: 120, description: 'True mastery — Invention master cape; quad material disassembly chance', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Invention_master_cape' },
+
+  // ── ARCHAEOLOGY (max 120) ─────────────────────────────────────────────────
+  { id: 'archaeology_5',   skill: 'Archaeology', level: 5,   description: 'Kharid-et dig site access; Font of Life relic (+500 max LP permanently)', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Font_of_Life' },
+  { id: 'archaeology_20',  skill: 'Archaeology', level: 20,  description: 'Infernal Source dig site (Zamorak lore artefacts)', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Infernal_Source_Dig_Site' },
+  { id: 'archaeology_40',  skill: 'Archaeology', level: 40,  description: 'Research teams — dispatch crews for artefacts passively; Assistant qualification', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Research' },
+  { id: 'archaeology_56',  skill: 'Archaeology', level: 56,  description: 'Berserker\'s Fury relic — deal up to +5.5% damage the lower your LP is; powerful passive for all styles', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Berserker\'s_Fury' },
+  { id: 'archaeology_60',  skill: 'Archaeology', level: 60,  description: 'Senntisten dig site; Pontifex shadow ring (artefact) — required for some elder god content', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Pontifex_shadow_ring' },
+  { id: 'archaeology_70',  skill: 'Archaeology', level: 70,  description: 'Stormguard Citadel dig site; Inquisitor staff artefacts; Associate qualification', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Inquisitor_staff' },
+  { id: 'archaeology_80',  skill: 'Archaeology', level: 80,  description: 'Bane mattock + Imcando mattock — high-tier excavation tools', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Archaeology' },
+  { id: 'archaeology_81',  skill: 'Archaeology', level: 81,  description: 'Death Ward relic — 5% damage reduction below 50% LP; 10% below 25% LP; huge survivability boost', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Death_Ward' },
+  { id: 'archaeology_90',  skill: 'Archaeology', level: 90,  description: 'Orthen dig site — highest tier artefacts; Professor qualification; Elder rune mattock', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Orthen_Dig_Site' },
+  { id: 'archaeology_97',  skill: 'Archaeology', level: 97,  description: 'Fury of the Small relic — all basic abilities generate +1% more adrenaline; top-tier adrenaline efficiency', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Fury_of_the_Small' },
+  { id: 'archaeology_98',  skill: 'Archaeology', level: 98,  description: 'Persistent Rage relic — adrenaline regenerates at 5%/1.2s outside combat; enter encounters with full adrenaline', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Persistent_Rage' },
+  { id: 'archaeology_99',  skill: 'Archaeology', level: 99,  description: 'Mattock of Time and Space (best excavation tool); Archaeology cape', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Mattock_of_Time_and_Space' },
+  { id: 'archaeology_105', skill: 'Archaeology', level: 105, description: 'Heightened Senses relic — increases maximum adrenaline cap from 100% to 110%; massive combo with ring of vigour', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Heightened_Senses' },
+  { id: 'archaeology_118', skill: 'Archaeology', level: 118, description: 'Conservation of Energy relic — regain 10% adrenaline after using an ultimate ability; pairs with Heightened Senses', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Conservation_of_Energy' },
+  { id: 'archaeology_119', skill: 'Archaeology', level: 119, description: 'Inspire Awe relic — +2% XP in all combat skills; useful for skilling but primarily a cosmetic milestone', unlock_type: 'relic',  wiki_url: 'https://runescape.wiki/w/Inspire_Awe' },
+  { id: 'archaeology_120', skill: 'Archaeology', level: 120, description: 'True mastery — Archaeology master cape; completion of all excavation sites', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Archaeology_master_cape' },
+
+  // ── NECROMANCY (max 120) ──────────────────────────────────────────────────
+  { id: 'necromancy_2',   skill: 'Necromancy', level: 2,   description: 'Conjure Skeleton Warrior — first summoned undead; starts the Necromancy combat style', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Conjure_Skeleton_Warrior' },
+  { id: 'necromancy_13',  skill: 'Necromancy', level: 13,  description: 'Touch of Death — basic adrenaline ability; Soul Sap foundation', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Touch_of_Death' },
+  { id: 'necromancy_40',  skill: 'Necromancy', level: 40,  description: 'Conjure Putrid Zombie + Vengeful Ghost; T40 Necromancy weapons — first viable multi-conjure setup', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Conjure_Putrid_Zombie' },
+  { id: 'necromancy_54',  skill: 'Necromancy', level: 54,  description: 'Soul Sap + Soul Strike — adrenaline generation abilities; core Necromancy rotation pieces', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Soul_Sap' },
+  { id: 'necromancy_60',  skill: 'Necromancy', level: 60,  description: 'Tier 2 ritual site + T60 Deathdealer gear; Command abilities; 35% critical strike damage', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Necromancy' },
+  { id: 'necromancy_70',  skill: 'Necromancy', level: 70,  description: 'T70 Deathdealer robes (power armour); Leech curses available; 40% crit damage — Necromancy becomes competitive', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Deathdealer_robe_top' },
+  { id: 'necromancy_80',  skill: 'Necromancy', level: 80,  description: 'T80 Necromancy gear; Invoke Death incantation; 45% critical strike damage; Zemouregal\'s nexus', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Invoke_Death' },
+  { id: 'necromancy_84',  skill: 'Necromancy', level: 84,  description: 'Maintain 4 simultaneous conjures — full conjure army (Warrior, Zombie, Ghost, + 1 more)', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Necromancy' },
+  { id: 'necromancy_90',  skill: 'Necromancy', level: 90,  description: 'Tier 3 ritual site; Sorrow curse; 50% critical strike damage — Necromancy competitive with other styles at max', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Sorrow' },
+  { id: 'necromancy_99',  skill: 'Necromancy', level: 99,  description: 'Conjure Undead Army (conjure all 4 at once in 1 global cooldown); Necromancy cape', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Conjure_Undead_Army' },
+  { id: 'necromancy_120', skill: 'Necromancy', level: 120, description: 'True mastery — Necromancy master cape; max DPS through conjures and soul stack mechanics', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Necromancy_master_cape' },
+
+  // ── RUNECRAFTING (max 120) ────────────────────────────────────────────────
+  { id: 'runecrafting_60',  skill: 'Runecrafting', level: 60,  description: 'Miasma runes (used for certain Necromancy rituals and alchemy)', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Miasma_rune' },
+  { id: 'runecrafting_75',  skill: 'Runecrafting', level: 75,  description: 'Giant pouches (carry 12 essence per fill) — significantly speeds up RC runs', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Giant_pouch' },
+  { id: 'runecrafting_77',  skill: 'Runecrafting', level: 77,  description: 'Blood runes — highest-value craftable rune; required for Ancient Magicks blood spells', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Blood_rune' },
+  { id: 'runecrafting_90',  skill: 'Runecrafting', level: 90,  description: 'Soul runes (requires \'Phite Club quest) — highest value rune, used for Soul Split and high magic', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Soul_rune' },
+  { id: 'runecrafting_99',  skill: 'Runecrafting', level: 99,  description: 'Runecrafting cape — enter Abyss without being skulled; teleport to any RC altar once per day', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Runecrafting_cape' },
+  { id: 'runecrafting_100', skill: 'Runecrafting', level: 100, description: 'Time runes — new rune type unlocked at true level 100', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Time_rune' },
+  { id: 'runecrafting_120', skill: 'Runecrafting', level: 120, description: 'True mastery — Runecrafting master cape; triple ethereal fragment collection rate', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Runecrafting_master_cape' },
+
+  // ── SMITHING (max 120) ────────────────────────────────────────────────────
+  { id: 'smithing_80',  skill: 'Smithing', level: 80,  description: 'Godsword blade smithing; Obsidian bars; Kethsian equipment; foundation for T80+ crafted gear', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Godsword_blade' },
+  { id: 'smithing_90',  skill: 'Smithing', level: 90,  description: 'Elder rune equipment (T80+); Dragonfire shield/ward/deflector; Tetsu armour (ports upgrade)', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Elder_rune_equipment' },
+  { id: 'smithing_99',  skill: 'Smithing', level: 99,  description: 'Full Masterwork armour (T90 melee power armour) + Trimmed Masterwork (add 99 Slayer); Smithing cape', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Masterwork_armour' },
+  { id: 'smithing_120', skill: 'Smithing', level: 120, description: 'True mastery — Smithing master cape; double ore smelting perk', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Smithing_master_cape' },
+
+  // ── CRAFTING (max 120) ────────────────────────────────────────────────────
+  { id: 'crafting_80',  skill: 'Crafting', level: 80,  description: 'Onyx jewellery including Amulet of fury (T70 neck, best general-purpose neck for most content)', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Amulet_of_fury' },
+  { id: 'crafting_87',  skill: 'Crafting', level: 87,  description: 'Hydrix bolt tips and Onyx bracelets; key crafting levels for high-end jewellery', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Onyx_bracelet' },
+  { id: 'crafting_90',  skill: 'Crafting', level: 90,  description: 'Hydrix gem jewellery — Amulet of souls (T90 neck, best for Soul Split efficiency)', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Amulet_of_souls' },
+  { id: 'crafting_99',  skill: 'Crafting', level: 99,  description: 'Crafting cape; access to all gem/leather crafting; key for Sirenic/Malevolent/Tectonic armour assembly', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Crafting_cape' },
+  { id: 'crafting_120', skill: 'Crafting', level: 120, description: 'True mastery — Crafting master cape', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Crafting_master_cape' },
+
+  // ── AGILITY (max 120) ─────────────────────────────────────────────────────
+  { id: 'agility_5',   skill: 'Agility',  level: 5,   description: 'Anachronia Agility Course entry — Double Surge / Double Escape codex pages drop from any section from level 5', unlock_type: 'course',  wiki_url: 'https://runescape.wiki/w/Anachronia_Agility_Course' },
+  { id: 'agility_60',  skill: 'Agility',  level: 60,  description: 'Werewolf Agility Course; God Wars Dungeon agility shortcut (skip combat in GWD)', unlock_type: 'course',  wiki_url: 'https://runescape.wiki/w/Werewolf_Agility_Course' },
+  { id: 'agility_70',  skill: 'Agility',  level: 70,  description: 'Advanced Anachronia sections; Anachronia base camp tier upgrades', unlock_type: 'course',  wiki_url: 'https://runescape.wiki/w/Anachronia_Agility_Course' },
+  { id: 'agility_75',  skill: 'Agility',  level: 75,  description: 'Flash Powder Factory; stop failing Ape Atoll Agility Course — consistent XP rates', unlock_type: 'course',  wiki_url: 'https://runescape.wiki/w/Flash_Powder_Factory' },
+  { id: 'agility_85',  skill: 'Agility',  level: 85,  description: 'Advanced Gnome Stronghold Course — best XP/hr before 90; Agile legs reward', unlock_type: 'course',  wiki_url: 'https://runescape.wiki/w/Advanced_Gnome_Stronghold_Agility_Course' },
+  { id: 'agility_90',  skill: 'Agility',  level: 90,  description: 'Advanced Barbarian Outpost Course; Agile top reward — best-in-slot XP/hr training method', unlock_type: 'course',  wiki_url: 'https://runescape.wiki/w/Advanced_Barbarian_Outpost_Agility_Course' },
+  { id: 'agility_99',  skill: 'Agility',  level: 99,  description: 'Agility cape (increased run energy restore rate); stop failing Wilderness Agility Course', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Agility_cape' },
+  { id: 'agility_120', skill: 'Agility',  level: 120, description: 'True mastery — Agility master cape', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Agility_master_cape' },
+
+  // ── MINING (max 120) ──────────────────────────────────────────────────────
+  { id: 'mining_80',  skill: 'Mining',  level: 80,  description: 'Banite ore + Imcando pickaxe option; key smithing material tier', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Banite_ore' },
+  { id: 'mining_90',  skill: 'Mining',  level: 90,  description: 'Light and dark animica — primary ingredient for elder rune bars and T90+ crafted armours; Elder rune pickaxe; Croesus access', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Light_animica' },
+  { id: 'mining_99',  skill: 'Mining',  level: 99,  description: 'Mining cape; +5% critical swing chance (rockertunity); double gem fragment collection', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Mining_cape' },
+  { id: 'mining_100', skill: 'Mining',  level: 100, description: 'Primal ore + Primal pickaxe — highest tier ore available at standard levels', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Primal_ore' },
+  { id: 'mining_120', skill: 'Mining',  level: 120, description: 'True mastery — Mining master cape; triple gem golem fragment collection', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Mining_master_cape' },
+
+  // ── WOODCUTTING (max 120) ─────────────────────────────────────────────────
+  { id: 'woodcutting_80',  skill: 'Woodcutting', level: 80,  description: 'Magic trees — solid XP/hr; magic logs needed for fletching bows and construction', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Magic_tree' },
+  { id: 'woodcutting_90',  skill: 'Woodcutting', level: 90,  description: 'Elder trees + Croesus skilling boss access; elder logs for elder rune smithing', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Elder_tree' },
+  { id: 'woodcutting_94',  skill: 'Woodcutting', level: 94,  description: 'Crystal trees (Prifddinas) — best standard XP/hr method', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Crystal_tree' },
+  { id: 'woodcutting_99',  skill: 'Woodcutting', level: 99,  description: 'Woodcutting cape; double bird nest chance (passive farming resources)', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Woodcutting_cape' },
+  { id: 'woodcutting_100', skill: 'Woodcutting', level: 100, description: 'Eternal magic trees; Primal hatchet — highest-tier woodcutting', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Eternal_magic_tree' },
+  { id: 'woodcutting_120', skill: 'Woodcutting', level: 120, description: 'True mastery — Woodcutting master cape; triple sentinel fragment collection', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Woodcutting_master_cape' },
+
+  // ── FISHING (max 120) ─────────────────────────────────────────────────────
+  { id: 'fishing_80',  skill: 'Fishing',  level: 80,  description: 'Rocktail — best food in the game (up to 2,400 + 10% max LP heal per bite); used for all high-end PvM', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Rocktail' },
+  { id: 'fishing_90',  skill: 'Fishing',  level: 90,  description: 'Croesus skilling boss access; cavefish for additional food options', unlock_type: 'boss',   wiki_url: 'https://runescape.wiki/w/Croesus' },
+  { id: 'fishing_99',  skill: 'Fishing',  level: 99,  description: 'Fishing cape; double fish chance from spots', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Fishing_cape' },
+  { id: 'fishing_120', skill: 'Fishing',  level: 120, description: 'True mastery — Fishing master cape; passive fish healing while skilling', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Fishing_master_cape' },
+
+  // ── COOKING (max 120) ─────────────────────────────────────────────────────
+  { id: 'cooking_91',  skill: 'Cooking',  level: 91,  description: 'Cook Rocktails without burning (with gauntlets); unlocks the best food supply for all PvM', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Rocktail' },
+  { id: 'cooking_94',  skill: 'Cooking',  level: 94,  description: 'Sailfish — high healing food, some content requires sailfish over rocktail', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Sailfish' },
+  { id: 'cooking_99',  skill: 'Cooking',  level: 99,  description: 'Cooking cape — passive bonus: never burn food without the gauntlets; max efficiency food production', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Cooking_cape' },
+  { id: 'cooking_120', skill: 'Cooking',  level: 120, description: 'True mastery — Cooking master cape', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Cooking_master_cape' },
+
+  // ── DIVINATION (max 120) ──────────────────────────────────────────────────
+  { id: 'divination_70',  skill: 'Divination', level: 70,  description: 'Hall of Memories access — best Divination training location; Simulacrum fragments for Combat XP lamps', unlock_type: 'course',  wiki_url: 'https://runescape.wiki/w/Hall_of_Memories' },
+  { id: 'divination_80',  skill: 'Divination', level: 80,  description: 'Invention prerequisite (80 Attack + Defence + Magic + Divination); Brilliant wisps', unlock_type: 'ability', wiki_url: 'https://runescape.wiki/w/Invention' },
+  { id: 'divination_90',  skill: 'Divination', level: 90,  description: 'Luminous wisps — high-tier energy; requirement for several Fate of the Gods story missions', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Luminous_energy' },
+  { id: 'divination_95',  skill: 'Divination', level: 95,  description: 'Incandescent wisps — highest standard Divination training wisp; Ancestral energy for divine charges', unlock_type: 'item',    wiki_url: 'https://runescape.wiki/w/Incandescent_energy' },
+  { id: 'divination_99',  skill: 'Divination', level: 99,  description: 'Divination cape; double enriched memory chance; 10% enriched rate', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Divination_cape' },
+  { id: 'divination_120', skill: 'Divination', level: 120, description: 'True mastery — Divination master cape; triple chronicle fragment collection', unlock_type: 'reward',  wiki_url: 'https://runescape.wiki/w/Divination_master_cape' },
+
+  // ── THIEVING (max 120) ────────────────────────────────────────────────────
+  { id: 'thieving_65', skill: 'Thieving', level: 65, description: 'Master Farmer pickpocket — herb seeds for Herblore (torstol seeds at high level)', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Master_Farmer' },
+  { id: 'thieving_75', skill: 'Thieving', level: 75, description: 'Prifddinas worker clan pickpockets — best XP and Thieving contract access', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Worker_worker' },
+  { id: 'thieving_99', skill: 'Thieving', level: 99, description: 'Thieving cape; passively gain extra loot from pickpocketing; access to all thieving content', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Thieving_cape' },
+  { id: 'thieving_120',skill: 'Thieving', level: 120, description: 'True mastery — Thieving master cape', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Thieving_master_cape' },
+
+  // ── HUNTER (max 120) ──────────────────────────────────────────────────────
+  { id: 'hunter_60', skill: 'Hunter', level: 60, description: 'Jadinkos (Jadinko Lair access) — moderate XP; drops Whip vine if at 86 Slayer', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Jadinko_Lair' },
+  { id: 'hunter_80', skill: 'Hunter', level: 80, description: 'Grenwalls (high XP/hr) + Prifddinas hunting contracts for bonus rewards', unlock_type: 'item',   wiki_url: 'https://runescape.wiki/w/Grenwall' },
+  { id: 'hunter_99', skill: 'Hunter', level: 99, description: 'Hunter cape; access to all hunting content; catch multiple creatures per trap more reliably', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Hunter_cape' },
+  { id: 'hunter_120',skill: 'Hunter', level: 120, description: 'True mastery — Hunter master cape', unlock_type: 'reward', wiki_url: 'https://runescape.wiki/w/Hunter_master_cape' },
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════

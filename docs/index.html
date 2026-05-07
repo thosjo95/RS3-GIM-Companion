@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Documentation v1.4</title>
+  <title>RS3 GIM Companion — Documentation v1.5</title>
   <style>
     :root {
       --bg:        #0d0b14;
@@ -188,7 +188,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.4 documentation</div>
+        <div class="sidebar-version">v1.5 documentation</div>
       </div>
     </div>
 
@@ -232,7 +232,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.4.0</span>
+          <span class="badge badge-green">v1.5.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -668,7 +668,16 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.4.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.5.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Slayer creatures database</strong> — 48 Slayer monsters seeded (Crawling Hand → Abyssal Lord) with Slayer level requirements, combat levels, locations, notable drops, and RS3 wiki icon URLs</li>
+      <li><strong>Slayer goal category</strong> — new "Slayer Drops" category in the Goal Browser with 20 goals covering unique drops from early Black mask through end-game Cinderbane gloves, Noxious weaponry components, and The Magister key fragments</li>
+      <li><strong>Skill milestones expanded</strong> — 166 milestone entries covering all 29 RS3 skills (true level 120 skills fully detailed); includes Archaeology relics (Berserker's Fury 56 → Conservation of Energy 118), Dungeoneering rewards, Necromancy conjure milestones, Elder overloads, and all combat prayer tiers</li>
+      <li><strong>21 new skill-unlock goals</strong> — Deflect curses, Malevolence/Affliction/Desolation, Supreme/Elder overloads, all major Archaeology relics, Ring of vigour, Masterwork armour, and more</li>
+      <li><strong>RS Wiki User-Agent compliance</strong> — all live RS Wiki API calls now send a descriptive User-Agent per the RS Wiki team's API guidelines</li>
+    </ul>
+
+    <h3>v1.4.0 — May 2026</h3>
     <ul>
       <li><strong>Universal chip design</strong> — all player filter selectors and toggle chips across Goals, Group Vault, and Gear Loadouts now use a single shared CSS class (<code>.chip</code> / <code>.chip.active</code>) for a consistent look</li>
       <li><strong>Add Item to Vault</strong> — new "+ Add Item" button (canWrite only) with RS3 wiki opensearch proxy; shows item icons in results; optional source field</li>
@@ -723,7 +732,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.4.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.5.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
