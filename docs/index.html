@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Documentation v1.5</title>
+  <title>RS3 GIM Companion — Documentation v1.6</title>
   <style>
     :root {
       --bg:        #0d0b14;
@@ -188,7 +188,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.5 documentation</div>
+        <div class="sidebar-version">v1.6 documentation</div>
       </div>
     </div>
 
@@ -232,7 +232,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.5.0</span>
+          <span class="badge badge-green">v1.6.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -402,6 +402,12 @@
       </tbody>
     </table>
 
+    <h3>Item Database (410+ items)</h3>
+    <p>Gear suggestions are pulled live from the database on every page load — no static lists. All four PvM wiki style pages (Melee / Ranged / Magic / Necromancy) are seeded across every equipment slot and tier. Items stored with <code>style: all</code> (pocket items, universal ammo) appear automatically in every combat style's picker.</p>
+
+    <h3>Cross-Style Item Picker</h3>
+    <p>Each slot picker has two tabs: the default style-specific suggestions, and a <strong>"🔍 All items"</strong> tab that lists items from other combat styles for that slot. This lets you equip off-style gear (e.g. Pernix's quiver on a Melee setup for prayer bonus) without the recommendations panel ever suggesting cross-style gear.</p>
+
     <h3>Item Requirements</h3>
     <p>Every suggested item has wiki-verified equip requirements. Items you can't use show a lock with the missing skill levels (e.g. <em>Defence 80/90</em>). Missing requirements can be added as Goals directly from the picker with one click.</p>
 
@@ -550,15 +556,19 @@ npm run install:all   # installs root + server + client deps
 npm run dev           # API on :3001, Vite dev server on :5173</code></pre>
     <p>Open <strong>http://localhost:5173</strong> — <code>/api</code> requests are proxied to the backend automatically by Vite.</p>
 
-    <h3>Seed Item Icons</h3>
-    <p>After first deploy (or after pulling to a new server), seed the RS3 item icon database so gear slot icons and vault item icons display correctly:</p>
-    <pre><code>node server/scripts/seedRs3Data.js
-node server/scripts/addMissingGearIcons.js</code></pre>
+    <h3>Seed Gear &amp; Item Data</h3>
+    <p>After first deploy (or after pulling to a new server), seed the RS3 gear and item database so gear slot icons, vault icons, and all item suggestions display correctly:</p>
+    <pre><code>cd /var/www/RS3-GIM-Companion
+node server/scripts/seedRs3Data.js</code></pre>
+    <p>This seeds 410+ gear items (with requirements and icons) plus 168 skill milestones. It uses <code>INSERT OR REPLACE</code> and is safe to re-run at any time — no restart needed.</p>
 
     <h3>Production Deploy</h3>
     <pre><code>ssh root@YOUR_SERVER_IP
 bash /root/deploy.sh
-# Script: git pull → npm run build → pm2 restart app</code></pre>
+# Script: git pull → npm run build → pm2 restart app
+
+# After deploy, re-seed if gear data changed:
+cd /var/www/RS3-GIM-Companion &amp;&amp; node server/scripts/seedRs3Data.js</code></pre>
 
     <div class="callout callout-tip">
       <span class="callout-icon">⚡</span>
@@ -616,9 +626,8 @@ curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m
     <p><strong>Cause:</strong> The <code>rs3_items</code> table has not been seeded on this server.</p>
     <p><strong>Fix:</strong></p>
     <pre><code>cd /var/www/RS3-GIM-Companion
-node server/scripts/seedRs3Data.js
-node server/scripts/addMissingGearIcons.js</code></pre>
-    <p>Both scripts use <code>INSERT OR REPLACE</code> and are safe to re-run at any time. No restart needed — icons appear on the next page load.</p>
+node server/scripts/seedRs3Data.js</code></pre>
+    <p>The seed script uses <code>INSERT OR REPLACE</code> and is safe to re-run at any time. No restart needed — icons and gear suggestions appear on the next page load.</p>
 
     <h3>A group lost their secret / need to re-claim</h3>
     <p><strong>Fix:</strong> Clear the <code>password_hash</code> — this resets the group to unclaimed so they can claim again. All data is untouched.</p>
@@ -668,7 +677,19 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.5.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.6.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Gear DB overhaul</strong> — 410 gear items in the database (was ~185); all four PvM wiki style pages (Melee / Ranged / Magic / Necromancy) scraped and seeded across every slot and tier</li>
+      <li><strong>GearLoadouts now fully DB-driven</strong> — replaced static gear suggestion lists with a <code>useRs3Gear</code> hook that fetches live data from the API; adding items to <code>seedRs3Data.js</code> is all that's needed going forward — no frontend code changes required</li>
+      <li><strong>Cross-style item picker</strong> — new "🔍 All items" tab in the slot picker lets you equip gear from other combat styles (e.g. Pernix's quiver on Melee for prayer bonus); recommendations remain style-specific</li>
+      <li><strong>Universal pocket slot</strong> — all 22 pocket items (scrimshaws, Erethdor's grimoire, all Scriptures) set to <code>style: all</code> so they appear in every combat style's picker automatically</li>
+      <li><strong>Universal ammo</strong> — Pernix's quiver and Grasping rune pouch marked <code>style: all</code> for cross-style use</li>
+      <li><strong>Melee ammo items</strong> — added Nodon spike harness (T90), Armour spikes, Armour spikes (alloy), Abyssal armour spikes, and Abyssal armour spikes (alloy)</li>
+      <li><strong>Necromancy ammo items</strong> — added The Devourer's Nexus and Zemouregal's nexus (both T80, boss drops)</li>
+      <li><strong>Data fixes</strong> — Rune weapons and armour corrected to level 50 (RS3 T50, not T40); amulet of strength acquisition source fixed to <em>crafting</em>; Cryptbloom armour corrected to Magic style</li>
+    </ul>
+
+    <h3>v1.5.0 — May 2026</h3>
     <ul>
       <li><strong>Slayer creatures database</strong> — 48 Slayer monsters seeded (Crawling Hand → Abyssal Lord) with Slayer level requirements, combat levels, locations, notable drops, and RS3 wiki icon URLs</li>
       <li><strong>Slayer goal category</strong> — new "Slayer Drops" category in the Goal Browser with 20 goals covering unique drops from early Black mask through end-game Cinderbane gloves, Noxious weaponry components, and The Magister key fragments</li>
@@ -732,7 +753,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.5.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.6.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 

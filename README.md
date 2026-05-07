@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.5.0-4caf50?style=flat-square" alt="v1.5.0"/>
+    <img src="https://img.shields.io/badge/version-1.6.0-4caf50?style=flat-square" alt="v1.6.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -43,6 +43,9 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Add Item** — "+ Add Item" button (canWrite only) searches the RS3 wiki for any item by name and adds it to the vault with an optional source field
 - **Delete vault entries** — each expanded item row has a × button (canWrite only) to remove that drop entry; confirmation prompt before deletion
 - **Gear Loadouts** — per-player equipment grid across 5 combat styles (Melee / Ranged / Magic / Necromancy / Hybrid); wiki-verified item requirements; confirmation dialog (✅ Owned vs 📋 Planning); only your own character is editable
+- **DB-driven item picker** — gear suggestions are pulled live from the database (410+ items); adding items to the seed script automatically updates the picker on next page load — no code changes required
+- **Cross-style item picker** — a "🔍 All items" tab in the slot picker lets you equip off-style gear (e.g. Pernix's quiver on Melee for prayer bonus) without affecting style-specific recommendations
+- **Universal pocket / ammo items** — pocket slot items (scrimshaws, scriptures, grimoire) and select ammo items (Pernix's quiver, Grasping rune pouch) are marked `style: all` so they appear in every combat style's picker automatically
 - **Viewing another player's gear** — item picker and Best Available panel are hidden; gear grid centres on screen for a clean read-only view
 - **Player selector chips** — "you" badge highlights your own character; same chip design as vault and goals
 - **Group Notes** — floating slide-in pinboard for strategies, loot rules, and session plans; auto-saves with debounce
@@ -196,7 +199,7 @@ RS3-GIM-Companion/
 │           ├── GroupNotesOverlay.jsx # Floating slide-in pinboard, auto-save
 │           └── WebhookSettings.jsx  # Discord webhook config modal (URL + event toggles + test)
 │   └── data/
-│       ├── gearSuggestions.js       # Wiki-verified item requirements for all 5 combat styles
+│       ├── gearSuggestions.js       # getBestAndNext() helper used by GearLoadouts (items sourced live from DB via useRs3Gear hook)
 │       ├── goalSuggestions.js       # Curated goal library: 220+ suggestions across 7 categories
 │       └── bosses.js                # Boss requirements, tiers, and drop tables
 └── server/
@@ -426,6 +429,16 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.6.0 — May 2026
+- 🗃️ **Gear DB overhaul** — 410 gear items in the database (was ~185); all four PvM wiki pages (Melee / Ranged / Magic / Necromancy) scraped and seeded across every slot and tier
+- ⚙️ **GearLoadouts now fully DB-driven** — replaced static `GEAR_SUGGESTIONS` object with a `useRs3Gear` hook that fetches live data from the API; adding items to `seedRs3Data.js` is all that's needed going forward — no frontend code changes required
+- 🔍 **Cross-style item picker** — new "🔍 All items" tab in the slot picker lets you equip gear from other combat styles (useful for prayer bonus hybrids); style-specific recommendations are unaffected
+- 🌐 **Universal pocket slot** — all 22 pocket items (scrimshaws, Erethdor's grimoire, all Scriptures) set to `style: all` so they appear in every combat style's gear picker automatically
+- 🏹 **Pernix's quiver + Grasping rune pouch** made `style: all` — prayer-bonus/utility ammo items usable across all styles
+- ⚔️ **Melee ammo items** — added Nodon spike harness (T90), Armour spikes, Armour spikes (alloy), Abyssal armour spikes, and Abyssal armour spikes (alloy)
+- 💀 **Necromancy ammo items** — added The Devourer's Nexus and Zemouregal's nexus (both T80)
+- 🛠️ **Data fixes** — Rune weapons and armour corrected to level 50 (RS3 T50, not T40); amulet of strength acquisition source fixed to `crafting`; Cryptbloom armour corrected to Magic style
 
 ### v1.5.0 — May 2026
 - 🦎 **Slayer Creatures database** — 48 RS3 slayer creatures seeded into `rs3_slayer_creatures` with slayer level, combat level, location, notable drops (JSON), boss flag, wiki URL, and icon URL (RS Wiki CDN). Covers every meaningful creature from Crawling Hand (5) through Abyssal Lord (115) and The Magister (115).
