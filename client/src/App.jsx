@@ -253,7 +253,7 @@ function ClaimModal({ group, onConfirm, onCancel }) {
 
 
 // Setup screen — shown when no group exists
-function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup }) {
+function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup, onStar }) {
   const [step, setStep] = useState(() => {
     if (!prefill) return 'search';
     // Unranked groups pre-filled from the search modal → skip straight to RSN entry
@@ -533,6 +533,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
       <div style={{...cardStyle, marginTop:12}}>
         <BrowseTrackedGroups
           onSelect={id => onSwitchToGroup?.(id)}
+          onStar={onStar}
         />
       </div>
     </div>
@@ -605,7 +606,7 @@ function GroupBrowseRow({ g, isPinned, isFav, onSelect, onFavorite, onRemove, on
 }
 
 // Inline browse panel used by both the modal and SetupScreen
-function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose }) {
+function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose, onStar }) {
   const [open,    setOpen]    = useState(false);
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);
@@ -687,18 +688,21 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose }) {
             {results.map(g => (
               <div
                 key={g.id}
-                onClick={() => { onSelect(g.id); onClose?.(); }}
                 style={{
-                  display:'flex', alignItems:'center', gap:10,
+                  display:'flex', alignItems:'center', gap:8,
                   padding:'8px 10px',
                   background:'var(--bg-panel)', border:'1px solid var(--border)',
-                  borderRadius:'var(--radius)', cursor:'pointer',
+                  borderRadius:'var(--radius)',
                   transition:'border-color 0.12s',
                 }}
                 onMouseEnter={e => e.currentTarget.style.borderColor='var(--gold-dark)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}
               >
-                <div style={{flex:1, minWidth:0}}>
+                {/* Group info — click to browse */}
+                <div
+                  style={{flex:1, minWidth:0, cursor:'pointer'}}
+                  onClick={() => { onSelect(g.id); onClose?.(); }}
+                >
                   <div style={{fontWeight:600, color:'var(--text-bright)', fontSize:13,
                     overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
                     {g.name}
@@ -709,7 +713,33 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose }) {
                     {g.is_claimed ? ' · 🔒' : ''}
                   </div>
                 </div>
-                <span style={{fontSize:11, color:'var(--gold)', fontWeight:600, flexShrink:0}}>Browse →</span>
+                {/* Browse → */}
+                <span
+                  onClick={() => { onSelect(g.id); onClose?.(); }}
+                  style={{fontSize:11, color:'var(--gold)', fontWeight:600, flexShrink:0, cursor:'pointer'}}>
+                  Browse →
+                </span>
+                {/* ⭐ Save to your groups */}
+                {onStar && (
+                  <button
+                    type="button"
+                    title="Save to your groups"
+                    onClick={() => {
+                      onStar(g.id);
+                      setResults(r => r.filter(x => x.id !== g.id));
+                    }}
+                    style={{
+                      background:'none', border:'1px solid var(--border)',
+                      borderRadius:'var(--radius)', cursor:'pointer',
+                      padding:'3px 7px', fontSize:13, lineHeight:1,
+                      color:'var(--text-dim)', flexShrink:0,
+                      transition:'color 0.15s, border-color 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color='var(--gold)'; e.currentTarget.style.borderColor='var(--gold-dark)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color='var(--text-dim)'; e.currentTarget.style.borderColor='var(--border)'; }}>
+                    ☆
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -720,7 +750,7 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose }) {
 }
 
 // Group search modal
-function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, onToast, onRemove, onFavorite, favoriteGroupIds }) {
+function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, onToast, onRemove, onFavorite, favoriteGroupIds, onStar }) {
   const [query, setQuery] = useState('');
   const [gimType, setGimType] = useState('regular');
   const [gimSize, setGimSize] = useState(5);
@@ -794,6 +824,7 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
             pinnedIds={pinnedIds}
             onSelect={id => { onSelect(id); }}
             onClose={onClose}
+            onStar={onStar}
           />
 
           {/* Separator */}
@@ -1110,11 +1141,17 @@ export default function App() {
     setLoading(true);
     loadGroups().then(data => {
       const pinnedIds = loadMyGroupIds();
-      const myGroups = data.filter(g => pinnedIds.includes(g.id));
+      const myGroups  = data.filter(g => pinnedIds.includes(g.id));
+      const saved     = localStorage.getItem('activeGroupId');
+      const savedId   = saved ? Number(saved) : null;
+
       if (myGroups.length > 0) {
-        const saved = localStorage.getItem('activeGroupId');
-        const id = saved && myGroups.find(g => g.id === Number(saved)) ? Number(saved) : myGroups[0].id;
+        // Prefer last-used pinned group; fall back to first pinned
+        const id = savedId && myGroups.find(g => g.id === savedId) ? savedId : myGroups[0].id;
         setActiveGroupId(id);
+      } else if (savedId && data.find(g => g.id === savedId)) {
+        // User was browsing an un-pinned group — restore it so they land on the dashboard
+        setActiveGroupId(savedId);
       }
       setLoading(false);
     });
@@ -1142,11 +1179,17 @@ export default function App() {
     loadGroups().then(() => setActiveGroupId(id));
   }
 
+  // Browse a group without auto-pinning — just view it
   function selectGroup(id) {
-    pinGroup(id);
     setActiveGroupId(id);
     setActiveTab('overview');
     setShowMobileSidebar(false);
+  }
+
+  // Explicitly save a group to "Your groups" sidebar
+  function saveGroup(id) {
+    pinGroup(id);
+    pushToast('⭐ Saved to your groups!', 'success');
   }
 
   function handleSearchAddNew(prefill) {
@@ -1158,6 +1201,7 @@ export default function App() {
     setGroupContext(activeGroupId, pw);
     await api.verifyGroup(activeGroupId); // throws if wrong
     saveGroupPassword(activeGroupId, pw);
+    pinGroup(activeGroupId); // unlock = save to "Your groups"
     if (rsn) setMyRsn(rsn);
     setShowPasswordModal(false);
     pushToast('Unlocked! 🔓', 'success');
@@ -1168,6 +1212,7 @@ export default function App() {
   async function handleClaimSubmit(rsn) {
     const result = await api.claimGroup(activeGroupId);
     saveGroupPassword(activeGroupId, result.secret);
+    pinGroup(activeGroupId); // claim = save to "Your groups"
     if (rsn) setMyRsn(rsn);
     await loadGroups(); // refresh to get updated is_claimed
     return result; // returns { secret } so modal can display it
@@ -1187,7 +1232,8 @@ export default function App() {
   const canWrite = isUnlocked;
 
   // No group yet, or creating a new one
-  if (groups.length === 0 || creatingGroup) {
+  // — allow browsing a non-pinned group (activeGroupId set) to fall through to the main layout
+  if (creatingGroup || (groups.length === 0 && !activeGroupId)) {
     return (
       <div className="app">
         <Header group={null} onSynced={() => {}} onToast={pushToast} />
@@ -1195,9 +1241,10 @@ export default function App() {
           onCreated={handleGroupCreated}
           onToast={pushToast}
           prefill={pendingImport}
-          onCancel={groups.length > 0 ? () => { setCreatingGroup(false); setPendingImport(null); } : null}
+          onCancel={groups.length > 0 || activeGroupId ? () => { setCreatingGroup(false); setPendingImport(null); } : null}
           groups={allGroups}
           onSwitchToGroup={id => { setCreatingGroup(false); setPendingImport(null); selectGroup(id); }}
+          onStar={saveGroup}
         />
         <ToastArea toasts={toasts} />
       </div>
@@ -1237,6 +1284,24 @@ export default function App() {
           isOpen={showMobileSidebar}
         />
         <main className="content">
+          {/* ── Guest banner: viewing a group that isn't saved to your sidebar ── */}
+          {group && !myGroupIds.includes(activeGroupId) && (
+            <div style={{
+              display:'flex', alignItems:'center', gap:12, flexWrap:'wrap',
+              padding:'10px 16px', marginBottom:16,
+              background:'rgba(200,168,75,0.08)', border:'1px solid var(--gold-dark)',
+              borderRadius:'var(--radius)', fontSize:13,
+            }}>
+              <span style={{flex:1, color:'var(--text-dim)', minWidth:200}}>
+                👁️ Browsing <strong style={{color:'var(--text-bright)'}}>{group.name}</strong> as a guest — read-only.
+              </span>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => saveGroup(activeGroupId)}>
+                ⭐ Save to your groups
+              </button>
+            </div>
+          )}
           {group ? (
             <>
               <div className="page-title">{group.name}</div>
@@ -1320,6 +1385,7 @@ export default function App() {
           onRemove={removeFromSidebar}
           onFavorite={toggleFavorite}
           favoriteGroupIds={favoriteGroupIds}
+          onStar={saveGroup}
         />
       )}
       {showTour && (
