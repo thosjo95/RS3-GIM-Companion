@@ -42,7 +42,8 @@ export const api = {
   // Groups
   getGroups: () => request('/groups'),
   getGroup: (id) => request(`/groups/${id}`),
-  searchGroups: (name) => request(`/groups/search?name=${encodeURIComponent(name)}`),
+  searchGroups:  (name)          => request(`/groups/search?name=${encodeURIComponent(name)}`),
+  browseGroups:  (limit = 25)    => request(`/groups/search?limit=${limit}`),
   createGroup: (body) => request('/groups', { method: 'POST', body }),
   updateGroup: (id, body) => request(`/groups/${id}`, { method: 'PUT', body }),
   deleteGroup: (id) => request(`/groups/${id}`, { method: 'DELETE' }),

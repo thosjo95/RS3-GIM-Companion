@@ -74,18 +74,38 @@ router.get('/lookup-debug', async (req, res) => {
 });
 
 // GET /api/groups/search?name=X — search existing DB groups by name
+// When name is empty, returns the most recently active groups (for browse/discover)
 router.get('/search', (req, res) => {
-  const { name } = req.query;
-  if (!name?.trim()) return res.json([]);
+  const { name, limit = 25 } = req.query;
+  const cap = Math.min(Number(limit) || 25, 100);
+
+  if (!name?.trim()) {
+    const groups = db.prepare(`
+      SELECT g.id, g.name, g.group_rsn, g.gim_type, g.gim_size,
+             g.created_at, g.last_activity,
+             (g.password_hash IS NOT NULL) as is_claimed,
+             COUNT(p.id) as member_count
+      FROM groups g
+      LEFT JOIN players p ON p.group_id = g.id
+      GROUP BY g.id
+      ORDER BY g.last_activity DESC, member_count DESC, g.created_at DESC
+      LIMIT ?
+    `).all(cap);
+    return res.json(groups);
+  }
+
   const groups = db.prepare(`
-    SELECT g.*, COUNT(p.id) as member_count
+    SELECT g.id, g.name, g.group_rsn, g.gim_type, g.gim_size,
+           g.created_at, g.last_activity,
+           (g.password_hash IS NOT NULL) as is_claimed,
+           COUNT(p.id) as member_count
     FROM groups g
     LEFT JOIN players p ON p.group_id = g.id
     WHERE g.name LIKE ? OR g.group_rsn LIKE ?
     GROUP BY g.id
     ORDER BY member_count DESC, g.last_activity DESC, g.created_at DESC
-    LIMIT 10
-  `).all(`%${name.trim()}%`, `%${name.trim()}%`);
+    LIMIT ?
+  `).all(`%${name.trim()}%`, `%${name.trim()}%`, cap);
   res.json(groups);
 });
 
