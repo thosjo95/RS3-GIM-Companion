@@ -174,7 +174,7 @@ export default function TourOverlay({ onComplete }) {
               style={{
                 width: i === stepIndex ? 16 : 6,
                 height: 6, borderRadius: 3, flexShrink: 0,
-                background: i === stepIndex ? 'var(--gold)' : i < stepIndex ? 'var(--gold-dim)' : 'var(--border)',
+                background: i === stepIndex ? 'var(--gold)' : i < stepIndex ? 'var(--gold-dark)' : 'var(--border)',
                 transition: 'all 0.2s', cursor: 'pointer',
               }}
             />
