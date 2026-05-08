@@ -204,7 +204,7 @@ function EditRsnModal({ player, onClose, onSaved, onToast }) {
 
 // ── Member card ───────────────────────────────────────────────────────────────
 
-function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, canWrite }) {
+function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, canWrite, onRemove }) {
   const [avatarError, setAvatarError] = useState(false);
   const [syncing,     setSyncing]     = useState(false);
   const overall = player.skills?.find(s => s.skill_name === 'Overall');
@@ -239,6 +239,22 @@ function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, c
             fontSize: 12, lineHeight: 1,
             color: 'var(--red-bright)',
           }}>⚠</div>
+      )}
+
+      {/* Remove player button — unranked groups only */}
+      {onRemove && (
+        <button
+          title={`Remove ${player.rsn} from group`}
+          onClick={e => { e.stopPropagation(); onRemove(player); }}
+          style={{
+            position: 'absolute', top: 4, left: 4,
+            background: 'rgba(192,64,64,0.18)',
+            border: '1px solid rgba(192,64,64,0.4)',
+            borderRadius: 4, cursor: 'pointer',
+            fontSize: 10, fontWeight: 700,
+            color: 'var(--red-bright)',
+            padding: '1px 5px', lineHeight: 1,
+          }}>✕</button>
       )}
 
       <div style={{
@@ -1005,10 +1021,23 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn, pendingRequests = [], onGoToRequests }) {
+export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn, pendingRequests = [], onGoToRequests, onAddPlayer }) {
   const [selectedId, setSelectedId] = useState(null);
   const [weeklyMode, setWeeklyMode] = useState(false);
   const [editRsnPlayer, setEditRsnPlayer] = useState(null); // player being RSN-edited
+
+  const isUnranked = group?.gim_type === 'regular_unranked';
+
+  async function handleRemovePlayer(player) {
+    if (!window.confirm(`Remove ${player.rsn} from this group?\n\nThis will permanently delete their skills, goals, gear and activity data.`)) return;
+    try {
+      await api.deletePlayer(player.id);
+      await onRefresh();
+      onToast?.(`${player.rsn} removed`, 'success');
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    }
+  }
   const selectedPlayer = players.find(p => p.id === selectedId) ?? null;
 
   const groupTotals = useMemo(() => {
@@ -1074,21 +1103,43 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Member cards — centered, with space below the tab bar */}
-      {players.length > 0 && (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
-          {players.map((p, i) => (
-            <MemberCard
-              key={p.id}
-              player={p}
-              active={selectedId === p.id}
-              color={MEMBER_COLORS[i % MEMBER_COLORS.length]}
-              onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
-              isMe={!!myRsn && normRsn(p.rsn) === normRsn(myRsn)}
-              canWrite={canWrite}
-              onEditRsn={setEditRsnPlayer}
-              onSync={syncOnePlayer}
-            />
-          ))}
+      {(players.length > 0 || (isUnranked && canWrite)) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Unranked group controls */}
+          {isUnranked && canWrite && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                👥 Unranked group — manage members freely
+              </span>
+              <button className="btn btn-primary btn-sm" onClick={onAddPlayer}>
+                ➕ Add Player
+              </button>
+            </div>
+          )}
+
+          {players.length === 0 && isUnranked && canWrite ? (
+            <div className="empty-state" style={{ marginTop: 8 }}>
+              <div className="icon">👤</div>
+              <p>No members yet. Add your first player to get started.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
+              {players.map((p, i) => (
+                <MemberCard
+                  key={p.id}
+                  player={p}
+                  active={selectedId === p.id}
+                  color={MEMBER_COLORS[i % MEMBER_COLORS.length]}
+                  onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
+                  isMe={!!myRsn && normRsn(p.rsn) === normRsn(myRsn)}
+                  canWrite={canWrite}
+                  onEditRsn={setEditRsnPlayer}
+                  onSync={syncOnePlayer}
+                  onRemove={isUnranked && canWrite ? handleRemovePlayer : undefined}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

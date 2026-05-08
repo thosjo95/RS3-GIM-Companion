@@ -265,6 +265,23 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   async function handleSearch(e) {
     e.preventDefault();
     if (!groupName.trim()) return;
+
+    // ── Unranked groups bypass hiscores entirely — go straight to manual RSN entry ──
+    if (gimType === 'regular_unranked') {
+      const existing = groups?.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
+      if (existing) { onSwitchToGroup?.(existing.id); return; }
+      setSearching(true);
+      try {
+        const dbResults = await api.searchGroups(groupName.trim());
+        const dbMatch = dbResults.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
+        if (dbMatch) { onSwitchToGroup?.(dbMatch.id); return; }
+      } catch {} finally { setSearching(false); }
+      setManualRsns(['', '']);
+      setStep('manual');
+      return;
+    }
+
+    // ── Ranked groups: search RS3 hiscores ───────────────────────────────────────
     // 1. Already in local sidebar — just switch
     const existing = groups?.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
     if (existing) { onSwitchToGroup?.(existing.id); return; }
@@ -295,7 +312,9 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
     setStep('setting-up');
     setSyncProgress(`Adding ${rsns.length} members and syncing hiscores…`);
     try {
-      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size: gimSize, member_rsns: rsns });
+      // For unranked groups the size is just the number of members added
+      const size = gimType === 'regular_unranked' ? rsns.length : gimSize;
+      const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size, member_rsns: rsns });
       if (result.failed?.length) {
         onToast(`Setup done. ${result.failed.length} member(s) couldn't sync from RS3.`, 'error');
       }
@@ -378,11 +397,15 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
         <h1>RS3 GIM Companion</h1>
         <div className="panel" style={cardStyle}>
           <div className="panel-header">
-            <span className="panel-title">Enter Member RSNs</span>
+            <span className="panel-title">
+              {gimType === 'regular_unranked' ? `Add Members — ${groupName}` : 'Enter Member RSNs'}
+            </span>
           </div>
           <div className="panel-body">
             <div style={{color:'var(--text-dim)',fontSize:13,marginBottom:14}}>
-              Enter each group member's exact RuneScape name as shown on the hiscores.
+              {gimType === 'regular_unranked'
+                ? 'Enter each member\'s RuneScape name. Each will be verified individually on the RS3 hiscores and synced in.'
+                : 'Enter each group member\'s exact RuneScape name as shown on the hiscores.'}
             </div>
             {manualRsns.map((rsn, i) => (
               <div key={i} className="form-group" style={{marginBottom:8}}>
@@ -425,8 +448,12 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
 
             <div className="form-group">
               <label className="form-label">Group Type</label>
-              <div className="flex gap-8">
-                {[['regular','⚔️ Regular'],['competitive','🏆 Competitive']].map(([val, label]) => (
+              <div className="flex gap-8" style={{flexWrap:'wrap'}}>
+                {[
+                  ['regular',          '⚔️ Regular'],
+                  ['competitive',      '🏆 Competitive'],
+                  ['regular_unranked', '👥 Unranked'],
+                ].map(([val, label]) => (
                   <button key={val} type="button"
                     className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => setGimType(val)}>
@@ -434,32 +461,45 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                   </button>
                 ))}
               </div>
+              {gimType === 'regular_unranked' && (
+                <div className="text-xs text-dim mt-8">
+                  For groups not on the RS3 GIM hiscores. Members are added manually by RSN in the next step.
+                </div>
+              )}
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Group Size</label>
-              <div className="flex gap-8">
-                {[2,3,4,5].map(n => (
-                  <button key={n} type="button"
-                    className={`btn btn-sm ${gimSize === n ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setGimSize(n)}>
-                    {n}
-                  </button>
-                ))}
+            {gimType !== 'regular_unranked' && (
+              <div className="form-group">
+                <label className="form-label">Group Size</label>
+                <div className="flex gap-8">
+                  {[2,3,4,5].map(n => (
+                    <button key={n} type="button"
+                      className={`btn btn-sm ${gimSize === n ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setGimSize(n)}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">Group Name (exact in-game name)</label>
               <input className="form-input" value={groupName} onChange={e => setGroupName(e.target.value)}
                 placeholder="e.g. True Deciples" required autoFocus />
-              <div className="text-xs text-dim mt-8">
-                Must match your group name on the{' '}
-                <a href={`https://rs.runescape.com/hiscores/group-ironman/${gimType}/${gimSize}`}
-                  target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>
-                  RS3 GIM hiscores
-                </a> exactly.
-              </div>
+              {gimType === 'regular_unranked' ? (
+                <div className="text-xs text-dim mt-8">
+                  Choose any name to identify your group in the app.
+                </div>
+              ) : (
+                <div className="text-xs text-dim mt-8">
+                  Must match your group name on the{' '}
+                  <a href={`https://rs.runescape.com/hiscores/group-ironman/${gimType}/${gimSize}`}
+                    target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>
+                    RS3 GIM hiscores
+                  </a> exactly.
+                </div>
+              )}
             </div>
 
           </div>
@@ -467,8 +507,10 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
           <div className="modal-footer" style={{flexDirection:'column',gap:8,alignItems:'stretch'}}>
             <button type="submit" className="btn btn-primary" disabled={searching || !groupName.trim()}>
               {searching
-                ? <><span className="spinner" style={{width:12,height:12}}/> Searching RS3 hiscores…</>
-                : '🔍 Search & Import Group'}
+                ? <><span className="spinner" style={{width:12,height:12}}/> Searching…</>
+                : gimType === 'regular_unranked'
+                  ? 'Next: Add Members →'
+                  : '🔍 Search & Import Group'}
             </button>
             {onCancel && <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>}
           </div>

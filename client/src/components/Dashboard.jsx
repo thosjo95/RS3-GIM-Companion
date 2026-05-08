@@ -52,6 +52,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
           myRsn={myRsn}
           pendingRequests={pendingRequests ?? []}
           onGoToRequests={() => onTabChange('goals')}
+          onAddPlayer={onAddPlayer}
         />
       )}
 
