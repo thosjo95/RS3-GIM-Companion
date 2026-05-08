@@ -54,13 +54,14 @@ const PAD  = 10;
 const TT_W = 360;
 const TT_H = 230; // conservative tooltip height for placement math
 
-export default function TourOverlay({ onComplete }) {
+export default function TourOverlay({ steps: stepsProp, onComplete }) {
+  const steps = stepsProp ?? TOUR_STEPS;
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect]           = useState(null);
 
-  const step     = TOUR_STEPS[stepIndex];
+  const step     = steps[stepIndex];
   const isFirst  = stepIndex === 0;
-  const isLast   = stepIndex === TOUR_STEPS.length - 1;
+  const isLast   = stepIndex === steps.length - 1;
 
   // ── Measure target element ────────────────────────────────────────────────
   useEffect(() => {
@@ -152,7 +153,7 @@ export default function TourOverlay({ onComplete }) {
 
         {/* Step counter */}
         <div style={{ fontSize:10, color:'var(--text-dim)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.8px', fontWeight:600 }}>
-          Step {stepIndex + 1} of {TOUR_STEPS.length}
+          Step {stepIndex + 1} of {steps.length}
         </div>
 
         {/* Title */}
@@ -167,7 +168,7 @@ export default function TourOverlay({ onComplete }) {
 
         {/* Progress dots */}
         <div style={{ display:'flex', gap:5, marginBottom:14, alignItems:'center' }}>
-          {TOUR_STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <div
               key={i}
               onClick={() => setStepIndex(i)}

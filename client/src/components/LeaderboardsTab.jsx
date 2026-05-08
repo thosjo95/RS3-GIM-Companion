@@ -1135,7 +1135,7 @@ export default function LeaderboardsTab({ players, groupId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      <div className="tab-bar-scroll" style={{ display: 'flex', gap: 2, marginBottom: 20, background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', padding: 4 }}>
+      <div data-tour="leaderboards-nav" className="tab-bar-scroll" style={{ display: 'flex', gap: 2, marginBottom: 20, background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', padding: 4 }}>
         {SECTIONS.map(s => (
           <button key={s.id} onClick={() => setSection(s.id)} style={{
             flex: 1, fontSize: 12, padding: '6px 8px', borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer',
@@ -1147,7 +1147,7 @@ export default function LeaderboardsTab({ players, groupId }) {
         ))}
       </div>
 
-      <div className="panel">
+      <div data-tour="leaderboards-panel" className="panel">
         <div className="panel-body">
           {section === 'firsts'     && <FirstsBoard    players={players} colorMap={colorMap} />}
           {section === 'milestones' && <MilestonesFeed players={players} colorMap={colorMap} />}
@@ -1158,7 +1158,7 @@ export default function LeaderboardsTab({ players, groupId }) {
       </div>
 
       <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
-        Firsts/Milestones auto-detected from RuneMetrics activity feeds (synced every 5 min) · Boss kills &amp; clue scroll counts from RS3 hiscores
+        Firsts/Milestones auto-detected from RuneMetrics activity feed (updates every ~2 hours) · Boss kills, clue counts &amp; XP from RS3 hiscores (syncs within ~5 min)
       </div>
     </div>
   );

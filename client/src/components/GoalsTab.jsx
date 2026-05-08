@@ -1058,7 +1058,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
       <StatsBar goals={goals} />
 
       {/* ── Section tabs ── */}
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div data-tour="goals-sections" style={{ display: 'flex', gap: 6 }}>
         <button onClick={() => setActiveSection('browser')} style={sectionPillStyle(activeSection === 'browser')}>
           💡 Goal Browser
         </button>
@@ -1074,7 +1074,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
 
       {/* ── Goal Browser ── */}
       {activeSection === 'browser' && (
-        <GoalBrowser
+        <div data-tour="goals-browser"><GoalBrowser
           players={players}
           goals={goals}
           onAdd={addSuggestion}
@@ -1083,7 +1083,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
           onCreateCustom={() => openAdd()}
           achievements={achievements}
           groupId={groupId}
-        />
+        /></div>
       )}
 
       {/* ── Active Goals ── */}
@@ -1091,7 +1091,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
           {/* View toggle + filters */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div data-tour="goals-filters" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* View toggle */}
             <div style={{ display: 'flex', gap: 2, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
               {[['board','📋 Board'],['list','☰ List']].map(([id, label]) => (

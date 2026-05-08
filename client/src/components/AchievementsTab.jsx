@@ -133,7 +133,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
             Auto-detected from RuneMetrics activity feed · Click a cell to mark manually
           </div>
         </div>
-        <div className="flex gap-4 tab-bar-scroll" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
+        <div data-tour="achievements-view" className="flex gap-4 tab-bar-scroll" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
           {[{ v: 'grid', l: '🗂️ Grid' }, { v: 'player', l: '👤 By Player' }].map(({ v, l }) => (
             <button key={v} onClick={() => setView(v)} style={{
               fontSize: 11, padding: '3px 12px', borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer',
@@ -146,7 +146,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
       </div>
 
       {/* Progress summary row */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div data-tour="achievements-progress" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {summary.map(p => (
           <div key={p.id} style={{
             flex: '1 1 140px', padding: '10px 14px',

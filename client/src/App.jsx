@@ -1030,8 +1030,18 @@ export default function App() {
   const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
-  const [showTour, setShowTour] = useState(false);
-  const tourShownRef = useRef(false); // prevent re-triggering on subsequent refreshes
+  const [showTour, setShowTour]             = useState(false);
+  const tourShownRef                        = useRef(false); // prevent re-triggering on subsequent refreshes
+  const [tabTourReplayKey, setTabTourReplayKey] = useState(0); // increment to replay current tab's tour
+
+  const TAB_TOUR_IDS = ['goals', 'vault', 'achievements', 'leaderboards'];
+  function handleTourClick() {
+    if (TAB_TOUR_IDS.includes(activeTab)) {
+      setTabTourReplayKey(k => k + 1);
+    } else {
+      setShowTour(true);
+    }
+  }
 
   // Only show groups this browser has explicitly added, favorites first
   const groups = allGroups
@@ -1266,7 +1276,7 @@ export default function App() {
         onWebhookClick={() => setShowWebhookModal(true)}
         onMenuToggle={() => setShowMobileSidebar(s => !s)}
         mobileMenuOpen={showMobileSidebar}
-        onTourClick={() => setShowTour(true)}
+        onTourClick={handleTourClick}
       />
       <div className="main-layout">
         {/* Mobile overlay — tapping closes the sidebar */}
@@ -1327,6 +1337,7 @@ export default function App() {
                 myRsn={myRsn}
                 onSetMyRsn={setMyRsn}
                 canWrite={canWrite}
+                tabTourReplayKey={tabTourReplayKey}
               />
               {showAddPlayer && (
                 <AddPlayerModal

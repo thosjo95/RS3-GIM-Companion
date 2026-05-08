@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Documentation v1.6</title>
+  <title>RS3 GIM Companion — Documentation v1.7</title>
   <style>
     :root {
       --bg:        #0d0b14;
@@ -188,7 +188,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.6 documentation</div>
+        <div class="sidebar-version">v1.7 documentation</div>
       </div>
     </div>
 
@@ -197,6 +197,8 @@
       <a href="#overview">What is this?</a>
       <a href="#quickstart">Quick Start</a>
       <a href="#access">Access Control</a>
+      <a href="#group-management">Group Management</a>
+      <a href="#tours">Product Tours</a>
 
       <div class="sidebar-section">Features</div>
       <a href="#tab-overview">Overview</a>
@@ -232,7 +234,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.6.0</span>
+          <span class="badge badge-green">v1.7.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -241,7 +243,7 @@
 
     <div class="callout callout-info">
       <span class="callout-icon">💡</span>
-      <p>RS3 GIM Companion is live at <a href="https://groupiron.com" target="_blank"><strong>groupiron.com</strong></a> and can also be self-hosted on any Node.js server. All data stays on your own infrastructure.</p>
+      <p>RS3 GIM Companion is live at <a href="https://groupiron.com" target="_blank"><strong>groupiron.com</strong></a> and can also be self-hosted on any Node.js server. All data stays on your own infrastructure. New users are guided through features with interactive per-tab product tours.</p>
     </div>
 
     <!-- Quick Start -->
@@ -277,6 +279,57 @@
     </table>
 
     <p>Gear loadouts have an additional permission layer: even when a group is unlocked, you can only edit <strong>your own character's</strong> gear. When viewing another group without being unlocked, all editing UI (slot pickers, add item, delete item, add goal) is hidden — the app is fully read-only for visitors.</p>
+
+    <hr />
+
+    <!-- Group Management -->
+    <h2 id="group-management">Group Management</h2>
+    <p>Click <strong>👥 Find or Manage Groups</strong> in the sidebar to open the group manager.</p>
+
+    <h3>Search &amp; Import</h3>
+    <p>Search by exact group name — the app validates the name, type (Regular / Competitive), and member count against the RS3 GIM hiscores before importing. If not found, a styled error message appears with a hint to check exact spelling.</p>
+
+    <h3>Browse Tracked Groups</h3>
+    <p>Expand the <strong>Browse tracked groups</strong> panel to scroll or search groups that have already been tracked by the app — sorted by most recently active. Click a group row to open it in read-only mode without saving it to your sidebar.</p>
+
+    <h3>Starring / Favouriting Groups</h3>
+    <p>Groups are only pinned to your sidebar when you <strong>explicitly save</strong> them — browsing a group does not auto-pin it. Three ways to save a group:</p>
+    <ul>
+      <li><strong>☆ Star button</strong> on any browse result row</li>
+      <li><strong>⭐ Save to your groups</strong> button in the guest banner (shown when viewing a non-saved group)</li>
+      <li>Automatically when you <strong>claim</strong> or <strong>unlock</strong> a group</li>
+    </ul>
+    <p>A saved group appears in your sidebar permanently across sessions. Unsaved / guest groups are viewable but disappear from the sidebar on refresh.</p>
+
+    <hr />
+
+    <!-- Product Tours -->
+    <h2 id="tours">Product Tours</h2>
+    <p>The app includes interactive step-by-step tours to help new users discover each section.</p>
+
+    <h3>App-wide Tour</h3>
+    <p>Shown automatically the first time you load a group. Walks through Sync All, Claim &amp; Unlock, Member Cards, and all five main tabs. Dismissed state is saved in <code>localStorage</code> — it will not re-appear.</p>
+
+    <h3>Per-tab Tours</h3>
+    <p>Goals, Group Vault, Achievement Diaries, and Leaderboards each have their own tour. The tour fires automatically the <strong>first time</strong> you visit each tab. Each tab's completion is tracked independently.</p>
+
+    <table>
+      <thead><tr><th>Tab</th><th>Steps covered</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Goals</strong></td><td>Section tabs (Browser / Active), Goal Browser, Filters &amp; Views</td></tr>
+        <tr><td><strong>Group Vault</strong></td><td>Vault tile grid, Gear Loadouts panel</td></tr>
+        <tr><td><strong>Achievement Diaries</strong></td><td>Player progress bars, Grid vs By Player toggle</td></tr>
+        <tr><td><strong>Leaderboards</strong></td><td>Section nav (Firsts / Milestones / Bosses / Clues / Mastery), auto-update sources</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Replaying a Tour</h3>
+    <p>The <strong>?</strong> button in the top-right header is context-aware:</p>
+    <ul>
+      <li>On <strong>Overview</strong> — replays the full 9-step app-wide tour</li>
+      <li>On <strong>Goals / Vault / Achievements / Leaderboards</strong> — replays that tab's tour</li>
+    </ul>
+    <p>Replay always works regardless of whether you've previously completed the tour.</p>
 
     <hr />
 
@@ -370,8 +423,8 @@
     <p>Click <strong>+ Add Item</strong> (visible when unlocked) to open the Add Item modal. Type any item name to search the RS3 wiki — results show the item icon and name. Select the item, choose which player obtained it, and optionally enter a source (e.g. "Nex", "Crafting"). Manual entries are tagged internally and their note is not shown in the vault display.</p>
 
     <div class="callout callout-tip">
-      <span class="callout-icon">⚡</span>
-      <p>Items are also added automatically from the RuneMetrics activity feed on every 2-hour sync. Manual add is for items that weren't detected automatically.</p>
+      <span class="callout-icon">🔄</span>
+      <p>Boss drops and item pickups detected in the RS3 activity feed are added to the vault <strong>automatically</strong> every ~2 hours. The vault subheading shows "auto-synced from activity feed" as a reminder. Use <strong>+ Add Item</strong> for anything the feed missed.</p>
     </div>
 
     <h3>Vaulted Achievements</h3>
@@ -433,7 +486,7 @@
 
     <!-- Tab: Achievement Diaries -->
     <h2 id="tab-diaries">Achievement Diaries</h2>
-    <p>Tracks diary completion across all 13 RS3 regions × 4 tiers (Easy / Medium / Hard / Elite).</p>
+    <p>Tracks diary completion across all 14 RS3 regions × 4 tiers (Easy / Medium / Hard / Elite).</p>
 
     <h3>Grid View <em>(default)</em></h3>
     <p>Regions as rows, tiers as columns. Each cell shows coloured player dots — one per player, filled if they've completed that diary tier.</p>
@@ -677,7 +730,17 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.6.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.7.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Per-tab product tours</strong> — interactive guided tours for Goals, Group Vault, Achievement Diaries, and Leaderboards; auto-trigger on first visit to each tab; context-aware <code>?</code> button replays the tour for whichever tab you're on (Overview replays the full app tour)</li>
+      <li><strong>Browse tracked groups</strong> — collapsible panel in Find/Manage Groups; search or scroll recently active groups; guest banner shown when viewing a non-saved group</li>
+      <li><strong>Star / Favourite groups</strong> — groups only pin to your sidebar when explicitly starred, claimed, or unlocked; browsing no longer auto-saves; ☆ button on browse results + "Save to your groups" in the guest banner</li>
+      <li><strong>Vault auto-sync label</strong> — Group Vault subheading now shows "🔄 auto-synced from activity feed" with a tooltip</li>
+      <li><strong>Timing corrections</strong> — RuneMetrics activity feed updates every ~2 hours; hiscores/XP syncs within ~5 minutes; corrected throughout UI, tours, and docs</li>
+      <li><strong>Diary region count fixed</strong> — 14 regions tracked (was documented as 13; Tirannwn, Wilderness, and Underworld were always present in the app)</li>
+    </ul>
+
+    <h3>v1.6.0 — May 2026 &nbsp;<span class="tag-dim">Previous</span></h3>
     <ul>
       <li><strong>Gear DB overhaul</strong> — 410 gear items in the database (was ~185); all four PvM wiki style pages (Melee / Ranged / Magic / Necromancy) scraped and seeded across every slot and tier</li>
       <li><strong>GearLoadouts now fully DB-driven</strong> — replaced static gear suggestion lists with a <code>useRs3Gear</code> hook that fetches live data from the API; adding items to <code>seedRs3Data.js</code> is all that's needed going forward — no frontend code changes required</li>
@@ -753,7 +816,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.6.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.7.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 

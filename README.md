@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.6.0-4caf50?style=flat-square" alt="v1.6.0"/>
+    <img src="https://img.shields.io/badge/version-1.7.0-4caf50?style=flat-square" alt="v1.7.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -51,7 +51,7 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Group Notes** — floating slide-in pinboard for strategies, loot rules, and session plans; auto-saves with debounce
 
 ### 📋 Achievement Diaries
-- 13 regions × 4 tiers (Easy / Medium / Hard / Elite) — same structure as RS3
+- 14 regions × 4 tiers (Easy / Medium / Hard / Elite) — same structure as RS3
 - **Grid view** — coloured player dots per cell showing who has completed each diary
 - **Player view** — per-player completion with toggle and dates
 - Auto-detected from RuneMetrics activity feed on each sync; manual override available
@@ -429,6 +429,13 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.7.0 — May 2026
+- 🗺️ **Per-tab product tours** — interactive guided tours for Goals, Group Vault, Achievement Diaries, and Leaderboards tabs; auto-trigger on your first visit to each tab; completing a tour saves the state per-tab so it only shows once; context-aware `?` button in the header replays the tour for whichever tab you're currently on (Overview `?` replays the full app tour)
+- 🔍 **Browse tracked groups** — collapsible "Browse tracked groups" panel in the Find/Manage Groups modal; search by name or scroll recently active groups without adding them first; guest banner appears when viewing a non-saved group
+- ⭐ **Star / Favourite groups** — only explicitly starred, claimed, or unlocked groups are pinned to your sidebar; browsing a group no longer auto-saves it; ☆ star button on browse results + "Save to your groups" button in the guest banner
+- 🔄 **Vault auto-sync label** — Group Vault subheading now shows "🔄 auto-synced from activity feed" with a tooltip explaining that boss drops and item pickups detected in the RS3 activity feed appear in the vault automatically on every sync
+- ✅ **Timing corrections** — RuneMetrics activity feed updates every ~2 hours; hiscores, XP, and skill data syncs within ~5 minutes; both intervals now stated correctly throughout the UI and docs
 
 ### v1.6.0 — May 2026
 - 🗃️ **Gear DB overhaul** — 410 gear items in the database (was ~185); all four PvM wiki pages (Melee / Ranged / Magic / Necromancy) scraped and seeded across every slot and tier

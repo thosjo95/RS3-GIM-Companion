@@ -1,12 +1,107 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import VaultTab from './VaultTab';
 import OverviewTab from './OverviewTab';
 import LeaderboardsTab from './LeaderboardsTab';
 import AchievementsTab from './AchievementsTab';
 import GoalsTab from './GoalsTab';
+import TourOverlay from './TourOverlay';
 
-export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite }) {
+// ── Per-tab tour step definitions ─────────────────────────────────────────────
+
+const TAB_TOURS = {
+  goals: [
+    {
+      target: null,
+      title: '🎯 Goals Tab',
+      body: "This is your group's planning board. Let's walk through the key parts — it only takes a moment!",
+    },
+    {
+      target: '[data-tour="goals-sections"]',
+      title: '💡 Goal Browser vs Active Goals',
+      body: 'Switch between the Goal Browser (220+ pre-built suggestions across quests, skills, bosses, and items) and Active Goals (your group\'s live tracking board).',
+    },
+    {
+      target: '[data-tour="goals-browser"]',
+      title: '📚 Goal Browser',
+      body: 'Browse pre-built suggestions filtered by category and priority. Each card shows XP requirements, wiki links, and player readiness. Hit Add to move any suggestion to your active board.',
+    },
+    {
+      target: '[data-tour="goals-filters"]',
+      title: '🔍 Filters & Views',
+      body: 'On the Active Goals board, filter by player, category, priority, or scope. Toggle between 📋 Board (Kanban columns) and ☰ List views to suit your style.',
+    },
+  ],
+
+  vault: [
+    {
+      target: null,
+      title: '🏆 Vault & Gear Loadouts',
+      body: "Two panels in one: the Group Vault for logging drops, and Gear Loadouts for tracking each player's equipment. Here's a quick tour.",
+    },
+    {
+      target: '[data-tour="vault-panel"]',
+      title: '🏆 Group Vault',
+      body: 'Every drop your group has logged shown as an icon tile grid. Dupe indicators highlight when multiple members own the same item. Click any tile to see who has it, when they got it, and its GE value.',
+    },
+    {
+      target: '[data-tour="vault-gear"]',
+      title: '⚔️ Gear Loadouts',
+      body: "Track each player's equipped gear across 5 combat styles: Melee, Ranged, Magic, Necromancy, and Hybrid. Requirements are verified against the RS3 wiki so you can see who's ready to upgrade.",
+    },
+  ],
+
+  achievements: [
+    {
+      target: null,
+      title: '📋 Achievement Diaries',
+      body: 'Track diary completion across all 14 RS3 regions × 4 tiers (Easy → Elite). Auto-detected from RuneMetrics, or toggle manually.',
+    },
+    {
+      target: '[data-tour="achievements-progress"]',
+      title: '📊 Player Progress',
+      body: "Each player gets a summary card showing how many diaries they've completed out of the total. The colour-coded bar updates as completions are recorded.",
+    },
+    {
+      target: '[data-tour="achievements-view"]',
+      title: '🗂️ Grid vs By Player',
+      body: 'Grid view shows all regions × tiers in one table with coloured dots per player. By Player view focuses on a single player\'s completion status across every tier.',
+    },
+  ],
+
+  leaderboards: [
+    {
+      target: null,
+      title: '🏅 Leaderboards',
+      body: "Five automatic leaderboards built from your group's synced activity feeds and hiscores — no manual tracking needed.",
+    },
+    {
+      target: '[data-tour="leaderboards-nav"]',
+      title: '📑 Leaderboard Sections',
+      body: "Browse 5 categories: 🥇 Firsts (who hit a milestone first), 📈 Milestones (XP goals), ⚔️ Boss Kills, 🗺️ Clue Scrolls, and 🎓 Skill Mastery (99s/120s per player).",
+    },
+    {
+      target: '[data-tour="leaderboards-panel"]',
+      title: '🤖 Auto-Updated Data',
+      body: 'Firsts and Milestones are detected from RuneMetrics activity feeds (updates every ~2 hours). Boss kills, clue counts, and XP pull from RS3 hiscores every time you sync (~5 min delay).',
+    },
+  ],
+};
+
+const TAB_TOUR_KEY = {
+  goals:         'tourCompleted_goals',
+  vault:         'tourCompleted_vault',
+  achievements:  'tourCompleted_achievements',
+  leaderboards:  'tourCompleted_leaderboards',
+};
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite, tabTourReplayKey }) {
   const players = group?.players || [];
+
+  const [tabTour, setTabTour]   = useState(null); // null | 'goals' | 'vault' | ...
+  const shownRef                = useRef({});      // tracks which tours have fired this session
+  const prevReplayKey           = useRef(0);
 
   const TABS = [
     { id: 'overview',      label: '📊 Overview' },
@@ -15,6 +110,31 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
     { id: 'achievements',  label: '📋 Achievement Diaries', tour: 'tab-achievements' },
     { id: 'leaderboards',  label: '🏅 Leaderboards',        tour: 'tab-leaderboards' },
   ];
+
+  // Auto-trigger per-tab tour on first visit
+  useEffect(() => {
+    if (!TAB_TOURS[activeTab]) return;
+    if (shownRef.current[activeTab]) return;
+    if (localStorage.getItem(TAB_TOUR_KEY[activeTab])) return;
+    shownRef.current[activeTab] = true;
+    const t = setTimeout(() => setTabTour(activeTab), 500);
+    return () => clearTimeout(t);
+  }, [activeTab]);
+
+  // Replay signal from the global ? button in the header
+  useEffect(() => {
+    if (!tabTourReplayKey || tabTourReplayKey === prevReplayKey.current) return;
+    prevReplayKey.current = tabTourReplayKey;
+    if (TAB_TOURS[activeTab]) {
+      shownRef.current[activeTab] = true; // prevent auto-trigger from re-firing
+      setTabTour(activeTab);
+    }
+  }, [tabTourReplayKey, activeTab]);
+
+  function completeTour(tab) {
+    localStorage.setItem(TAB_TOUR_KEY[tab], '1');
+    setTabTour(null);
+  }
 
   return (
     <div>
@@ -97,6 +217,15 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
       )}
 
       </div>{/* end tab content */}
+
+      {/* Per-tab tour overlay */}
+      {tabTour && (
+        <TourOverlay
+          key={tabTour}
+          steps={TAB_TOURS[tabTour]}
+          onComplete={() => completeTour(tabTour)}
+        />
+      )}
     </div>
   );
 }

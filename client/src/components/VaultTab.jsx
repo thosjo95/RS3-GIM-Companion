@@ -549,7 +549,13 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
               </span>
             )}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{vaultItems.length} item{vaultItems.length !== 1 ? 's' : ''} logged</div>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+            {vaultItems.length} item{vaultItems.length !== 1 ? 's' : ''} logged
+            &nbsp;·&nbsp;
+            <span title="Boss drops and item pickups detected in the RS3 activity feed are added here automatically when you sync">
+              🔄 auto-synced from activity feed
+            </span>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {canWrite && (
@@ -682,7 +688,7 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
         {/* LEFT — Group Vault */}
-        <div style={{
+        <div data-tour="vault-panel" style={{
           flex: '1 1 0', minWidth: 280,
           background: 'var(--bg-panel)',
           border: '1px solid var(--border)',
@@ -710,7 +716,7 @@ export default function VaultTab({ players, groupId, goals = [], onToast, canWri
         </div>
 
         {/* RIGHT — Gear Loadouts */}
-        <div style={{
+        <div data-tour="vault-gear" style={{
           flex: '1 1 0', minWidth: 320,
           background: 'var(--bg-panel)',
           border: '1px solid var(--border)',
