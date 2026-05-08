@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
 // ── Tour steps ────────────────────────────────────────────────────────────────
-// target: CSS selector for the element to spotlight (null = centered welcome card)
-// position: preferred tooltip placement ('bottom' | 'top' | 'center')
 const TOUR_STEPS = [
   {
     target: null,
@@ -60,8 +58,9 @@ const TOUR_STEPS = [
   },
 ];
 
-const PAD = 10;   // padding around the highlighted element
-const TT_W = 360; // tooltip width
+const PAD   = 10;   // padding around the highlighted element
+const TT_W  = 360;  // tooltip width
+const TT_H  = 220;  // conservative tooltip height estimate for placement
 
 export default function TourOverlay({ onComplete }) {
   const [stepIndex, setStepIndex] = useState(0);
@@ -69,7 +68,7 @@ export default function TourOverlay({ onComplete }) {
 
   const step = TOUR_STEPS[stepIndex];
 
-  // Measure target element position
+  // Measure target element on every step change
   useEffect(() => {
     if (!step?.target) { setRect(null); return; }
 
@@ -79,7 +78,7 @@ export default function TourOverlay({ onComplete }) {
         const r = el.getBoundingClientRect();
         setRect({ top: r.top, left: r.left, width: r.width, height: r.height, bottom: r.bottom, right: r.right });
       } else {
-        setRect(null); // element not present — fall back to centered tooltip
+        setRect(null);
       }
     }
 
@@ -96,70 +95,68 @@ export default function TourOverlay({ onComplete }) {
     if (stepIndex < TOUR_STEPS.length - 1) setStepIndex(i => i + 1);
     else onComplete();
   }
-
+  function back() { setStepIndex(i => i - 1); }
   function skip() { onComplete(); }
 
-  // ── Tooltip positioning ───────────────────────────────────────────────────
+  // ── Tooltip position ──────────────────────────────────────────────────────
   function getTooltipStyle() {
-    if (!rect) {
-      // Centered on screen
-      return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: TT_W };
-    }
-
     const vH = window.innerHeight;
     const vW = window.innerWidth;
 
-    // Prefer below, fall back to above
-    let top;
-    if (rect.bottom + 12 + 180 < vH) {
-      top = rect.bottom + PAD + 12;
-    } else {
-      top = rect.top - PAD - 12 - 180; // approx tooltip height
+    if (!rect) {
+      return { top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: TT_W };
     }
 
-    // Centre horizontally on the element, clamped to viewport
+    // Prefer below the element; fall back to above
+    let top;
+    if (rect.bottom + 12 + TT_H < vH) {
+      top = rect.bottom + PAD + 12;
+    } else {
+      top = Math.max(8, rect.top - PAD - 12 - TT_H);
+    }
+    // Clamp so tooltip never runs off the bottom edge
+    top = Math.min(top, vH - TT_H - 16);
+
     let left = rect.left + rect.width / 2 - TT_W / 2;
     left = Math.max(12, Math.min(vW - TT_W - 12, left));
 
-    return { position: 'fixed', top, left, width: TT_W };
+    return { top, left, width: TT_W };
   }
 
-  // ── Arrow pointing toward highlighted element ────────────────────────────
+  function isBelow() {
+    if (!rect) return false;
+    const vH = window.innerHeight;
+    return rect.bottom + 12 + TT_H < vH;
+  }
+
+  // ── Arrow ─────────────────────────────────────────────────────────────────
   function getArrow() {
     if (!rect) return null;
-    const vH = window.innerHeight;
-    const arrowStyle = {
-      position: 'absolute',
-      left: '50%', transform: 'translateX(-50%)',
-      width: 0, height: 0, border: '7px solid transparent',
-    };
-    if (rect.bottom + 12 + 180 < vH) {
-      // Tooltip is below → arrow points up
-      return <div style={{ ...arrowStyle, top: -14, borderBottomColor: 'var(--gold-dark)', borderTop: 'none' }} />;
-    } else {
-      // Tooltip is above → arrow points down
-      return <div style={{ ...arrowStyle, bottom: -14, borderTopColor: 'var(--gold-dark)', borderBottom: 'none' }} />;
+    const base = { position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, border: '7px solid transparent' };
+    if (isBelow()) {
+      return <div style={{ ...base, top: -14, borderBottomColor: 'var(--gold-dark)', borderTop: 'none' }} />;
     }
+    return <div style={{ ...base, bottom: -14, borderTopColor: 'var(--gold-dark)', borderBottom: 'none' }} />;
   }
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 10000 }}>
+  const ttStyle = getTooltipStyle();
 
-      {/* ── Spotlight backdrop ────────────────────────────────────────────── */}
+  return (
+    <>
+      {/* ── Layer 1: Backdrop  (z-index 9998, pointer-events only on dark areas) ── */}
       {rect ? (
         <>
           {/* Top */}
-          <div onClick={skip} style={{ position: 'fixed', top: 0, left: 0, right: 0, height: Math.max(0, rect.top - PAD), background: 'rgba(0,0,0,0.72)' }} />
+          <div onClick={skip} style={{ position: 'fixed', zIndex: 9998, top: 0, left: 0, right: 0, height: Math.max(0, rect.top - PAD), background: 'rgba(0,0,0,0.72)', cursor: 'default' }} />
           {/* Bottom */}
-          <div onClick={skip} style={{ position: 'fixed', top: rect.bottom + PAD, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.72)' }} />
+          <div onClick={skip} style={{ position: 'fixed', zIndex: 9998, top: rect.bottom + PAD, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.72)', cursor: 'default' }} />
           {/* Left */}
-          <div onClick={skip} style={{ position: 'fixed', top: rect.top - PAD, left: 0, width: Math.max(0, rect.left - PAD), height: rect.height + PAD * 2, background: 'rgba(0,0,0,0.72)' }} />
+          <div onClick={skip} style={{ position: 'fixed', zIndex: 9998, top: rect.top - PAD, left: 0, width: Math.max(0, rect.left - PAD), height: rect.height + PAD * 2, background: 'rgba(0,0,0,0.72)', cursor: 'default' }} />
           {/* Right */}
-          <div onClick={skip} style={{ position: 'fixed', top: rect.top - PAD, left: rect.right + PAD, right: 0, height: rect.height + PAD * 2, background: 'rgba(0,0,0,0.72)' }} />
-
-          {/* Gold highlight ring */}
+          <div onClick={skip} style={{ position: 'fixed', zIndex: 9998, top: rect.top - PAD, left: rect.right + PAD, right: 0, height: rect.height + PAD * 2, background: 'rgba(0,0,0,0.72)', cursor: 'default' }} />
+          {/* Gold highlight ring — no pointer events */}
           <div style={{
-            position: 'fixed',
+            position: 'fixed', zIndex: 9998,
             top: rect.top - PAD, left: rect.left - PAD,
             width: rect.width + PAD * 2, height: rect.height + PAD * 2,
             border: '2px solid var(--gold)',
@@ -169,20 +166,24 @@ export default function TourOverlay({ onComplete }) {
           }} />
         </>
       ) : (
-        /* Full-screen backdrop for centered steps */
-        <div onClick={skip} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)' }} />
+        <div onClick={skip} style={{ position: 'fixed', zIndex: 9998, inset: 0, background: 'rgba(0,0,0,0.78)', cursor: 'default' }} />
       )}
 
-      {/* ── Tooltip card ─────────────────────────────────────────────────── */}
-      <div style={{
-        ...getTooltipStyle(),
-        zIndex: 10001,
-        background: 'var(--bg-panel)',
-        border: '1px solid var(--gold-dark)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '20px 22px 16px',
-        boxShadow: '0 12px 48px rgba(0,0,0,0.7)',
-      }}>
+      {/* ── Layer 2: Tooltip  (z-index 9999, completely separate from backdrop) ── */}
+      <div
+        style={{
+          position: 'fixed',
+          zIndex: 9999,
+          ...ttStyle,
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--gold-dark)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '20px 22px 16px',
+          boxShadow: '0 12px 48px rgba(0,0,0,0.7)',
+        }}
+        // Prevent clicks inside tooltip from reaching anything behind it
+        onClick={e => e.stopPropagation()}
+      >
         {getArrow()}
 
         {/* Step counter */}
@@ -212,6 +213,7 @@ export default function TourOverlay({ onComplete }) {
                 background: i === stepIndex ? 'var(--gold)' : i < stepIndex ? 'var(--gold-dim)' : 'var(--border)',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             />
           ))}
@@ -227,7 +229,7 @@ export default function TourOverlay({ onComplete }) {
           <div style={{ display: 'flex', gap: 8 }}>
             {stepIndex > 0 && (
               <button
-                onClick={() => setStepIndex(i => i - 1)}
+                onClick={back}
                 style={{
                   padding: '7px 14px', fontSize: 12, fontWeight: 600,
                   background: 'transparent', border: '1px solid var(--border)',
@@ -248,6 +250,6 @@ export default function TourOverlay({ onComplete }) {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

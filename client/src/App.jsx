@@ -254,17 +254,6 @@ function ClaimModal({ group, onConfirm, onCancel }) {
 
 // Setup screen — shown when no group exists
 function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup }) {
-  // Browse: all groups already tracked in the app (for visitors)
-  const [browseList, setBrowseList]   = useState([]);
-  const [browseLoading, setBrowseLoading] = useState(false);
-  useEffect(() => {
-    setBrowseLoading(true);
-    api.browseGroups(20)
-      .then(setBrowseList)
-      .catch(() => {})
-      .finally(() => setBrowseLoading(false));
-  }, []);
-
   const [step, setStep] = useState(() => {
     if (!prefill) return 'search';
     // Unranked groups pre-filled from the search modal → skip straight to RSN entry
@@ -540,40 +529,12 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
         </form>
       </div>
 
-      {/* ── Browse groups already tracked in this app ── */}
-      {(browseLoading || browseList.length > 0) && (
-        <div className="panel" style={{...cardStyle, marginTop:16}}>
-          <div className="panel-header">
-            <span className="panel-title" style={{fontSize:13}}>
-              Browse groups tracked in this app
-            </span>
-            {browseLoading && <span className="spinner" style={{width:12,height:12}} />}
-          </div>
-          <div className="panel-body" style={{padding:'8px 12px'}}>
-            <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:10}}>
-              These groups are already being tracked here. Click any to browse them — read-only unless you own it.
-            </div>
-            {/* Filter by typed name if any */}
-            {browseList
-              .filter(g => !groupName.trim() || g.name.toLowerCase().includes(groupName.toLowerCase()))
-              .map(g => (
-                <GroupBrowseRow
-                  key={g.id} g={g}
-                  isPinned={false}
-                  onSelect={id => onSwitchToGroup?.(id)}
-                  actionLabel="Browse →"
-                />
-              ))}
-            {browseList.length > 0 &&
-              groupName.trim() &&
-              browseList.filter(g => g.name.toLowerCase().includes(groupName.toLowerCase())).length === 0 && (
-                <div style={{fontSize:12,color:'var(--text-dim)',textAlign:'center',padding:'4px 0'}}>
-                  No tracked groups match "{groupName}"
-                </div>
-              )}
-          </div>
-        </div>
-      )}
+      {/* ── Browse groups already tracked in this app (collapsible) ── */}
+      <div style={{...cardStyle, marginTop:12}}>
+        <BrowseTrackedGroups
+          onSelect={id => onSwitchToGroup?.(id)}
+        />
+      </div>
     </div>
   );
 }
@@ -643,6 +604,121 @@ function GroupBrowseRow({ g, isPinned, isFav, onSelect, onFavorite, onRemove, on
   );
 }
 
+// Inline browse panel used by both the modal and SetupScreen
+function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose }) {
+  const [open,    setOpen]    = useState(false);
+  const [query,   setQuery]   = useState('');
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const debRef = useRef(null);
+
+  // Fetch when panel opens or query changes
+  useEffect(() => {
+    if (!open) return;
+    clearTimeout(debRef.current);
+    debRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const data = await (query.trim() ? api.searchGroups(query.trim()) : api.browseGroups(40));
+        setResults(data.filter(g => !pinnedIds.has(g.id)));
+      } catch { /* ignore */ }
+      finally { setLoading(false); }
+    }, query.trim() ? 220 : 0);
+    return () => clearTimeout(debRef.current);
+  }, [open, query]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const typeLabel = t => {
+    if (t === 'competitive')      return '🏆 Competitive';
+    if (t === 'regular_unranked') return '👥 Unranked';
+    return '⚔️ Regular';
+  };
+
+  return (
+    <div style={{marginBottom: open ? 12 : 4}}>
+      {/* Toggle button */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', textAlign: 'left',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 12px',
+          background: open ? 'rgba(200,168,75,0.08)' : 'var(--bg-panel-alt)',
+          border: `1px solid ${open ? 'var(--gold-dark)' : 'var(--border)'}`,
+          borderRadius: 'var(--radius)', cursor: 'pointer',
+          color: open ? 'var(--gold)' : 'var(--text-dim)',
+          fontSize: 13, fontWeight: 600,
+          transition: 'all 0.15s',
+        }}>
+        <span>👥 Browse groups tracked in this app</span>
+        <span style={{fontSize:11}}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {/* Expanded panel */}
+      {open && (
+        <div style={{
+          border: '1px solid var(--gold-dark)', borderTop: 'none',
+          borderRadius: '0 0 var(--radius) var(--radius)',
+          background: 'var(--bg-panel-alt)',
+          padding: '10px 12px',
+        }}>
+          {/* Search within tracked groups */}
+          <input
+            className="form-input"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Filter by group name…"
+            autoFocus
+            style={{marginBottom:10}}
+          />
+
+          {/* Scrollable list */}
+          <div style={{maxHeight:260, overflowY:'auto', display:'flex', flexDirection:'column', gap:4}}>
+            {loading && (
+              <div style={{textAlign:'center',padding:8}}>
+                <span className="spinner" style={{width:14,height:14}} />
+              </div>
+            )}
+            {!loading && results.length === 0 && (
+              <div style={{fontSize:12,color:'var(--text-dim)',textAlign:'center',padding:'8px 0'}}>
+                {query.trim() ? `No groups match "${query}"` : 'No tracked groups found'}
+              </div>
+            )}
+            {results.map(g => (
+              <div
+                key={g.id}
+                onClick={() => { onSelect(g.id); onClose?.(); }}
+                style={{
+                  display:'flex', alignItems:'center', gap:10,
+                  padding:'8px 10px',
+                  background:'var(--bg-panel)', border:'1px solid var(--border)',
+                  borderRadius:'var(--radius)', cursor:'pointer',
+                  transition:'border-color 0.12s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor='var(--gold-dark)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}
+              >
+                <div style={{flex:1, minWidth:0}}>
+                  <div style={{fontWeight:600, color:'var(--text-bright)', fontSize:13,
+                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                    {g.name}
+                  </div>
+                  <div style={{fontSize:11, color:'var(--text-dim)', marginTop:1}}>
+                    {typeLabel(g.gim_type)}
+                    {' · '}{g.member_count ?? 0} member{(g.member_count ?? 0) !== 1 ? 's' : ''}
+                    {g.is_claimed ? ' · 🔒' : ''}
+                  </div>
+                </div>
+                <span style={{fontSize:11, color:'var(--gold)', fontWeight:600, flexShrink:0}}>Browse →</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Group search modal
 function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, onToast, onRemove, onFavorite, favoriteGroupIds }) {
   const [query, setQuery] = useState('');
@@ -650,31 +726,12 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
   const [gimSize, setGimSize] = useState(5);
   const [searching, setSearching] = useState(false);
   const [rs3Result, setRs3Result] = useState(null);
-  const [dbResults, setDbResults] = useState(null); // null = not yet loaded
-  const [dbLoading, setDbLoading] = useState(false);
-  const debounceRef = useRef(null);
 
-  // Load initial browse list on mount, then live-search on query change
-  useEffect(() => {
-    clearTimeout(debounceRef.current);
-    const q = query.trim();
-    debounceRef.current = setTimeout(async () => {
-      setDbLoading(true);
-      try {
-        const results = await (q ? api.searchGroups(q) : api.browseGroups(30));
-        setDbResults(results);
-      } catch { /* silently ignore */ }
-      finally { setDbLoading(false); }
-    }, q ? 220 : 0); // instant on open, debounced while typing
-    return () => clearTimeout(debounceRef.current);
-  }, [query]);
-
-  // Separate pinned vs other groups from DB results
+  // Pinned group matches
   const pinnedIds = new Set(groups.map(g => g.id));
   const pinnedMatches = query.trim()
     ? groups.filter(g => g.name.toLowerCase().includes(query.toLowerCase()))
     : groups;
-  const otherMatches = (dbResults || []).filter(g => !pinnedIds.has(g.id));
 
   async function handleRs3Search(e) {
     e.preventDefault();
@@ -695,11 +752,6 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
     ? (allDbGroups ?? groups).find(g => g.name.toLowerCase() === rs3Result.groupName?.toLowerCase())
     : null;
 
-  const showOther = otherMatches.length > 0;
-  const showOtherHeader = !query.trim()
-    ? 'Browse groups tracked in this app'
-    : `Other groups matching "${query.trim()}"`;
-
   return (
     <div className="modal-backdrop">
       <div className="modal" style={{maxWidth:500}}>
@@ -707,7 +759,7 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
           <span className="modal-title">👥 Find or Manage Groups</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
         </div>
-        <div className="modal-body" style={{paddingTop:8, maxHeight:'80vh', overflowY:'auto'}}>
+        <div className="modal-body" style={{paddingTop:8, maxHeight:'85vh', overflowY:'auto'}}>
 
           {/* Search input */}
           <div className="form-group" style={{marginBottom:12,marginTop:0}}>
@@ -737,31 +789,12 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
             </div>
           )}
 
-          {/* ── Browse other tracked groups ── */}
-          {(showOther || dbLoading) && (
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.5px',display:'flex',alignItems:'center',gap:6}}>
-                {showOtherHeader}
-                {dbLoading && <span className="spinner" style={{width:10,height:10}} />}
-              </div>
-              {otherMatches.map(g => (
-                <GroupBrowseRow
-                  key={g.id} g={g}
-                  isPinned={false}
-                  onSelect={id => { onSelect(id); }}
-                  onClose={onClose}
-                  actionLabel="Browse →"
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Empty state when nothing found at all */}
-          {!dbLoading && pinnedMatches.length === 0 && otherMatches.length === 0 && query.trim() && (
-            <div style={{fontSize:13,color:'var(--text-dim)',textAlign:'center',padding:'12px 0 4px'}}>
-              No tracked groups match "{query.trim()}"
-            </div>
-          )}
+          {/* ── Browse all tracked groups (collapsible) ── */}
+          <BrowseTrackedGroups
+            pinnedIds={pinnedIds}
+            onSelect={id => { onSelect(id); }}
+            onClose={onClose}
+          />
 
           {/* Separator */}
           <div style={{display:'flex',alignItems:'center',gap:8,margin:'14px 0 12px'}}>
