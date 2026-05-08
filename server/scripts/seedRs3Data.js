@@ -1034,6 +1034,153 @@ const QUESTS = [
     requirements: { skills: { Prayer: 65, Slayer: 65, Defence: 65 } },
     rewards: ['Soul Wars access (Zeal tokens)', 'Nomad\'s diary'],
     wiki_url: "https://runescape.wiki/w/Nomad's_Requiem" },
+
+  // ── Elf / Tirannwn chain ─────────────────────────────────────────────────
+  { id: 'plague_city', name: 'Plague City', series: 'Elf', quest_points: 1,
+    requirements: {},
+    rewards: ['West Ardougne access', 'Biohazard prerequisite'],
+    wiki_url: 'https://runescape.wiki/w/Plague_City' },
+
+  { id: 'biohazard', name: 'Biohazard', series: 'Elf', quest_points: 3,
+    requirements: { quests: ['Plague City'] },
+    rewards: ['Underground Pass prerequisite', 'Ardougne content'],
+    wiki_url: 'https://runescape.wiki/w/Biohazard' },
+
+  { id: 'underground_pass', name: 'Underground Pass', series: 'Elf', quest_points: 5,
+    requirements: { skills: { Ranged: 25 }, quests: ['Biohazard'] },
+    rewards: ['Isafdar access', 'Regicide prerequisite'],
+    wiki_url: 'https://runescape.wiki/w/Underground_Pass' },
+
+  { id: 'regicide', name: 'Regicide', series: 'Elf', quest_points: 3,
+    requirements: { skills: { Agility: 56, Crafting: 10 }, quests: ['Underground Pass'] },
+    rewards: ['Tirannwn access', 'Mourning\'s End prerequisite', 'Tirannwn Diary access'],
+    wiki_url: 'https://runescape.wiki/w/Regicide' },
+
+  { id: 'mournings_end_part_i', name: "Mourning's End Part I", series: 'Elf', quest_points: 2,
+    requirements: { skills: { Ranged: 60, Agility: 60 }, quests: ['Roving Elves'] },
+    rewards: ['Tirannwn Diary (Medium)', 'Mourning\'s End Part II prerequisite'],
+    wiki_url: 'https://runescape.wiki/w/Mourning%27s_End_Part_I' },
+
+  { id: 'mournings_end_part_ii', name: "Mourning's End Part II", series: 'Elf', quest_points: 2,
+    requirements: { quests: ["Mourning's End Part I"] },
+    rewards: ['Death Altar (77 RC — Death rune crafting)', 'Plague\'s End prerequisite', 'Tirannwn Diary (Hard)'],
+    wiki_url: 'https://runescape.wiki/w/Mourning%27s_End_Part_II' },
+
+  { id: 'within_the_light', name: 'Within the Light', series: 'Elf', quest_points: 4,
+    requirements: { skills: { Agility: 75, Woodcutting: 75, Fletching: 75, Ranged: 75 }, quests: ["Mourning's End Part II"] },
+    rewards: ['Plague\'s End prerequisite', '20k Agility + 20k Ranged XP'],
+    wiki_url: 'https://runescape.wiki/w/Within_the_Light' },
+
+  { id: 'the_light_within', name: 'The Light Within', series: 'Elf', quest_points: 2,
+    requirements: { skills: { Agility: 80, Crafting: 80, Divination: 80, Herblore: 80, Prayer: 80, Runecrafting: 80, Summoning: 80 }, quests: ["Plague's End", 'The World Wakes', 'Fate of the Gods'] },
+    rewards: ['Seren prayers (Berserker, Superhuman Strength, Runic Accuracy)', 'Crystal Rain spell'],
+    wiki_url: 'https://runescape.wiki/w/The_Light_Within' },
+
+  // ── Myreque chain ────────────────────────────────────────────────────────
+  { id: 'in_aid_of_the_myreque', name: 'In Aid of the Myreque', series: 'Myreque', quest_points: 2,
+    requirements: { skills: { Crafting: 25, Magic: 7, Mining: 15, Smithing: 15 }, quests: ['In Search of the Myreque'] },
+    rewards: ['Burgh de Rott improvements', 'Morytania Diary (Medium) access'],
+    wiki_url: 'https://runescape.wiki/w/In_Aid_of_the_Myreque' },
+
+  { id: 'legacy_of_seergaze', name: 'Legacy of Seergaze', series: 'Myreque', quest_points: 1,
+    requirements: { skills: { Agility: 52, Crafting: 48, Magic: 47, Mining: 52, Ranged: 50, Strength: 50 }, quests: ['In Aid of the Myreque'] },
+    rewards: ['Meiyerditch Blood Altar (77 RC)', 'Morytania Diary (Hard/Elite)', 'River of Blood prerequisite'],
+    wiki_url: 'https://runescape.wiki/w/Legacy_of_Seergaze' },
+
+  { id: 'river_of_blood', name: 'River of Blood', series: 'Myreque', quest_points: 2,
+    requirements: { skills: { Agility: 65, Herblore: 65, Fletching: 65, Firemaking: 60 }, quests: ['Legacy of Seergaze', 'The Lord of Vampyrium'] },
+    rewards: ['Morytania fully cleansed', '75k XP in Agility/Herblore/Fletching/Firemaking'],
+    wiki_url: 'https://runescape.wiki/w/River_of_Blood' },
+
+  // ── Troll chain ──────────────────────────────────────────────────────────
+  { id: 'troll_stronghold', name: 'Troll Stronghold', series: 'Troll', quest_points: 1,
+    requirements: { skills: { Agility: 15 }, quests: ['Death Plateau'] },
+    rewards: ['God Wars Dungeon access', "Eadgar's Ruse prerequisite", "My Arm's Big Adventure prerequisite"],
+    wiki_url: 'https://runescape.wiki/w/Troll_Stronghold' },
+
+  { id: 'my_arms_big_adventure', name: "My Arm's Big Adventure", series: 'Troll', quest_points: 1,
+    requirements: { skills: { Farming: 29, Woodcutting: 10 }, quests: ['Troll Stronghold', "Eadgar's Ruse"] },
+    rewards: ['Trollheim herb patch (disease-free)'],
+    wiki_url: 'https://runescape.wiki/w/My_Arm%27s_Big_Adventure' },
+
+  // ── Mahjarrat additions ──────────────────────────────────────────────────
+  { id: 'enakhras_lament', name: "Enakhra's Lament", series: 'Mahjarrat', quest_points: 2,
+    requirements: { skills: { Crafting: 50, Firemaking: 45, Magic: 39, Prayer: 43 } },
+    rewards: ['Ritual of the Mahjarrat prerequisite', 'Camulet teleport'],
+    wiki_url: 'https://runescape.wiki/w/Enakhra%27s_Lament' },
+
+  { id: 'summers_end', name: "Summer's End", series: 'Mahjarrat', quest_points: 1,
+    requirements: { skills: { Summoning: 23, Slayer: 35, Prayer: 47, Hunter: 35 }, quests: ['Spirit of Summer'] },
+    rewards: ['While Guthix Sleeps prerequisite', 'Corporeal Beast access'],
+    wiki_url: 'https://runescape.wiki/w/Summer%27s_End' },
+
+  // ── Temple Knight / misc unlocks ─────────────────────────────────────────
+  { id: 'the_slug_menace', name: 'The Slug Menace', series: 'Temple Knight', quest_points: 1,
+    requirements: { skills: { Runecrafting: 30, Crafting: 30, Thieving: 30, Slayer: 30 }, quests: ['Wanted!'] },
+    rewards: ['While Guthix Sleeps prerequisite', 'Proselyte armour'],
+    wiki_url: 'https://runescape.wiki/w/The_Slug_Menace' },
+
+  { id: 'contact', name: 'Contact!', series: 'Menaphos', quest_points: 1,
+    requirements: { skills: { Agility: 38 }, quests: ["Icthlarin's Little Helper"] },
+    rewards: ['Sophanem full access', 'Sophanem Slayer Dungeon access'],
+    wiki_url: 'https://runescape.wiki/w/Contact!' },
+
+  // ── Fremennik / Lunar ────────────────────────────────────────────────────
+  { id: 'the_fremennik_trials', name: 'The Fremennik Trials', series: 'Fremennik', quest_points: 3,
+    requirements: {},
+    rewards: ['Fremennik Province access', 'Lunar Diplomacy prerequisite', 'DKS access'],
+    wiki_url: 'https://runescape.wiki/w/The_Fremennik_Trials' },
+
+  { id: 'lunar_diplomacy', name: 'Lunar Diplomacy', series: 'Fremennik', quest_points: 2,
+    requirements: { skills: { Magic: 65, Crafting: 61, Mining: 60, Woodcutting: 55, Firemaking: 49, Herblore: 5, Defence: 40 }, quests: ['The Fremennik Trials', 'Lost City', 'Rune Mysteries', 'Shilo Village'] },
+    rewards: ['Lunar spellbook (Vengeance, NPC Contact, Fertile Soil, Cure Other)'],
+    wiki_url: 'https://runescape.wiki/w/Lunar_Diplomacy' },
+
+  // ── Skill unlocks ────────────────────────────────────────────────────────
+  { id: 'rune_mysteries', name: 'Rune Mysteries', series: null, quest_points: 1,
+    requirements: {},
+    rewards: ['Runecrafting skill unlocked'],
+    wiki_url: 'https://runescape.wiki/w/Rune_Mysteries' },
+
+  { id: 'dragon_slayer', name: 'Dragon Slayer', series: null, quest_points: 2,
+    requirements: { qp: 32 },
+    rewards: ['Rune platebody equippable', 'Antidragon shield', 'Crandor access'],
+    wiki_url: 'https://runescape.wiki/w/Dragon_Slayer' },
+
+  { id: 'animal_magnetism', name: 'Animal Magnetism', series: null, quest_points: 1,
+    requirements: { skills: { Slayer: 18, Crafting: 19, Ranged: 30 }, quests: ['Restless Ghost', 'Ernest the Chicken', 'Priest in Peril'] },
+    rewards: ["Ava's accumulator (auto-collects ranged ammo)", "Ava's alerter upgrade"],
+    wiki_url: 'https://runescape.wiki/w/Animal_Magnetism' },
+
+  { id: 'cabin_fever', name: 'Cabin Fever', series: 'Pirate', quest_points: 1,
+    requirements: { skills: { Agility: 42, Crafting: 45, Smithing: 50, Ranged: 40 }, quests: ["Pirate's Treasure", 'Rum Deal', 'Priest in Peril'] },
+    rewards: ["Mos Le'Harmless access", 'Cave Horrors (Black mask source)'],
+    wiki_url: 'https://runescape.wiki/w/Cabin_Fever' },
+
+  { id: 'waterfall_quest', name: 'Waterfall Quest', series: null, quest_points: 1,
+    requirements: {},
+    rewards: ['13,750 Attack XP', '13,750 Strength XP'],
+    wiki_url: 'https://runescape.wiki/w/Waterfall_Quest' },
+
+  { id: 'fairy_tale_ii', name: 'Fairy Tale Part II - Cure a Queen', series: null, quest_points: 2,
+    requirements: { skills: { Farming: 49, Herblore: 57 }, quests: ['Fairy Tale I - Growing Pains'] },
+    rewards: ['Fairy ring network (full access)'],
+    wiki_url: 'https://runescape.wiki/w/Fairy_Tale_II_-_Cure_a_Queen' },
+
+  { id: 'swan_song', name: 'Swan Song', series: null, quest_points: 1,
+    requirements: { skills: { Magic: 66, Cooking: 62, Fishing: 62, Smithing: 45, Firemaking: 42, Crafting: 40 } },
+    rewards: ['Piscatoris Fishing Colony access', 'Western Provinces Diary access'],
+    wiki_url: 'https://runescape.wiki/w/Swan_Song' },
+
+  { id: 'heroes_quest', name: "Heroes' Quest", series: null, quest_points: 1,
+    requirements: { skills: { Cooking: 53, Fishing: 53, Herblore: 25, Mining: 50, Smithing: 50 }, qp: 55, quests: ['Shield of Arrav', 'Lost City', "Merlin's Crystal", 'Dragon Slayer'] },
+    rewards: ["Heroes' Guild access", 'Dragon battleaxe', 'Brimhaven Dungeon access'],
+    wiki_url: 'https://runescape.wiki/w/Heroes%27_Quest' },
+
+  { id: 'legends_quest', name: "Legends' Quest", series: null, quest_points: 4,
+    requirements: { skills: { Agility: 50, Crafting: 50, Herblore: 45, Magic: 56, Mining: 52, Prayer: 42, Smithing: 52, Strength: 50, Thieving: 50, Woodcutting: 50 }, qp: 107 },
+    rewards: ['Cape of Legends', "Legends' Guild", 'End-game quest prerequisite'],
+    wiki_url: 'https://runescape.wiki/w/Legends%27_Quest' },
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
