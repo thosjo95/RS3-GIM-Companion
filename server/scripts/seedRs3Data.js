@@ -1181,6 +1181,48 @@ const QUESTS = [
     requirements: { skills: { Agility: 50, Crafting: 50, Herblore: 45, Magic: 56, Mining: 52, Prayer: 42, Smithing: 52, Strength: 50, Thieving: 50, Woodcutting: 50 }, qp: 107 },
     rewards: ['Cape of Legends', "Legends' Guild", 'End-game quest prerequisite'],
     wiki_url: 'https://runescape.wiki/w/Legends%27_Quest' },
+
+  // ── Early unlock quests ──────────────────────────────────────────────────
+  { id: 'lost_city', name: 'Lost City', series: null, quest_points: 1,
+    requirements: { skills: { Crafting: 31, Woodcutting: 36 } },
+    rewards: ['Zanaris access', 'Dragon dagger + longsword equippable', 'Lunar Diplomacy prerequisite'],
+    wiki_url: 'https://runescape.wiki/w/Lost_City' },
+
+  { id: 'the_dig_site', name: 'The Dig Site', series: null, quest_points: 2,
+    requirements: { skills: { Agility: 10, Herblore: 10, Thieving: 25 } },
+    rewards: ['Temple at Senntisten prerequisite', 'Dig Site area access'],
+    wiki_url: 'https://runescape.wiki/w/The_Dig_Site' },
+
+  // ── Mid-game prereqs ─────────────────────────────────────────────────────
+  { id: 'eadgars_ruse', name: "Eadgar's Ruse", series: 'Troll', quest_points: 1,
+    requirements: { skills: { Herblore: 31 }, quests: ['Troll Stronghold'] },
+    rewards: ['My Arm\'s Big Adventure prerequisite', 'Trollheim Teleport spell'],
+    wiki_url: 'https://runescape.wiki/w/Eadgar%27s_Ruse' },
+
+  { id: 'icthlarin', name: "Icthlarin's Little Helper", series: 'Menaphos', quest_points: 1,
+    requirements: {},
+    rewards: ['Sophanem access', 'Pyramid Plunder (best Thieving XP)', 'Contact! prerequisite'],
+    wiki_url: 'https://runescape.wiki/w/Icthlarin%27s_Little_Helper' },
+
+  { id: 'song_from_the_depths', name: 'Song from the Depths', series: null, quest_points: 1,
+    requirements: {},
+    rewards: ['Queen Black Dragon access', 'Royal crossbow farming (T80)', 'Draconic visage drops'],
+    wiki_url: 'https://runescape.wiki/w/Song_from_the_Depths' },
+
+  { id: 'chosen_commander', name: 'The Chosen Commander', series: 'Dorgeshuun', quest_points: 1,
+    requirements: { skills: { Agility: 46, Thieving: 46 }, quests: ['Another Slice of H.A.M.'] },
+    rewards: ['The World Wakes prerequisite', 'Goblin series conclusion'],
+    wiki_url: 'https://runescape.wiki/w/The_Chosen_Commander' },
+
+  { id: 'blood_runs_deep', name: 'Blood Runs Deep', series: 'Fremennik', quest_points: 2,
+    requirements: { skills: { Agility: 72, Dungeoneering: 72 }, quests: ['The Fremennik Isles', 'Throne of Miscellania', 'Royal Trouble'] },
+    rewards: ['The World Wakes prerequisite', 'Fremennik series conclusion'],
+    wiki_url: 'https://runescape.wiki/w/Blood_Runs_Deep' },
+
+  { id: 'brink_of_extinction', name: 'The Brink of Extinction', series: 'TzHaar', quest_points: 2,
+    requirements: { skills: { Attack: 80, Defence: 80, Magic: 80, Ranged: 80, Strength: 80 } },
+    rewards: ['The Elder Kiln prerequisite', 'Fight Kiln unlocked (TokHaar-Kal capes)'],
+    wiki_url: 'https://runescape.wiki/w/The_Brink_of_Extinction' },
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
