@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../api/client';
 import GroupNotesOverlay from './GroupNotesOverlay';
 
-export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick, onWebhookClick, onMenuToggle, mobileMenuOpen }) {
+export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed, myRsn, onLockClick, onClaimClick, onSetRsnClick, onWebhookClick, onMenuToggle, mobileMenuOpen, onTourClick }) {
   const [syncing, setSyncing] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
 
@@ -71,6 +71,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         {/* Group not claimed → prompt to claim */}
         {group && !isClaimed && (
           <button
+            data-tour="lock"
             className="sync-btn"
             onClick={onClaimClick}
             title="Claim this group to protect it with a secret and enable editing"
@@ -88,6 +89,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         {/* Claimed but not yet unlocked on this browser → unlock button */}
         {group && isClaimed && !isUnlocked && (
           <button
+            data-tour="lock"
             className="sync-btn"
             onClick={onLockClick}
             title="Enter your group secret to enable editing"
@@ -104,6 +106,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         {/* Already unlocked → show player badge (no action required) */}
         {group && isClaimed && isUnlocked && (
           <button
+            data-tour="lock"
             className="sync-btn"
             onClick={onSetRsnClick}
             title={myRsn ? `Logged in as ${myRsn} · Click to change character` : 'Set your character name'}
@@ -120,6 +123,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         {/* Group Notes — always accessible when a group is loaded */}
         {group && (
           <button
+            data-tour="notes"
             className="sync-btn"
             onClick={() => setNotesOpen(n => !n)}
             title="Group Notes"
@@ -194,8 +198,24 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
           Discord
         </a>
 
+        {/* Tour replay button */}
+        {group && onTourClick && (
+          <button
+            className="sync-btn"
+            onClick={onTourClick}
+            title="Show feature tour"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              padding: '0 10px', fontSize: 14, fontWeight: 700,
+            }}>
+            ?
+          </button>
+        )}
+
         {group && (
-          <button className="sync-btn" onClick={syncAll} disabled={syncing}>
+          <button data-tour="sync" className="sync-btn" onClick={syncAll} disabled={syncing}>
             {syncing ? <><span className="spinner" style={{width:14,height:14}} /> Syncing…</> : '↻ Sync All'}
           </button>
         )}

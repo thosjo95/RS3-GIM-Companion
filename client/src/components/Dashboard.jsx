@@ -10,10 +10,10 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
 
   const TABS = [
     { id: 'overview',      label: '📊 Overview' },
-    { id: 'goals',         label: '🎯 Goals' },
-    { id: 'vault',         label: '🏆 Group Vault' },
-    { id: 'achievements',  label: '📋 Achievement Diaries' },
-    { id: 'leaderboards',  label: '🏅 Leaderboards' },
+    { id: 'goals',         label: '🎯 Goals',               tour: 'tab-goals' },
+    { id: 'vault',         label: '🏆 Group Vault',         tour: 'tab-vault' },
+    { id: 'achievements',  label: '📋 Achievement Diaries', tour: 'tab-achievements' },
+    { id: 'leaderboards',  label: '🏅 Leaderboards',        tour: 'tab-leaderboards' },
   ];
 
   return (
@@ -25,6 +25,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
             key={t.id}
             onClick={() => onTabChange(t.id)}
             className="btn btn-ghost"
+            {...(t.tour ? { 'data-tour': t.tour } : {})}
             style={{
               borderBottom: activeTab === t.id ? '2px solid var(--gold)' : '2px solid transparent',
               borderRadius: 0,

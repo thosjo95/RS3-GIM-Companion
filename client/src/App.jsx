@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import AddPlayerModal from './components/AddPlayerModal';
 import WebhookSettings from './components/WebhookSettings';
+import TourOverlay from './components/TourOverlay';
 
 // Toast notification system
 function useToasts() {
@@ -253,12 +254,25 @@ function ClaimModal({ group, onConfirm, onCancel }) {
 
 // Setup screen — shown when no group exists
 function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup }) {
-  const [step, setStep] = useState(() => prefill ? 'preview' : 'search');
+  const [step, setStep] = useState(() => {
+    if (!prefill) return 'search';
+    // Unranked groups pre-filled from the search modal → skip straight to RSN entry
+    if (prefill.type === 'regular_unranked') return 'manual';
+    return 'preview';
+  });
   const [gimType, setGimType] = useState(prefill?.type || 'regular');
   const [gimSize, setGimSize] = useState(prefill?.size || 5);
   const [groupName, setGroupName] = useState(prefill?.name || '');
-  const [lookupResult, setLookupResult] = useState(prefill ? { found: true, groupName: prefill.name, type: prefill.type, size: prefill.size, members: prefill.members } : null);
-  const [manualRsns, setManualRsns] = useState(prefill?.members?.map(m => m.rsn) || []);
+  const [lookupResult, setLookupResult] = useState(
+    prefill && prefill.type !== 'regular_unranked'
+      ? { found: true, groupName: prefill.name, type: prefill.type, size: prefill.size, members: prefill.members }
+      : null
+  );
+  const [manualRsns, setManualRsns] = useState(
+    prefill?.type === 'regular_unranked'
+      ? Array(prefill?.size || 2).fill('')
+      : (prefill?.members?.map(m => m.rsn) || [])
+  );
   const [searching, setSearching] = useState(false);
   const [syncProgress, setSyncProgress] = useState('');
 
@@ -276,7 +290,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
         const dbMatch = dbResults.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
         if (dbMatch) { onSwitchToGroup?.(dbMatch.id); return; }
       } catch {} finally { setSearching(false); }
-      setManualRsns(['', '']);
+      setManualRsns(Array(gimSize).fill(''));
       setStep('manual');
       return;
     }
@@ -468,20 +482,18 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
               )}
             </div>
 
-            {gimType !== 'regular_unranked' && (
-              <div className="form-group">
-                <label className="form-label">Group Size</label>
-                <div className="flex gap-8">
-                  {[2,3,4,5].map(n => (
-                    <button key={n} type="button"
-                      className={`btn btn-sm ${gimSize === n ? 'btn-primary' : 'btn-secondary'}`}
-                      onClick={() => setGimSize(n)}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
+            <div className="form-group">
+              <label className="form-label">Group Size</label>
+              <div className="flex gap-8">
+                {[2,3,4,5].map(n => (
+                  <button key={n} type="button"
+                    className={`btn btn-sm ${gimSize === n ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setGimSize(n)}>
+                    {n}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
 
             <div className="form-group">
               <label className="form-label">Group Name (exact in-game name)</label>
@@ -631,18 +643,23 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
           {/* Separator */}
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
             <div style={{flex:1,height:1,background:'var(--border)'}} />
-            <span style={{fontSize:11,color:'var(--text-dim)'}}>Search RS3 hiscores</span>
+            <span style={{fontSize:11,color:'var(--text-dim)'}}>
+              {gimType === 'regular_unranked' ? 'Create unranked group' : 'Search RS3 hiscores'}
+            </span>
             <div style={{flex:1,height:1,background:'var(--border)'}} />
           </div>
 
           <form onSubmit={handleRs3Search}>
-            <div style={{display:'flex',gap:6,marginBottom:6,justifyContent:'center'}}>
-              {[['regular','⚔️ Regular'],['competitive','🏆 Competitive']].map(([val,label]) => (
+            {/* Type buttons */}
+            <div style={{display:'flex',gap:6,marginBottom:6,justifyContent:'center',flexWrap:'wrap'}}>
+              {[['regular','⚔️ Regular'],['competitive','🏆 Competitive'],['regular_unranked','👥 Unranked']].map(([val,label]) => (
                 <button key={val} type="button"
                   className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setGimType(val)}>{label}</button>
+                  onClick={() => { setGimType(val); setRs3Result(null); }}>{label}</button>
               ))}
             </div>
+
+            {/* Size picker — always shown */}
             <div style={{display:'flex',gap:6,marginBottom:10,justifyContent:'center'}}>
               {[2,3,4,5].map(n => (
                 <button key={n} type="button"
@@ -650,13 +667,31 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
                   onClick={() => setGimSize(n)}>{n} members</button>
               ))}
             </div>
-            <div style={{textAlign:'center'}}>
-              <button type="submit" className="btn btn-secondary btn-sm" style={{minWidth:180}}
-                disabled={searching || !query.trim()}>
-                {searching
-                  ? <><span className="spinner" style={{width:12,height:12}} /> Searching RS3…</>
-                  : '🔍 Search RS3 Hiscores'}
-              </button>
+
+            {/* Action */}
+            <div style={{textAlign:'center', marginTop: gimType === 'regular_unranked' ? 10 : 0}}>
+              {gimType === 'regular_unranked' ? (
+                <>
+                  <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:8}}>
+                    Type your group name in the field above, then click Create.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    style={{minWidth:180}}
+                    disabled={!query.trim()}
+                    onClick={() => { onClose(); onAddNew({ name: query.trim(), type: 'regular_unranked', size: gimSize }); }}>
+                    👥 Create Unranked Group →
+                  </button>
+                </>
+              ) : (
+                <button type="submit" className="btn btn-secondary btn-sm" style={{minWidth:180}}
+                  disabled={searching || !query.trim()}>
+                  {searching
+                    ? <><span className="spinner" style={{width:12,height:12}} /> Searching RS3…</>
+                    : '🔍 Search RS3 Hiscores'}
+                </button>
+              )}
             </div>
           </form>
 
@@ -808,6 +843,8 @@ export default function App() {
   const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // pre-filled data from RS3 search
+  const [showTour, setShowTour] = useState(false);
+  const tourShownRef = useRef(false); // prevent re-triggering on subsequent refreshes
 
   // Only show groups this browser has explicitly added, favorites first
   const groups = allGroups
@@ -931,7 +968,14 @@ export default function App() {
   useEffect(() => {
     if (activeGroupId) {
       localStorage.setItem('activeGroupId', activeGroupId);
-      loadGroup(activeGroupId);
+      loadGroup(activeGroupId).then(() => {
+        // Show tour on first-ever visit (once per browser)
+        if (!tourShownRef.current && !localStorage.getItem('tourCompleted')) {
+          tourShownRef.current = true;
+          // Small delay so the UI settles before the overlay appears
+          setTimeout(() => setShowTour(true), 600);
+        }
+      });
       setMyRsnState((localStorage.getItem(`myRsn_${activeGroupId}`) || '').replace(/\s/g, ' ').trim());
     }
   }, [activeGroupId]);
@@ -1019,6 +1063,7 @@ export default function App() {
         onWebhookClick={() => setShowWebhookModal(true)}
         onMenuToggle={() => setShowMobileSidebar(s => !s)}
         mobileMenuOpen={showMobileSidebar}
+        onTourClick={() => setShowTour(true)}
       />
       <div className="main-layout">
         {/* Mobile overlay — tapping closes the sidebar */}
@@ -1119,6 +1164,14 @@ export default function App() {
           onRemove={removeFromSidebar}
           onFavorite={toggleFavorite}
           favoriteGroupIds={favoriteGroupIds}
+        />
+      )}
+      {showTour && (
+        <TourOverlay
+          onComplete={() => {
+            localStorage.setItem('tourCompleted', '1');
+            setShowTour(false);
+          }}
         />
       )}
       <ToastArea toasts={toasts} />

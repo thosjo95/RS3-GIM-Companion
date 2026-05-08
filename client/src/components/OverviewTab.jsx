@@ -1123,7 +1123,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
               <p>No members yet. Add your first player to get started.</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
+            <div data-tour="members" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
               {players.map((p, i) => (
                 <MemberCard
                   key={p.id}
