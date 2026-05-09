@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://thosjo95.github.io/RS3-GIM-Companion/sitemap.xml
