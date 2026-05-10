@@ -452,6 +452,50 @@ router.put('/:id/webhook', (req, res) => {
   res.json({ success: true });
 });
 
+// POST /api/groups/:id/share-snapshot
+// Accepts a base64 PNG and posts it as a file to the group's Discord webhook
+router.post('/:id/share-snapshot', checkGroupAuth, async (req, res) => {
+  const group = db.prepare('SELECT discord_webhook_url AS webhook_url, name FROM groups WHERE id = ?').get(req.params.id);
+  if (!group?.webhook_url) return res.status(400).json({ error: 'No Discord webhook configured for this group. Set one in the notification settings.' });
+
+  const { imageData } = req.body;
+  if (!imageData) return res.status(400).json({ error: 'No image data provided' });
+
+  try {
+    const base64 = imageData.replace(/^data:image\/png;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
+
+    // Build a multipart/form-data body manually (Node 18+ has no native FormData for fetch)
+    const boundary = `----FormBoundary${Date.now()}`;
+    const payloadJson = JSON.stringify({
+      content: `📊 **${group.name}** — Group Snapshot`,
+      username: 'RS3 GIM Companion',
+    });
+
+    const parts = [
+      `--${boundary}\r\nContent-Disposition: form-data; name="payload_json"\r\nContent-Type: application/json\r\n\r\n${payloadJson}\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="snapshot.png"\r\nContent-Type: image/png\r\n\r\n`,
+    ];
+    const prefix = Buffer.from(parts.join(''));
+    const suffix = Buffer.from(`\r\n--${boundary}--\r\n`);
+    const body   = Buffer.concat([prefix, buffer, suffix]);
+
+    const response = await fetch(group.webhook_url, {
+      method: 'POST',
+      headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+      body,
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return res.status(502).json({ error: `Discord returned ${response.status}: ${errText}` });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/groups/:id/webhook/test — send a test embed (auth required)
 router.post('/:id/webhook/test', async (req, res) => {
   if (!checkGroupAuth(req, res, req.params.id)) return;

@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { api } from '../api/client';
+import { GOAL_SUGGESTIONS } from '../data/goalSuggestions';
 import GoalModal from './GoalModal';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -372,9 +373,175 @@ function SkillTable({ player }) {
   );
 }
 
+// ── Snapshot / Share button ───────────────────────────────────────────────────
+
+function SnapshotButton({ group, players, goals, onToast }) {
+  const [sharing, setSharing] = useState(false);
+  const canvasRef = useRef(null);
+
+  function drawSnapshot() {
+    const W = 800, H = 420;
+    const canvas = document.createElement('canvas');
+    canvas.width = W * 2; canvas.height = H * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+
+    // Background
+    ctx.fillStyle = '#0d0b14';
+    ctx.fillRect(0, 0, W, H);
+
+    // Gold border
+    ctx.strokeStyle = '#c8a84b44';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(12, 12, W - 24, H - 24);
+
+    // Header
+    ctx.fillStyle = '#c8a84b';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.fillText(group.name ?? 'Group Snapshot', 28, 50);
+    ctx.fillStyle = '#8a80a0';
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillText(`RS3 GIM Companion · groupiron.com · ${new Date().toLocaleDateString()}`, 28, 70);
+
+    // Divider
+    ctx.strokeStyle = '#2e2840';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(28, 82); ctx.lineTo(W - 28, 82); ctx.stroke();
+
+    // Player stats
+    const colW = (W - 56) / Math.max(players.length, 1);
+    players.forEach((p, i) => {
+      const x = 28 + i * colW;
+      const overall = p.skills?.find(s => s.skill_name === 'Overall');
+      const COLORS = ['#c8a84b', '#7eb8f7', '#7ef7a8', '#f77e7e', '#d07ef7', '#f7c97e'];
+      ctx.fillStyle = COLORS[i % COLORS.length];
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.fillText(p.rsn, x, 112);
+      ctx.fillStyle = '#e2ddf0';
+      ctx.font = '12px system-ui, sans-serif';
+      ctx.fillText(`Cmb ${p.combat_level ?? '?'}`, x, 132);
+      ctx.fillStyle = '#8a80a0';
+      ctx.fillText(`Lvl ${overall?.level ?? '?'}`, x, 150);
+      const xpStr = overall?.xp ? (overall.xp >= 1e9 ? (overall.xp/1e9).toFixed(2)+'B' : overall.xp >= 1e6 ? (overall.xp/1e6).toFixed(1)+'M' : String(overall.xp)) : '—';
+      ctx.fillText(`${xpStr} XP`, x, 168);
+    });
+
+    // Goals summary
+    ctx.strokeStyle = '#2e2840';
+    ctx.beginPath(); ctx.moveTo(28, 188); ctx.lineTo(W - 28, 188); ctx.stroke();
+    const active = goals.filter(g => g.status === 'in_progress').length;
+    const done   = goals.filter(g => g.status === 'complete' || g.status === 'vaulted').length;
+    const total  = goals.length;
+    ctx.fillStyle = '#c8a84b';
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillText('Goals', 28, 212);
+    ctx.fillStyle = '#8a80a0';
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillText(`${done}/${total} complete · ${active} in progress`, 28, 230);
+
+    // Progress bar
+    const barW = W - 56;
+    ctx.fillStyle = '#1c1826';
+    ctx.fillRect(28, 238, barW, 8);
+    if (total > 0) {
+      ctx.fillStyle = '#4caf50';
+      ctx.fillRect(28, 238, Math.round((done / total) * barW), 8);
+    }
+
+    // Active quest goals list
+    const questGoals = goals.filter(g => g.category === 'quest' && g.status !== 'complete' && g.status !== 'vaulted').slice(0, 8);
+    if (questGoals.length > 0) {
+      ctx.fillStyle = '#c8a84b';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillText('Active Quest Goals', 28, 268);
+      ctx.fillStyle = '#8a80a0';
+      ctx.font = '11px system-ui, sans-serif';
+      questGoals.forEach((g, i) => {
+        ctx.fillText(`• ${g.title}`, 28, 286 + i * 16);
+      });
+    }
+
+    // Footer
+    ctx.fillStyle = '#2e2840';
+    ctx.fillRect(0, H - 32, W, 32);
+    ctx.fillStyle = '#8a80a0';
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText('RS3 GIM Companion · groupiron.com · Not affiliated with Jagex Ltd.', 28, H - 12);
+
+    return canvas;
+  }
+
+  function download() {
+    const canvas = drawSnapshot();
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `${(group.name ?? 'group').replace(/\s+/g, '-')}-snapshot.png`;
+    a.click();
+    onToast?.('Snapshot saved!', 'success');
+  }
+
+  async function shareToDiscord() {
+    setSharing(true);
+    try {
+      const canvas = drawSnapshot();
+      const imageData = canvas.toDataURL('image/png');
+      await api.shareSnapshot(group.id, { imageData });
+      onToast?.('Snapshot shared to Discord!', 'success');
+    } catch (err) {
+      onToast?.(err.message || 'Share failed', 'error');
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius)',
+          background: 'rgba(200,168,75,0.10)', border: '1px solid rgba(200,168,75,0.3)',
+          color: 'var(--gold)', cursor: 'pointer', fontWeight: 600,
+        }}>
+        📸 Share
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 100,
+          background: 'var(--bg-panel)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', overflow: 'hidden', minWidth: 160,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+        }}>
+          <button onClick={() => { download(); setOpen(false); }} style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 12, background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-panel-alt)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+            ⬇ Download PNG
+          </button>
+          <button onClick={() => { shareToDiscord(); setOpen(false); }} disabled={sharing} style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 12, background: 'none', border: 'none', color: 'var(--text)', cursor: sharing ? 'default' : 'pointer', opacity: sharing ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 8 }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-panel-alt)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+            {sharing ? '…' : '📤'} Post to Discord
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Group stats (tabbed) ──────────────────────────────────────────────────────
 
-function GroupStats({ players, weeklyMode }) {
+function GroupStats({ players, weeklyMode, goals, groupId }) {
   const [tab, setTab] = useState('skills');
   const colorMap = useMemo(() => Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]])), [players]);
 
@@ -409,7 +576,20 @@ function GroupStats({ players, weeklyMode }) {
     return counts;
   }, [skillLeaders, players]);
 
-  const TABS = [{ id: 'xp', label: '📊 XP' }, { id: 'skills', label: '⭐ Skills' }, { id: 'combat', label: '⚔️ Combat' }];
+  // Fetch per-skill weekly gains from snapshots API
+  const [skillGains, setSkillGains] = useState([]);
+  useEffect(() => {
+    if (!groupId) return;
+    api.getGroupSnapshots(groupId).then(setSkillGains).catch(() => {});
+  }, [groupId]);
+
+  const TABS = [
+    { id: 'xp',     label: '📊 XP' },
+    { id: 'skills', label: '⭐ Skills' },
+    { id: 'combat', label: '⚔️ Combat' },
+    { id: 'gains',  label: '📅 Gains' },
+    { id: 'gaps',   label: '🎯 Gaps' },
+  ];
 
   function pillStyle(active) {
     return {
@@ -571,6 +751,164 @@ function GroupStats({ players, weeklyMode }) {
           })}
         </div>
       )}
+
+      {/* Gains tab — per-skill weekly XP breakdown */}
+      {tab === 'gains' && (
+        <div>
+          {skillGains.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
+              No snapshot data yet — gains appear after the first daily sync.
+            </div>
+          ) : (() => {
+            // Collect all skills that any player gained XP in, sorted by total group gain
+            const allSkills = new Set();
+            for (const p of skillGains) Object.keys(p.gains).forEach(s => allSkills.add(s));
+            const skillTotals = [...allSkills].map(skill => ({
+              skill,
+              total: skillGains.reduce((sum, p) => sum + (p.gains[skill] ?? 0), 0),
+            })).sort((a, b) => b.total - a.total);
+
+            if (skillTotals.length === 0) return (
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
+                No XP gains recorded in the past 7 days.
+              </div>
+            );
+
+            return (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th align="left" style={{ padding: '4px 8px 8px 4px', fontWeight: 600, color: 'var(--text-dim)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4px', position: 'sticky', left: 0, background: 'var(--bg-panel)', zIndex: 2, whiteSpace: 'nowrap', minWidth: 110 }}>Skill</th>
+                      {skillGains.map(p => (
+                        <th key={p.playerId} align="right" style={{ padding: '4px 8px 8px', fontWeight: 700, color: colorMap[p.playerId] ?? 'var(--text)', fontSize: 11, whiteSpace: 'nowrap' }}>{p.rsn}</th>
+                      ))}
+                      <th align="right" style={{ padding: '4px 8px 8px', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {skillTotals.map(({ skill, total }, rowIdx) => {
+                      const altBg = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
+                      const stickyBg = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
+                      return (
+                        <tr key={skill} style={{ borderTop: '1px solid var(--border)', background: altBg }}>
+                          <td style={{ padding: '5px 8px 5px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
+                            <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={16} /></span>
+                            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{skill}</span>
+                          </td>
+                          {skillGains.map(p => {
+                            const gain = p.gains[skill] ?? 0;
+                            return (
+                              <td key={p.playerId} align="right" style={{ padding: '5px 8px', color: gain > 0 ? 'var(--green-bright)' : 'var(--text-dim)', fontWeight: gain > 0 ? 600 : 400 }}>
+                                {gain > 0 ? `+${fmtXp(gain)}` : '—'}
+                              </td>
+                            );
+                          })}
+                          <td align="right" style={{ padding: '5px 8px', color: 'var(--gold)', fontWeight: 700 }}>
+                            {fmtXp(total)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Gaps tab — skill gap analysis for pending quest goals */}
+      {tab === 'gaps' && (() => {
+        // Build a map of pending quest goal titles
+        const pendingQuestTitles = new Set(
+          (goals || [])
+            .filter(g => g.category === 'quest' && g.status !== 'complete' && g.status !== 'vaulted')
+            .map(g => g.title.toLowerCase())
+        );
+
+        // Cross-reference with GOAL_SUGGESTIONS to get skill requirements
+        const pendingSuggestions = GOAL_SUGGESTIONS.filter(s =>
+          s.category === 'quest_series' && pendingQuestTitles.has(s.title.toLowerCase())
+        );
+
+        // For each suggestion, check each player's skill levels
+        const skillGapMap = {};
+
+        for (const sugg of pendingSuggestions) {
+          for (const [skill, need] of Object.entries(sugg.requirements?.skills ?? {})) {
+            for (const player of players) {
+              const have = player.skills?.find(s => s.skill_name === skill)?.level ?? 1;
+              if (have < need) {
+                const key = skill;
+                if (!skillGapMap[key]) skillGapMap[key] = { skill, need: 0, quests: new Set(), players: {} };
+                if (need > skillGapMap[key].need) skillGapMap[key].need = need;
+                skillGapMap[key].quests.add(sugg.title);
+                if (!skillGapMap[key].players[player.rsn] || skillGapMap[key].players[player.rsn].gap < (need - have)) {
+                  skillGapMap[key].players[player.rsn] = { rsn: player.rsn, have, need, gap: need - have };
+                }
+              }
+            }
+          }
+        }
+
+        const gapList = Object.values(skillGapMap).sort((a, b) => {
+          const aAffected = Object.keys(a.players).length;
+          const bAffected = Object.keys(b.players).length;
+          if (bAffected !== aAffected) return bAffected - aAffected;
+          return b.need - a.need;
+        });
+
+        if (pendingQuestTitles.size === 0) return (
+          <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
+            No active quest goals — add some from the Goal Browser to see skill gaps.
+          </div>
+        );
+
+        if (gapList.length === 0) return (
+          <div style={{ color: 'var(--green-bright)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
+            ✓ All players meet the skill requirements for every pending quest goal!
+          </div>
+        );
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>
+              Skill bottlenecks across {pendingQuestTitles.size} pending quest goal{pendingQuestTitles.size !== 1 ? 's' : ''} — sorted by players affected.
+            </div>
+            {gapList.map(({ skill, need, quests, players: affPlayers }) => {
+              const affected = Object.values(affPlayers);
+              return (
+                <div key={skill} style={{ background: 'var(--bg-panel-alt)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <SkillIcon name={skill} size={18} />
+                    <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)' }}>{skill}</span>
+                    <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 10, background: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.3)', color: 'var(--gold)' }}>
+                      Need {need}
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 'auto' }}>
+                      {affected.length} player{affected.length !== 1 ? 's' : ''} affected
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                    {affected.map(({ rsn, have, gap }) => {
+                      const pColor = colorMap[players.find(p => p.rsn === rsn)?.id] ?? 'var(--text)';
+                      return (
+                        <span key={rsn} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(192,64,64,0.10)', border: '1px solid rgba(192,64,64,0.3)', color: 'var(--red-bright)' }}>
+                          <span style={{ color: pColor, fontWeight: 700 }}>{rsn}</span> {have} → {have + gap} <span style={{ opacity: 0.7 }}>(+{gap})</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>
+                    Needed for: {[...quests].join(' · ')}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1197,10 +1535,13 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
       <div className="grid-2">
         {/* Left */}
         <div className="panel">
-          <div className="panel-header">
-            <span className="panel-title">
+          <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="panel-title" style={{ flex: 1 }}>
               {selectedPlayer ? `${selectedPlayer.rsn} — Skills` : weeklyMode ? '📅 This Week\'s XP' : 'Group Stats'}
             </span>
+            {!selectedPlayer && group && (
+              <SnapshotButton group={group} players={players} goals={goals} onToast={onToast} />
+            )}
           </div>
           <div className="panel-body">
             {selectedPlayer
@@ -1208,7 +1549,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
                 ? <SkillTable player={selectedPlayer} />
                 : <div className="empty-state"><p>No data — sync this player first.</p></div>
               : players.length > 0
-                ? <GroupStats players={players} weeklyMode={weeklyMode} />
+                ? <GroupStats players={players} weeklyMode={weeklyMode} goals={goals} groupId={groupId} />
                 : <div className="empty-state"><p>No players yet.</p></div>}
           </div>
         </div>

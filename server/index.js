@@ -36,7 +36,7 @@ const BETWEEN_BATCH_MS  = 60000; // 60s pause between batches
 
 cron.schedule('0 */2 * * *', async () => {
   const { fetchRuneMetrics } = require('./services/runescape');
-  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
+  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players WHERE group_id IS NOT NULL').all();
   const batches = Math.ceil(players.length / BATCH_SIZE);
@@ -52,6 +52,7 @@ cron.schedule('0 */2 * * *', async () => {
         autoDetectDiaries(player.id, newActivities);
         autoCountBossKills(player.id, newActivities);
         autoDetectLevelMilestones(player.id, newActivities);
+        autoCompleteQuestGoals(player.id, newActivities);
       }
     } catch (err) {
       console.error(`[2h cron] ${player.rsn}: ${err.message}`);
@@ -77,7 +78,7 @@ cron.schedule('0 */2 * * *', async () => {
 // Runs at midnight every day — syncs hiscores (skills, boss kills, clue scrolls).
 cron.schedule('0 0 * * *', async () => {
   const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('./services/runescape');
-  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('./services/activitySync');
+  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players').all();
   const today   = new Date().toISOString().slice(0, 10);
@@ -128,6 +129,7 @@ cron.schedule('0 0 * * *', async () => {
           autoDetectDiaries(player.id, newActivities);
           autoCountBossKills(player.id, newActivities);
           autoDetectLevelMilestones(player.id, newActivities);
+          autoCompleteQuestGoals(player.id, newActivities);
         }
       }
 

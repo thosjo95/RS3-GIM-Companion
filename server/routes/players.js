@@ -380,6 +380,38 @@ router.post('/sync-activities/:groupId', async (req, res) => {
   res.json(results);
 });
 
+// GET /api/players/group-snapshots/:groupId
+// Returns per-player per-skill weekly XP gains (current snapshot minus 7-day-old snapshot)
+router.get('/group-snapshots/:groupId', (req, res) => {
+  const { groupId } = req.params;
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const players = db.prepare('SELECT id, rsn FROM players WHERE group_id = ? ORDER BY rsn').all(groupId);
+
+  const result = players.map(player => {
+    const latestSnap = db.prepare(
+      'SELECT skills_json FROM snapshots WHERE player_id = ? ORDER BY snapshot_date DESC LIMIT 1'
+    ).get(player.id);
+    const weekSnap = db.prepare(
+      'SELECT skills_json FROM snapshots WHERE player_id = ? AND snapshot_date <= ? ORDER BY snapshot_date DESC LIMIT 1'
+    ).get(player.id, weekAgo);
+
+    let gains = {};
+    try {
+      const latest = latestSnap?.skills_json ? JSON.parse(latestSnap.skills_json) : {};
+      const old    = weekSnap?.skills_json   ? JSON.parse(weekSnap.skills_json)   : {};
+      for (const [skill, data] of Object.entries(latest)) {
+        if (skill === 'Overall') continue;
+        const gain = (data.xp ?? 0) - (old[skill]?.xp ?? 0);
+        if (gain > 0) gains[skill] = gain;
+      }
+    } catch {}
+
+    return { playerId: player.id, rsn: player.rsn, gains };
+  });
+
+  res.json(result);
+});
+
 // GET /api/players/:id/snapshots - XP history
 router.get('/:id/snapshots', (req, res) => {
   const snaps = db.prepare(
