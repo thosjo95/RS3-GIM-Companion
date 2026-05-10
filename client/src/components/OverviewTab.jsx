@@ -579,6 +579,9 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
   // Gaps tab filter state
   const [gapsSkill, setGapsSkill] = useState('');       // '' = all skills
   const [gapsLevel, setGapsLevel] = useState('');       // '' = use GOAL_SUGGESTIONS threshold
+  const [gapsSort,  setGapsSort]  = useState('affected-desc'); // 'affected-desc' | 'level-desc' | 'level-asc'
+  const GAPS_SORT_CYCLE = ['affected-desc', 'level-desc', 'level-asc'];
+  const GAPS_SORT_LABEL = { 'affected-desc': '👥 Most affected', 'level-desc': '⬆ Level: high → low', 'level-asc': '⬇ Level: low → high' };
 
   // Fetch per-skill XP gains from snapshots API
   const GAIN_PERIODS = [
@@ -895,6 +898,9 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
         }
 
         const gapList = Object.values(skillGapMap).sort((a, b) => {
+          if (gapsSort === 'level-desc') return b.maxNeed - a.maxNeed;
+          if (gapsSort === 'level-asc')  return a.maxNeed - b.maxNeed;
+          // default: most players affected, then highest level
           const diff = Object.keys(b.players).length - Object.keys(a.players).length;
           return diff !== 0 ? diff : b.maxNeed - a.maxNeed;
         });
@@ -951,11 +957,20 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                 </button>
               )}
 
-              <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-                {isFiltered
-                  ? `Filtered: ${gapsSkill}${customLevel ? ` @ ${customLevel}` : ''}`
-                  : `${questSuggestions.length} quest suggestions`}
-              </span>
+              {/* Sort toggle — cycles through modes on each click */}
+              <button
+                onClick={() => {
+                  const idx = GAPS_SORT_CYCLE.indexOf(gapsSort);
+                  setGapsSort(GAPS_SORT_CYCLE[(idx + 1) % GAPS_SORT_CYCLE.length]);
+                }}
+                style={{
+                  background: 'transparent', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)', color: 'var(--text-dim)',
+                  fontSize: 10, padding: '3px 8px', cursor: 'pointer',
+                  marginLeft: 'auto', whiteSpace: 'nowrap',
+                }}>
+                {GAPS_SORT_LABEL[gapsSort]}
+              </button>
             </div>
 
             {gapList.length === 0 ? (
@@ -985,7 +1000,9 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                       const pColor = colorMap[players.find(p => p.rsn === rsn)?.id] ?? 'var(--text)';
                       return (
                         <span key={rsn} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(192,64,64,0.10)', border: '1px solid rgba(192,64,64,0.3)', color: 'var(--red-bright)' }}>
-                          <span style={{ color: pColor, fontWeight: 700 }}>{rsn}</span> {have} <span style={{ opacity: 0.6 }}>→ {need}</span>
+                          <span style={{ color: pColor, fontWeight: 700 }}>{rsn}</span>
+                          <span style={{ opacity: 0.7 }}> ({have})</span>
+                          <span style={{ color: 'var(--gold)', fontWeight: 600 }}> +{need - have}</span>
                         </span>
                       );
                     })}
