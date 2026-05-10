@@ -731,7 +731,7 @@ function normRsn(s) {
   return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
 }
 
-export default function GoalModal({ players, onClose, onSaved, prefill = {}, onToast, myRsn = '' }) {
+export default function GoalModal({ players, onClose, onSaved, prefill = {}, onToast, myRsn = '', editId = null }) {
   // Resolve "me" — prefer explicit prefill, then myRsn match, then first player
   const myPlayerId = useMemo(() => {
     if (!myRsn) return null;
@@ -755,7 +755,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
     priority: prefill.priority || 'medium',
     skill: prefill.skill || '',
     target_value: prefill.target_value || '',
-    details: {},
+    details: prefill.details || {},
     contributor_ids: [],
   });
   const [saving, setSaving] = useState(false);
@@ -834,19 +834,33 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
 
     setSaving(true);
     try {
-      await api.createGoal({
-        type: form.type,
-        owner_id: form.type === 'personal' ? Number(form.owner_id) : null,
-        title: title,
-        description: form.description?.trim() || null,
-        category,
-        skill: goalType === 'skill_unlock' ? form.skill : null,
-        target_value: goalType === 'skill_unlock' ? Number(form.target_value) || null : null,
-        priority: form.priority,
-        details_json,
-        ...(initialStatus ? { status: initialStatus } : {}),
-        contributor_ids: form.type === 'group' ? form.contributor_ids : [],
-      });
+      if (editId) {
+        // ── Edit existing goal ────────────────────────────────────────────
+        await api.updateGoal(editId, {
+          title,
+          description: form.description?.trim() || null,
+          category,
+          skill: goalType === 'skill_unlock' ? form.skill : null,
+          target_value: goalType === 'skill_unlock' ? Number(form.target_value) || null : null,
+          priority: form.priority,
+          details_json,
+        });
+      } else {
+        // ── Create new goal ───────────────────────────────────────────────
+        await api.createGoal({
+          type: form.type,
+          owner_id: form.type === 'personal' ? Number(form.owner_id) : null,
+          title,
+          description: form.description?.trim() || null,
+          category,
+          skill: goalType === 'skill_unlock' ? form.skill : null,
+          target_value: goalType === 'skill_unlock' ? Number(form.target_value) || null : null,
+          priority: form.priority,
+          details_json,
+          ...(initialStatus ? { status: initialStatus } : {}),
+          contributor_ids: form.type === 'group' ? form.contributor_ids : [],
+        });
+      }
       onSaved();
       onClose();
     } catch (err) {
@@ -860,7 +874,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 560 }}>
         <div className="modal-header">
-          <span className="modal-title">Add Goal</span>
+          <span className="modal-title">{editId ? 'Edit Goal' : 'Add Goal'}</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
         </div>
 

@@ -99,9 +99,10 @@ const TAB_TOUR_KEY = {
 export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite, tabTourReplayKey }) {
   const players = group?.players || [];
 
-  const [tabTour, setTabTour]   = useState(null); // null | 'goals' | 'vault' | ...
-  const shownRef                = useRef({});      // tracks which tours have fired this session
-  const prevReplayKey           = useRef(0);
+  const [tabTour, setTabTour]       = useState(null); // null | 'goals' | 'vault' | ...
+  const [goalsJumpKey, setGoalsJumpKey] = useState(0); // incremented to force GoalsTab → Active Goals
+  const shownRef                    = useRef({});      // tracks which tours have fired this session
+  const prevReplayKey               = useRef(0);
 
   const TABS = [
     { id: 'overview',      label: '📊 Overview' },
@@ -172,7 +173,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
           canWrite={canWrite}
           myRsn={myRsn}
           pendingRequests={pendingRequests ?? []}
-          onGoToRequests={() => onTabChange('goals')}
+          onGoToRequests={() => { onTabChange('goals'); setGoalsJumpKey(k => k + 1); }}
           onAddPlayer={onAddPlayer}
         />
       )}
@@ -188,6 +189,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
           onToast={onToast}
           canWrite={canWrite}
           myRsn={myRsn}
+          jumpToActiveKey={goalsJumpKey}
         />
       )}
 

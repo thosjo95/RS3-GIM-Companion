@@ -241,7 +241,11 @@ router.post('/:id/sync', async (req, res) => {
     db.prepare(`
       INSERT INTO snapshots (player_id, snapshot_date, total_xp, total_level, skills_json)
       VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(player_id, snapshot_date) DO NOTHING
+      ON CONFLICT(player_id, snapshot_date) DO UPDATE SET
+        total_xp    = excluded.total_xp,
+        total_level = excluded.total_level,
+        skills_json = excluded.skills_json
+      WHERE snapshots.skills_json IS NULL
     `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
     autoCompleteGoals(player.id, data.skills);
@@ -317,7 +321,11 @@ router.post('/sync-all/:groupId', async (req, res) => {
       db.prepare(`
         INSERT INTO snapshots (player_id, snapshot_date, total_xp, total_level, skills_json)
         VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(player_id, snapshot_date) DO NOTHING
+        ON CONFLICT(player_id, snapshot_date) DO UPDATE SET
+          total_xp    = excluded.total_xp,
+          total_level = excluded.total_level,
+          skills_json = excluded.skills_json
+        WHERE snapshots.skills_json IS NULL
       `).run(player.id, today, data.totalXp, data.totalLevel, JSON.stringify(data.skills));
 
       autoCompleteGoals(player.id, data.skills);
@@ -389,30 +397,45 @@ router.get('/group-snapshots/:groupId', (req, res) => {
   const players = db.prepare('SELECT id, rsn FROM players WHERE group_id = ? ORDER BY rsn').all(groupId);
 
   const result = players.map(player => {
-    const latestSnap = db.prepare(
-      'SELECT skills_json FROM snapshots WHERE player_id = ? ORDER BY snapshot_date DESC LIMIT 1'
-    ).get(player.id);
-    const weekSnap = db.prepare(
+    // Always read current levels/XP from the live skills table so Gains and Skills tabs
+    // stay in sync after every Sync All — snapshots lag by up to one day.
+    const liveSkills = db.prepare(
+      'SELECT skill_name, level, xp FROM skills WHERE player_id = ?'
+    ).all(player.id);
+
+    // Historical snapshot to diff against (oldest within the requested window)
+    const oldSnap = db.prepare(
       'SELECT skills_json FROM snapshots WHERE player_id = ? AND snapshot_date <= ? ORDER BY snapshot_date DESC LIMIT 1'
     ).get(player.id, sinceDate);
 
     let gains = {};
     let levelGains = {};
     let currentLevels = {};
+    let hasHistory = false;
     try {
-      const latest = latestSnap?.skills_json ? JSON.parse(latestSnap.skills_json) : {};
-      const old    = weekSnap?.skills_json   ? JSON.parse(weekSnap.skills_json)   : {};
-      for (const [skill, data] of Object.entries(latest)) {
-        if (skill === 'Overall') continue;
-        currentLevels[skill] = data.level ?? 1;
-        const xpGain = (data.xp ?? 0) - (old[skill]?.xp ?? 0);
-        if (xpGain > 0) gains[skill] = xpGain;
-        const lvlGain = (data.level ?? 0) - (old[skill]?.level ?? 0);
-        if (lvlGain > 0) levelGains[skill] = lvlGain;
+      // Build current map from live skills table
+      const liveMap = {};
+      for (const s of liveSkills) {
+        if (s.skill_name === 'Overall') continue;
+        currentLevels[s.skill_name] = s.level ?? 1;
+        liveMap[s.skill_name] = { level: s.level ?? 1, xp: s.xp ?? 0 };
+      }
+
+      // Only compute gains when there is a real historical snapshot to diff against.
+      // Without one, the diff would be the player's entire lifetime XP — meaningless.
+      if (oldSnap?.skills_json) {
+        hasHistory = true;
+        const old = JSON.parse(oldSnap.skills_json);
+        for (const [skill, data] of Object.entries(liveMap)) {
+          const xpGain = data.xp - (old[skill]?.xp ?? 0);
+          if (xpGain > 0) gains[skill] = xpGain;
+          const lvlGain = data.level - (old[skill]?.level ?? 0);
+          if (lvlGain > 0) levelGains[skill] = lvlGain;
+        }
       }
     } catch {}
 
-    return { playerId: player.id, rsn: player.rsn, gains, levelGains, currentLevels };
+    return { playerId: player.id, rsn: player.rsn, gains, levelGains, currentLevels, hasHistory };
   });
 
   res.json(result);

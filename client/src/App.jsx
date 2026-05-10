@@ -1127,14 +1127,18 @@ export default function App() {
   async function loadGroup(id) {
     if (!id) return;
     try {
-      const [g, g_goals, g_reqs] = await Promise.all([
+      const [g, g_goals] = await Promise.all([
         api.getGroup(id),
         api.getGoals(id),
-        api.getRequests(id),
       ]);
       setGroup(g);
       setGoals(g_goals);
-      setPendingRequests(g_reqs.filter(r => !r.obtained));
+      // Derive pending item requests from goals (category = 'item_request', not yet complete/vaulted)
+      // so the Overview banner and Goals tab stay in sync without a separate API call.
+      const pendingItemGoals = g_goals.filter(
+        g => g.category === 'item_request' && g.status !== 'complete' && g.status !== 'vaulted'
+      );
+      setPendingRequests(pendingItemGoals);
     } catch (err) {
       pushToast(err.message, 'error');
     }

@@ -17,7 +17,7 @@ const STATUS_COLS = [
 
 const STATUS_CYCLE = ['not_started', 'in_progress', 'blocked', 'complete'];
 
-const CAT_ICONS  = { skill: '📈', quest: '📜', item: '📦', boss: '⚔️', diary: '📋', other: '✏️' };
+const CAT_ICONS  = { skill: '📈', quest: '📜', item: '📦', item_request: '📦', boss: '⚔️', diary: '📋', other: '✏️' };
 const PRI_COLORS = { high: 'var(--red-bright)', medium: 'var(--gold)', low: 'var(--green-bright)' };
 const PRI_DOT    = { high: '🔴', medium: '🟠', low: '🟢' };
 
@@ -171,7 +171,7 @@ function PlayerChips({ players, selected, onToggle }) {
 
 // ── Active-goal card (board) ──────────────────────────────────────────────────
 
-function GoalCard({ goal, players, onCycle, onDelete, canWrite }) {
+function GoalCard({ goal, players, onCycle, onDelete, onEdit, onSetBlocked, canWrite, isDragging, onDragStart, onDragEnd }) {
   const details  = parseDetails(goal.details_json);
   const owner    = players.find(p => p.id === goal.owner_id);
   const isGroup  = goal.type === 'group';
@@ -191,14 +191,31 @@ function GoalCard({ goal, players, onCycle, onDelete, canWrite }) {
   const questName = details?.questName;
   const wikiHref  = questName ? `https://runescape.wiki/w/${questName.replace(/ /g, '_')}` : null;
 
+  const btnBase = {
+    background: 'none', border: '1px solid var(--border)', borderRadius: 4,
+    cursor: 'pointer', fontSize: 11, padding: '2px 5px', color: 'var(--text-dim)',
+    transition: 'all 0.12s', lineHeight: 1,
+  };
+
   return (
-    <div style={{
-      background: 'var(--bg-panel-alt)',
-      border: `1px solid ${isHot ? 'rgba(192,64,64,0.5)' : 'var(--border)'}`,
-      borderRadius: 'var(--radius-lg)',
-      padding: '10px 12px', marginBottom: 6,
-      boxShadow: isHot ? '0 0 8px rgba(192,64,64,0.2)' : undefined,
-    }}>
+    <div
+      draggable={canWrite}
+      onDragStart={e => {
+        e.dataTransfer.setData('text/plain', String(goal.id));
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart?.();
+      }}
+      onDragEnd={() => onDragEnd?.()}
+      style={{
+        background: 'var(--bg-panel-alt)',
+        border: `1px solid ${isHot ? 'rgba(192,64,64,0.5)' : 'var(--border)'}`,
+        borderRadius: 'var(--radius-lg)',
+        padding: '10px 12px', marginBottom: 6,
+        boxShadow: isHot ? '0 0 8px rgba(192,64,64,0.2)' : undefined,
+        opacity: isDragging ? 0.35 : 1,
+        cursor: canWrite ? 'grab' : undefined,
+        transition: 'opacity 0.15s',
+      }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
         <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{CAT_ICONS[goal.category] ?? '✏️'}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -221,17 +238,28 @@ function GoalCard({ goal, players, onCycle, onDelete, canWrite }) {
         </div>
         {canWrite && (
           <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-            <button onClick={() => onCycle(goal)} title="Advance status"
-              style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
-                cursor: 'pointer', fontSize: 10, padding: '2px 5px', color: 'var(--text-dim)' }}>▶</button>
-            <button
-              onClick={() => onDelete(goal.id)}
-              title="Remove goal"
+            {/* Edit */}
+            <button onClick={e => { e.stopPropagation(); onEdit?.(goal); }} title="Edit goal"
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,136,184,0.15)'; e.currentTarget.style.borderColor = 'rgba(74,136,184,0.4)'; e.currentTarget.style.color = '#6ab0e0'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
+              style={btnBase}>✏️</button>
+            {/* Blocked — only when not already blocked or complete */}
+            {goal.status !== 'blocked' && goal.status !== 'complete' && (
+              <button onClick={e => { e.stopPropagation(); onSetBlocked?.(goal.id); }} title="Mark as blocked"
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,64,64,0.12)'; e.currentTarget.style.borderColor = 'rgba(192,64,64,0.4)'; e.currentTarget.style.color = 'var(--red-bright)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
+                style={btnBase}>🚫</button>
+            )}
+            {/* Advance status */}
+            <button onClick={e => { e.stopPropagation(); onCycle(goal); }} title="Advance status"
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(90,154,80,0.12)'; e.currentTarget.style.borderColor = 'rgba(90,154,80,0.4)'; e.currentTarget.style.color = 'var(--green-bright)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
+              style={btnBase}>▶</button>
+            {/* Delete */}
+            <button onClick={e => { e.stopPropagation(); onDelete(goal.id); }} title="Remove goal"
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,64,64,0.15)'; e.currentTarget.style.borderColor = 'rgba(192,64,64,0.5)'; e.currentTarget.style.color = 'var(--red-bright)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
-              style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
-                cursor: 'pointer', fontSize: 11, padding: '2px 6px', color: 'var(--text-dim)',
-                transition: 'all 0.12s' }}>🗑</button>
+              style={btnBase}>✕</button>
           </div>
         )}
       </div>
@@ -287,29 +315,52 @@ function StatsBar({ goals }) {
 
 // ── Board view ────────────────────────────────────────────────────────────────
 
-function BoardView({ goals, players, onCycle, onDelete, canWrite }) {
+function BoardView({ goals, players, onCycle, onDelete, onEdit, onSetBlocked, onSetStatus, canWrite }) {
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, alignItems: 'start' }}>
       {STATUS_COLS.map(col => {
         const colGoals = goals.filter(g => g.status === col.id);
+        const isOver   = dragOverCol === col.id;
         return (
-          <div key={col.id} style={{
-            background: 'var(--bg-panel-alt)',
-            border: `1px solid ${col.border}`,
-            borderRadius: 'var(--radius-lg)',
-            padding: '10px 10px 6px',
-          }}>
+          <div key={col.id}
+            onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverCol(col.id); }}
+            onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverCol(null); }}
+            onDrop={e => {
+              e.preventDefault();
+              const goalId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+              if (goalId && onSetStatus) onSetStatus(goalId, col.id);
+              setDraggingId(null);
+              setDragOverCol(null);
+            }}
+            style={{
+              background: isOver ? 'rgba(200,168,75,0.06)' : 'var(--bg-panel-alt)',
+              border: `1px solid ${isOver ? 'var(--gold)' : col.border}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: '10px 10px 6px',
+              transition: 'border-color 0.15s, background 0.15s',
+              minHeight: 60,
+            }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: col.color }}>{col.icon} {col.label}</span>
               <span style={{ fontSize: 11, color: 'var(--text-dim)', background: 'var(--bg-input)', borderRadius: 10, padding: '1px 7px' }}>
                 {colGoals.length}
               </span>
             </div>
-            {colGoals.length === 0
-              ? <div style={{ color: 'var(--text-dim)', fontSize: 11, textAlign: 'center', padding: '12px 0', fontStyle: 'italic' }}>Empty</div>
+            {colGoals.length === 0 && !isOver
+              ? <div style={{ color: 'var(--text-dim)', fontSize: 11, textAlign: 'center', padding: '12px 0', fontStyle: 'italic' }}>
+                  {canWrite ? 'Drop here' : 'Empty'}
+                </div>
               : colGoals.map(g => (
                   <GoalCard key={g.id} goal={g} players={players}
-                    onCycle={onCycle} onDelete={onDelete} canWrite={canWrite} />
+                    onCycle={onCycle} onDelete={onDelete} onEdit={onEdit} onSetBlocked={onSetBlocked}
+                    canWrite={canWrite}
+                    isDragging={draggingId === g.id}
+                    onDragStart={() => setDraggingId(g.id)}
+                    onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
+                  />
                 ))
             }
           </div>
@@ -928,7 +979,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function GoalsTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn }) {
+export default function GoalsTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn, jumpToActiveKey = 0 }) {
   const [view,           setView]           = useState('board');
   const [filterPlayer,   setFilterPlayer]   = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -936,9 +987,19 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
   const [filterScope,    setFilterScope]    = useState('all');
   const [showModal,      setShowModal]      = useState(false);
   const [prefill,        setPrefill]        = useState({});
+  const [editGoalId,     setEditGoalId]     = useState(null); // null = create, number = edit
   const [addingId,       setAddingId]       = useState(null);
   const [activeSection,  setActiveSection]  = useState('browser'); // 'browser' | 'active'
   const [achievements,   setAchievements]   = useState([]);
+
+  // Jump to 'active' section when signalled from outside (e.g. Overview banner click)
+  const prevJumpKey = React.useRef(0);
+  React.useEffect(() => {
+    if (jumpToActiveKey && jumpToActiveKey !== prevJumpKey.current) {
+      prevJumpKey.current = jumpToActiveKey;
+      setActiveSection('active');
+    }
+  }, [jumpToActiveKey]);
 
   const myPlayerId = useMemo(() =>
     myRsn ? players.find(p => normRsn(p.rsn) === normRsn(myRsn))?.id ?? null : null,
@@ -993,7 +1054,32 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
 
   function openAdd(overrides = {}) {
     setPrefill({ ...(myPlayerId ? { owner_id: myPlayerId } : {}), ...overrides });
+    setEditGoalId(null);
     setShowModal(true);
+  }
+
+  function openEdit(goal) {
+    const details = parseDetails(goal.details_json);
+    setPrefill({
+      type:         goal.type,
+      owner_id:     goal.owner_id,
+      title:        goal.title,
+      description:  goal.description || '',
+      priority:     goal.priority,
+      skill:        goal.skill || '',
+      target_value: goal.target_value || '',
+      category:     goal.category,
+      details:      details || {},
+    });
+    setEditGoalId(goal.id);
+    setShowModal(true);
+  }
+
+  async function setGoalStatus(goalId, newStatus) {
+    try {
+      await api.updateGoal(goalId, { status: newStatus });
+      onRefresh();
+    } catch (err) { onToast(err.message, 'error'); }
   }
 
   async function addSuggestion(s, status = 'not_started', selectedPlayerIds = []) {
@@ -1170,7 +1256,12 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
 
           {/* Board / List */}
           {view === 'board'
-            ? <BoardView goals={filteredGoals} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />
+            ? <BoardView goals={filteredGoals} players={players}
+                onCycle={cycleStatus} onDelete={deleteGoal}
+                onEdit={openEdit}
+                onSetBlocked={id => setGoalStatus(id, 'blocked')}
+                onSetStatus={setGoalStatus}
+                canWrite={canWrite} />
             : <ListView  goals={filteredGoals} players={players} onCycle={cycleStatus} onDelete={deleteGoal} canWrite={canWrite} />}
 
           {/* Empty state */}
@@ -1191,14 +1282,15 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
         </div>
       )}
 
-      {/* ── Goal modal ── */}
+      {/* ── Goal modal (create or edit) ── */}
       {showModal && (
         <GoalModal
           players={players}
           prefill={prefill}
+          editId={editGoalId}
           myRsn={myRsn}
-          onClose={() => setShowModal(false)}
-          onSaved={() => { onRefresh(); setShowModal(false); }}
+          onClose={() => { setShowModal(false); setEditGoalId(null); }}
+          onSaved={() => { onRefresh(); setShowModal(false); setEditGoalId(null); if (!editGoalId) setActiveSection('active'); }}
           onToast={onToast}
         />
       )}

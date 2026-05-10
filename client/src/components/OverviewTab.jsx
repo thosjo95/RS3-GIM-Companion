@@ -802,25 +802,24 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
 
           {skillGains.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-              No snapshot data yet — gains appear after the first daily sync.
+              No snapshot data yet — sync the group first to begin tracking.
             </div>
           ) : (() => {
             const periodLabel = GAIN_PERIODS.find(p => p.days === gainPeriod)?.label.toLowerCase() ?? 'period';
+            const noHistory   = skillGains.every(p => !p.hasHistory);
 
             // Collect all skills any player gained XP in, ordered by SKILL_ORDER (same as Skills tab)
             const gainedSkills = new Set();
             for (const p of skillGains) Object.keys(p.gains).forEach(s => gainedSkills.add(s));
             const skillTotals = SKILL_ORDER
               .filter(skill => gainedSkills.has(skill))
-              .map(skill => ({
-                skill,
-                totalXp:  skillGains.reduce((sum, p) => sum + (p.gains[skill] ?? 0), 0),
-                totalLvl: skillGains.reduce((sum, p) => sum + (p.levelGains?.[skill] ?? 0), 0),
-              }));
+              .map(skill => ({ skill }));
 
             if (skillTotals.length === 0) return (
               <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-                No XP gains recorded in the past {periodLabel}.
+                {noHistory
+                  ? 'Snapshot history is building — gains will appear once a second daily sync has run. Current levels are tracked.'
+                  : `No XP gains recorded in the past ${periodLabel}.`}
               </div>
             );
 
@@ -831,47 +830,44 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                     <tr>
                       <th align="left" style={{ padding: '4px 8px 8px 4px', fontWeight: 600, color: 'var(--text-dim)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4px', position: 'sticky', left: 0, background: 'var(--bg-panel)', zIndex: 2, whiteSpace: 'nowrap', minWidth: 110 }}>Skill</th>
                       {skillGains.map(p => (
-                        <th key={p.playerId} align="right" style={{ padding: '4px 8px 8px', fontWeight: 700, color: colorMap[p.playerId] ?? 'var(--text)', fontSize: 11, whiteSpace: 'nowrap' }}>{p.rsn}</th>
+                        <th key={p.playerId} align="center" style={{ padding: '4px 8px 8px', fontWeight: 700, color: colorMap[p.playerId] ?? 'var(--text)', fontSize: 11, whiteSpace: 'nowrap' }}>{p.rsn}</th>
                       ))}
-                      <th align="right" style={{ padding: '4px 8px 8px', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>Total lvls</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {skillTotals.map(({ skill, totalLvl }, rowIdx) => {
+                    {skillTotals.map(({ skill }, rowIdx) => {
                       const altBg    = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
                       const stickyBg = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
+                      // Find the highest level gain in this row so we can highlight only the winner
+                      const maxLvlGain = Math.max(...skillGains.map(p => p.levelGains?.[skill] ?? 0));
                       return (
                         <tr key={skill} style={{ borderTop: '1px solid var(--border)', background: altBg }}>
                           <td style={{ padding: '5px 8px 5px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
-                            <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={16} /></span>
+                            <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={18} /></span>
                             <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{skill}</span>
                           </td>
                           {skillGains.map(p => {
-                            const hasXp  = (p.gains[skill] ?? 0) > 0;
-                            const curLvl = p.currentLevels?.[skill] ?? null;
+                            const hasXp   = (p.gains[skill] ?? 0) > 0;
+                            const curLvl  = p.currentLevels?.[skill] ?? null;
                             const lvlGain = p.levelGains?.[skill] ?? 0;
-                            if (!hasXp) return (
-                              <td key={p.playerId} align="right" style={{ padding: '5px 8px', color: 'var(--text-dim)' }}>—</td>
-                            );
+                            const isTop   = maxLvlGain > 0 && lvlGain === maxLvlGain;
+                            const is120   = curLvl >= 120;
+                            const is99    = curLvl >= 99;
+                            const lvlColor = is120 ? 'var(--gold)' : is99 ? 'var(--text-bright)' : curLvl ? 'var(--text)' : 'var(--text-dim)';
                             return (
-                              <td key={p.playerId} align="right"
-                                title={`+${(p.gains[skill] ?? 0).toLocaleString()} XP`}
-                                style={{ padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'default' }}>
-                                {curLvl !== null && (
-                                  <span style={{ color: 'var(--text-dim)', fontSize: 10, marginRight: 3 }}>{curLvl}</span>
-                                )}
+                              <td key={p.playerId} align="center"
+                                title={hasXp ? `+${(p.gains[skill] ?? 0).toLocaleString()} XP` : undefined}
+                                style={{ padding: '5px 6px', whiteSpace: 'nowrap', cursor: hasXp ? 'default' : undefined,
+                                  background: isTop ? 'rgba(200,168,75,0.18)' : undefined }}>
+                                {curLvl !== null
+                                  ? <span style={{ color: isTop ? 'var(--gold)' : lvlColor, fontWeight: isTop ? 700 : 400 }}>{curLvl}</span>
+                                  : <span style={{ color: 'var(--text-dim)' }}>—</span>}
                                 {lvlGain > 0 && (
-                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700 }}>+{lvlGain}</span>
-                                )}
-                                {lvlGain === 0 && (
-                                  <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>—</span>
+                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700, fontSize: 10, marginLeft: 3 }}>+{lvlGain}</span>
                                 )}
                               </td>
                             );
                           })}
-                          <td align="right" style={{ padding: '5px 8px', color: totalLvl > 0 ? 'var(--gold)' : 'var(--text-dim)', fontWeight: 700 }}>
-                            {totalLvl > 0 ? `+${totalLvl}` : '—'}
-                          </td>
                         </tr>
                       );
                     })}
@@ -1653,16 +1649,16 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
             borderRadius: 'var(--radius-lg)', textAlign: 'left',
           }}
         >
-          <span style={{ fontSize: 18, flexShrink: 0 }}>🎯</span>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>📦</span>
           <div style={{ flex: 1 }}>
             <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--gold)' }}>
               {pendingRequests.length} active item request{pendingRequests.length !== 1 ? 's' : ''}
             </span>
             <span style={{ fontSize: 12, color: 'var(--text-dim)', marginLeft: 8 }}>
-              {[...new Set(pendingRequests.map(r => r.rsn))].join(', ')}
+              {[...new Set(pendingRequests.map(r => r.owner_rsn ?? r.rsn).filter(Boolean))].join(', ')}
             </span>
           </div>
-          <span style={{ fontSize: 12, color: 'var(--gold)', flexShrink: 0 }}>View in Items &amp; Drops →</span>
+          <span style={{ fontSize: 12, color: 'var(--gold)', flexShrink: 0 }}>View in Active Goals →</span>
         </button>
       )}
 
