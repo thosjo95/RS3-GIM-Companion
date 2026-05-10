@@ -397,17 +397,22 @@ router.get('/group-snapshots/:groupId', (req, res) => {
     ).get(player.id, sinceDate);
 
     let gains = {};
+    let levelGains = {};
+    let currentLevels = {};
     try {
       const latest = latestSnap?.skills_json ? JSON.parse(latestSnap.skills_json) : {};
       const old    = weekSnap?.skills_json   ? JSON.parse(weekSnap.skills_json)   : {};
       for (const [skill, data] of Object.entries(latest)) {
         if (skill === 'Overall') continue;
-        const gain = (data.xp ?? 0) - (old[skill]?.xp ?? 0);
-        if (gain > 0) gains[skill] = gain;
+        currentLevels[skill] = data.level ?? 1;
+        const xpGain = (data.xp ?? 0) - (old[skill]?.xp ?? 0);
+        if (xpGain > 0) gains[skill] = xpGain;
+        const lvlGain = (data.level ?? 0) - (old[skill]?.level ?? 0);
+        if (lvlGain > 0) levelGains[skill] = lvlGain;
       }
     } catch {}
 
-    return { playerId: player.id, rsn: player.rsn, gains };
+    return { playerId: player.id, rsn: player.rsn, gains, levelGains, currentLevels };
   });
 
   res.json(result);

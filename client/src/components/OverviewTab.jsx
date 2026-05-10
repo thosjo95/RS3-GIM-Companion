@@ -800,13 +800,15 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
             </div>
           ) : (() => {
             const periodLabel = GAIN_PERIODS.find(p => p.days === gainPeriod)?.label.toLowerCase() ?? 'period';
-            // Collect all skills that any player gained XP in, sorted by total group gain
+
+            // Collect all skills any player gained XP in, sorted by total group level gains then XP
             const allSkills = new Set();
             for (const p of skillGains) Object.keys(p.gains).forEach(s => allSkills.add(s));
             const skillTotals = [...allSkills].map(skill => ({
               skill,
-              total: skillGains.reduce((sum, p) => sum + (p.gains[skill] ?? 0), 0),
-            })).sort((a, b) => b.total - a.total);
+              totalXp:  skillGains.reduce((sum, p) => sum + (p.gains[skill] ?? 0), 0),
+              totalLvl: skillGains.reduce((sum, p) => sum + (p.levelGains?.[skill] ?? 0), 0),
+            })).sort((a, b) => b.totalLvl !== a.totalLvl ? b.totalLvl - a.totalLvl : b.totalXp - a.totalXp);
 
             if (skillTotals.length === 0) return (
               <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
@@ -823,12 +825,12 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                       {skillGains.map(p => (
                         <th key={p.playerId} align="right" style={{ padding: '4px 8px 8px', fontWeight: 700, color: colorMap[p.playerId] ?? 'var(--text)', fontSize: 11, whiteSpace: 'nowrap' }}>{p.rsn}</th>
                       ))}
-                      <th align="right" style={{ padding: '4px 8px 8px', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>Total</th>
+                      <th align="right" style={{ padding: '4px 8px 8px', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>Total lvls</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {skillTotals.map(({ skill, total }, rowIdx) => {
-                      const altBg = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
+                    {skillTotals.map(({ skill, totalLvl }, rowIdx) => {
+                      const altBg    = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
                       const stickyBg = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
                       return (
                         <tr key={skill} style={{ borderTop: '1px solid var(--border)', background: altBg }}>
@@ -837,15 +839,26 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                             <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{skill}</span>
                           </td>
                           {skillGains.map(p => {
-                            const gain = p.gains[skill] ?? 0;
+                            const hasXp  = (p.gains[skill] ?? 0) > 0;
+                            const curLvl = p.currentLevels?.[skill] ?? null;
+                            const lvlGain = p.levelGains?.[skill] ?? 0;
+                            if (!hasXp) return (
+                              <td key={p.playerId} align="right" style={{ padding: '5px 8px', color: 'var(--text-dim)' }}>—</td>
+                            );
                             return (
-                              <td key={p.playerId} align="right" style={{ padding: '5px 8px', color: gain > 0 ? 'var(--green-bright)' : 'var(--text-dim)', fontWeight: gain > 0 ? 600 : 400 }}>
-                                {gain > 0 ? `+${fmtXp(gain)}` : '—'}
+                              <td key={p.playerId} align="right" style={{ padding: '5px 8px', whiteSpace: 'nowrap' }}>
+                                {curLvl !== null && (
+                                  <span style={{ color: 'var(--text-dim)', fontSize: 10, marginRight: 3 }}>{curLvl}</span>
+                                )}
+                                {lvlGain > 0
+                                  ? <span style={{ color: 'var(--green-bright)', fontWeight: 700 }}>+{lvlGain}</span>
+                                  : <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>+{fmtXp(p.gains[skill])} xp</span>
+                                }
                               </td>
                             );
                           })}
-                          <td align="right" style={{ padding: '5px 8px', color: 'var(--gold)', fontWeight: 700 }}>
-                            {fmtXp(total)}
+                          <td align="right" style={{ padding: '5px 8px', color: totalLvl > 0 ? 'var(--gold)' : 'var(--text-dim)', fontWeight: 700 }}>
+                            {totalLvl > 0 ? `+${totalLvl}` : '—'}
                           </td>
                         </tr>
                       );
