@@ -656,12 +656,13 @@ function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, o
 
 // ── Goal Browser ──────────────────────────────────────────────────────────────
 
-function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom, achievements, groupId }) {
+function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom, achievements, groupId, myPlayerId }) {
   const DISMISSED_KEY = `rs3gim_dismissed_suggestions_${groupId || 'default'}`;
   const autoStage = useMemo(() => detectStage(players), [players]);
   const [stage,    setStage]    = useState(autoStage);
   const [category, setCategory] = useState('all');
-  const [selected, setSelected] = useState(() => players.map(p => p.id));
+  // Default to just "me" if a character name is set, otherwise select everyone
+  const [selected, setSelected] = useState(() => myPlayerId ? [myPlayerId] : players.map(p => p.id));
   const [search,   setSearch]   = useState('');
   const [showDismissed,        setShowDismissed]        = useState(false);
   const [showCompletedDiaries, setShowCompletedDiaries] = useState(false);
@@ -1113,6 +1114,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
           onCreateCustom={() => openAdd()}
           achievements={achievements}
           groupId={groupId}
+          myPlayerId={myPlayerId}
         /></div>
       )}
 
