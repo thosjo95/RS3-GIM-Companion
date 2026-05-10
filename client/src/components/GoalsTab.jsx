@@ -665,6 +665,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
   const [search,   setSearch]   = useState('');
   const [showDismissed,        setShowDismissed]        = useState(false);
   const [showCompletedDiaries, setShowCompletedDiaries] = useState(false);
+  const [showCompletedGoals,   setShowCompletedGoals]   = useState(false);
 
   // Map: playerId → Set of achieved diary keys
   const achievedByPlayer = useMemo(() => {
@@ -720,7 +721,14 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
     );
   }
 
-  const activeKeys = useMemo(() => new Set(goals.map(g => g.title)), [goals]);
+  // Titles of goals that are complete or vaulted — these get hidden from the browser
+  const completedTitles = useMemo(() =>
+    new Set(goals.filter(g => g.status === 'complete' || g.status === 'vaulted').map(g => g.title)),
+  [goals]);
+  // Titles of goals that are added but still active (not yet done) — show "✓ Added"
+  const activeKeys = useMemo(() =>
+    new Set(goals.filter(g => g.status !== 'complete' && g.status !== 'vaulted').map(g => g.title)),
+  [goals]);
   const selectedPlayers = players.filter(p => selected.includes(p.id));
 
   const filtered = useMemo(() => {
@@ -729,6 +737,8 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
       if (s.stage !== stage) return false;
       if (category !== 'all' && s.category !== category) return false;
       if (!showDismissed && dismissed.has(s.id)) return false;
+      // Hide suggestions whose goal has been completed or vaulted
+      if (!showCompletedGoals && completedTitles.has(s.title)) return false;
       // Hide diary suggestions that ALL selected players have already completed
       if (s.category === 'diary' && selected.length > 0 && !showCompletedDiaries) {
         const achKey = diaryAchievementKey(s.id);
@@ -744,11 +754,21 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
       }
       return true;
     });
-  }, [allSuggestions, stage, category, dismissed, showDismissed, showCompletedDiaries, selected, achievedByPlayer, search]);
+  }, [allSuggestions, stage, category, dismissed, showDismissed, showCompletedGoals, completedTitles, showCompletedDiaries, selected, achievedByPlayer, search]);
 
   const dismissedInView = useMemo(() =>
     allSuggestions.filter(s => s.stage === stage && (category === 'all' || s.category === category) && dismissed.has(s.id)).length,
   [allSuggestions, stage, category, dismissed]);
+
+  // Count suggestions hidden because the goal is already complete / vaulted
+  const completedGoalsHidden = useMemo(() =>
+    allSuggestions.filter(s =>
+      s.stage === stage &&
+      (category === 'all' || s.category === category) &&
+      !dismissed.has(s.id) &&
+      completedTitles.has(s.title)
+    ).length,
+  [allSuggestions, stage, category, dismissed, completedTitles]);
 
   // Count diary suggestions hidden because all selected players have completed them
   const completedDiariesHidden = useMemo(() => {
@@ -758,9 +778,10 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
       (category === 'all' || s.category === category) &&
       s.category === 'diary' &&
       !dismissed.has(s.id) &&
+      !completedTitles.has(s.title) &&
       selected.every(pid => achievedByPlayer[pid]?.has(diaryAchievementKey(s.id)))
     ).length;
-  }, [allSuggestions, stage, category, dismissed, selected, achievedByPlayer]);
+  }, [allSuggestions, stage, category, dismissed, completedTitles, selected, achievedByPlayer]);
 
   const stageKeys = Object.keys(STAGES);
 
@@ -840,7 +861,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
       </div>
 
       {/* Hidden count + restore */}
-      {(dismissedInView > 0 || completedDiariesHidden > 0) && (
+      {(dismissedInView > 0 || completedGoalsHidden > 0 || completedDiariesHidden > 0) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: 'var(--text-dim)', flexWrap: 'wrap' }}>
           {dismissedInView > 0 && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -857,6 +878,15 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
                 </button>
               )}
             </span>
+          )}
+          {completedGoalsHidden > 0 && (
+            <button onClick={() => setShowCompletedGoals(s => !s)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
+                color: 'var(--green-bright)', textDecoration: 'underline', padding: 0 }}>
+              {showCompletedGoals
+                ? '▾ Hide completed'
+                : `✓ ${completedGoalsHidden} completed goal${completedGoalsHidden > 1 ? 's' : ''} hidden`}
+            </button>
           )}
           {completedDiariesHidden > 0 && (
             <button onClick={() => setShowCompletedDiaries(s => !s)}
