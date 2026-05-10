@@ -818,90 +818,85 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
         </div>
       )}
 
-      {/* Gaps tab — skill gap analysis for pending quest goals */}
+      {/* Gaps tab — automatic skill gap analysis across all quest suggestions */}
       {tab === 'gaps' && (() => {
-        // Build a map of pending quest goal titles
-        const pendingQuestTitles = new Set(
-          (goals || [])
-            .filter(g => g.category === 'quest' && g.status !== 'complete' && g.status !== 'vaulted')
-            .map(g => g.title.toLowerCase())
+        // Scan ALL quest suggestions (no goals required) and find skill shortfalls per player
+        const questSuggestions = GOAL_SUGGESTIONS.filter(s =>
+          s.requirements?.skills && Object.keys(s.requirements.skills).length > 0
         );
 
-        // Cross-reference with GOAL_SUGGESTIONS to get skill requirements
-        const pendingSuggestions = GOAL_SUGGESTIONS.filter(s =>
-          s.category === 'quest_series' && pendingQuestTitles.has(s.title.toLowerCase())
-        );
-
-        // For each suggestion, check each player's skill levels
+        // skillGapMap[skill] = { skill, maxNeed, quests: Set, players: { rsn: { have, need, gap } } }
         const skillGapMap = {};
 
-        for (const sugg of pendingSuggestions) {
-          for (const [skill, need] of Object.entries(sugg.requirements?.skills ?? {})) {
+        for (const sugg of questSuggestions) {
+          for (const [skill, need] of Object.entries(sugg.requirements.skills)) {
             for (const player of players) {
               const have = player.skills?.find(s => s.skill_name === skill)?.level ?? 1;
               if (have < need) {
-                const key = skill;
-                if (!skillGapMap[key]) skillGapMap[key] = { skill, need: 0, quests: new Set(), players: {} };
-                if (need > skillGapMap[key].need) skillGapMap[key].need = need;
-                skillGapMap[key].quests.add(sugg.title);
-                if (!skillGapMap[key].players[player.rsn] || skillGapMap[key].players[player.rsn].gap < (need - have)) {
-                  skillGapMap[key].players[player.rsn] = { rsn: player.rsn, have, need, gap: need - have };
+                if (!skillGapMap[skill]) skillGapMap[skill] = { skill, maxNeed: 0, quests: new Set(), players: {} };
+                if (need > skillGapMap[skill].maxNeed) skillGapMap[skill].maxNeed = need;
+                skillGapMap[skill].quests.add(sugg.title);
+                // Store the worst gap per player per skill
+                const existing = skillGapMap[skill].players[player.rsn];
+                if (!existing || need > existing.need) {
+                  skillGapMap[skill].players[player.rsn] = { rsn: player.rsn, have, need, gap: need - have };
                 }
               }
             }
           }
         }
 
+        // Sort by: most players affected → highest level needed
         const gapList = Object.values(skillGapMap).sort((a, b) => {
-          const aAffected = Object.keys(a.players).length;
-          const bAffected = Object.keys(b.players).length;
-          if (bAffected !== aAffected) return bAffected - aAffected;
-          return b.need - a.need;
+          const diff = Object.keys(b.players).length - Object.keys(a.players).length;
+          return diff !== 0 ? diff : b.maxNeed - a.maxNeed;
         });
 
-        if (pendingQuestTitles.size === 0) return (
+        if (!players.length) return (
           <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-            No active quest goals — add some from the Goal Browser to see skill gaps.
+            No players loaded.
           </div>
         );
 
         if (gapList.length === 0) return (
           <div style={{ color: 'var(--green-bright)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-            ✓ All players meet the skill requirements for every pending quest goal!
+            ✓ All players meet every skill requirement across all quest suggestions!
           </div>
         );
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>
-              Skill bottlenecks across {pendingQuestTitles.size} pending quest goal{pendingQuestTitles.size !== 1 ? 's' : ''} — sorted by players affected.
+              Skills holding players back from quests — sorted by players affected. Based on {questSuggestions.length} quest suggestions.
             </div>
-            {gapList.map(({ skill, need, quests, players: affPlayers }) => {
+            {gapList.map(({ skill, maxNeed, quests, players: affPlayers }) => {
               const affected = Object.values(affPlayers);
+              const questList = [...quests].slice(0, 4);
+              const extra = quests.size - questList.length;
               return (
                 <div key={skill} style={{ background: 'var(--bg-panel-alt)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <SkillIcon name={skill} size={18} />
                     <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)' }}>{skill}</span>
                     <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 10, background: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.3)', color: 'var(--gold)' }}>
-                      Need {need}
+                      up to {maxNeed}
                     </span>
                     <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-                      {affected.length} player{affected.length !== 1 ? 's' : ''} affected
+                      {affected.length} player{affected.length !== 1 ? 's' : ''} · {quests.size} quest{quests.size !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                    {affected.map(({ rsn, have, gap }) => {
+                    {affected.map(({ rsn, have, need }) => {
                       const pColor = colorMap[players.find(p => p.rsn === rsn)?.id] ?? 'var(--text)';
                       return (
                         <span key={rsn} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(192,64,64,0.10)', border: '1px solid rgba(192,64,64,0.3)', color: 'var(--red-bright)' }}>
-                          <span style={{ color: pColor, fontWeight: 700 }}>{rsn}</span> {have} → {have + gap} <span style={{ opacity: 0.7 }}>(+{gap})</span>
+                          <span style={{ color: pColor, fontWeight: 700 }}>{rsn}</span> {have} <span style={{ opacity: 0.6 }}>→ {need}</span>
                         </span>
                       );
                     })}
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>
-                    Needed for: {[...quests].join(' · ')}
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                    Blocks: {questList.join(' · ')}{extra > 0 ? ` +${extra} more` : ''}
                   </div>
                 </div>
               );
