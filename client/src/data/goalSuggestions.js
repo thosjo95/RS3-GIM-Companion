@@ -480,17 +480,17 @@ export const GOAL_SUGGESTIONS = [
   {
     id: 'temple_at_senntisten',
     title: 'The Temple at Senntisten',
-    description: 'Unlocks the Ancient Curses prayer book including Deflect prayers (Deflect Melee/Ranged/Magic) and higher-tier curses. Required to access Nex, Nex: AoD, and Spiritual Mages. Arguably the second most impactful quest in the game after While Guthix Sleeps.',
+    description: 'Unlocks the Ancient Curses prayer book — the single most impactful combat quest in the game. Grants Soul Split, Deflect prayers, Turmoil, Anguish, Torment, and Berserker. Essential for all end-game bossing and required to access Nex.',
     stage: 'mid',
     category: 'quest_series',
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/The_Temple_at_Senntisten',
     requirements: {
       skills: { Prayer: 50 },
-      quests: ['Desert Treasure', 'The Dig Site'],
+      quests: ['Desert Treasure', 'Devious Minds', 'The Curse of Arrav'],
       qp: 0,
     },
-    unlocks: ['Ancient Curses prayer book', 'Deflect Melee/Ranged/Magic (71–75)', 'Access to Nex (GWD1 Ancient Prison)', 'Prerequisite for While Guthix Sleeps'],
+    unlocks: ['Ancient Curses prayer book', 'Soul Split', 'Deflect Melee / Ranged / Magic', 'Turmoil / Anguish / Torment', 'Altar of Zaros (+15% Prayer points)', 'Access to Nex (GWD1 Ancient Prison)'],
   },
   {
     id: 'troll_stronghold',
@@ -824,17 +824,17 @@ export const GOAL_SUGGESTIONS = [
   {
     id: 'while_guthix_sleeps',
     title: 'While Guthix Sleeps',
-    description: 'The most impactful quest in RS3. Unlocks Ancient Curses including Soul Split, Deflect prayers, Turmoil, Anguish, and Torment — essential for all end-game bossing.',
+    description: 'One of the most prestigious quests in RS3. Unlocks Tormented Demons as a Slayer target — the only source of Dragon Claws and Dragon Platebody limbs. Also rewards Elite Black Armour, Dagon\'hai Robes, 400,000 XP (4×100k lamps), and access to the Black Knights\' Catacombs.',
     stage: 'end',
     category: 'quest_series',
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/While_Guthix_Sleeps',
     requirements: {
-      skills: { Slayer: 55, Hunter: 55, Thieving: 55, Agility: 65, Herblore: 65, Summoning: 65, Magic: 75 },
+      skills: { Agility: 65, Farming: 65, Herblore: 65, Hunter: 55, Magic: 75, Thieving: 60 },
       quests: ['The Temple at Senntisten', 'The Slug Menace', "Swan Song", "Summer's End"],
       qp: 175,
     },
-    unlocks: ['Ancient Curses', 'Soul Split', 'Deflect prayers', 'Turmoil', 'Anguish', 'Torment'],
+    unlocks: ['Tormented Demons (Dragon Claws, Dragon Limbs, Dragon Platebody parts)', 'Elite Black Armour set', "Dagon'hai Robes (T60 Magic)", '400,000 XP (4×100k lamps, any skill 65+)', 'Black Knights\' Catacombs access'],
   },
   {
     id: 'ritual_mahjarrat',
