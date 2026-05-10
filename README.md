@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-2.0.0-4caf50?style=flat-square" alt="v2.0.0"/>
+    <img src="https://img.shields.io/badge/version-1.9.1-4caf50?style=flat-square" alt="v1.9.1"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -481,7 +481,7 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 
 ## Changelog
 
-### v2.0.0 — May 2026
+### v1.9.1 — May 2026
 - 🖱️ **Active Goals drag-and-drop** — goal cards can be dragged between Not Started, In Progress, and Blocked columns; target column highlights gold during drag; empty columns show a "Drop here" hint
 - ✏️ **Edit Goal** — new edit button on every goal card opens the modal pre-filled with all current values; submits a PUT update instead of creating a new goal
 - 🚫 **Blocked status button** — new 🚫 button on goal cards to directly move a goal to Blocked; hidden once the goal is already blocked or complete
