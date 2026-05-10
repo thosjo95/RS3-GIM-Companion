@@ -1578,12 +1578,6 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
         {
           label: 'Active This Week',
           value: hasWeeklyData ? `${activePlayers.length} / ${players.length}` : 'Sync needed',
-          clickable: hasWeeklyData,
-          active: weeklyMode,
-          tooltip: hasWeeklyData
-            ? `${activePlayers.length} of ${players.length} players gained XP in the past 7 days.\nClick to toggle weekly XP view.`
-            : 'Sync players to track weekly activity.',
-          onClick: hasWeeklyData ? () => setWeeklyMode(m => !m) : undefined,
         },
       ];
 
@@ -1636,20 +1630,10 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
           <div
             key={b.label}
             className="stat-box"
-            title={b.tooltip ?? ''}
-            onClick={b.onClick}
-            style={{
-              cursor: b.clickable ? 'pointer' : 'default',
-              outline: b.active ? '2px solid var(--gold)' : 'none',
-              transition: 'outline 0.15s',
-            }}
           >
-            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {b.label}
-              {b.tooltip && <span style={{ fontSize: 10, color: 'var(--text-dim)', cursor: 'help' }} title={b.tooltip}>ⓘ</span>}
-            </div>
-            <div className="stat-value" style={{ color: b.dim ? 'var(--text-dim)' : undefined, fontSize: b.active ? undefined : undefined }}>
-              {b.active && !selectedPlayer ? <span style={{ color: 'var(--gold)' }}>{b.value}</span> : b.value}
+            <div className="stat-label">{b.label}</div>
+            <div className="stat-value" style={{ color: b.dim ? 'var(--text-dim)' : undefined }}>
+              {b.value}
             </div>
           </div>
         ))}
