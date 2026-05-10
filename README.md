@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.0-4caf50?style=flat-square" alt="v1.9.0"/>
+    <img src="https://img.shields.io/badge/version-2.0.0-4caf50?style=flat-square" alt="v2.0.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -31,8 +31,10 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 
 ### 🎯 Goals
 - **Goal Browser** — curated suggestion library with 263+ suggestions across seven categories: Quest Series (66 quest chains spanning early/mid/end game), Skill Unlocks, Key Items, Item Requests, Achievement Diaries, Boss Kills, Slayer Drops; completed/vaulted goals are automatically hidden so the list stays focused
-- **Item Requests** — 35+ pre-loaded suggestions covering Dungeoneering cape & rewards (Chaotic weapons, Hex/Farsight, Stalker bow, Balmung), Archaeology artefacts (Pontifex ring, Inquisitor staff, Guildmaster's aura), Shattered Worlds codices (Double Surge, Double Escape, Bladed Dive, Natural Instinct, etc.), ports armour, boss drops and more
-- **Active Goals** — personal and group goals with status tracking (Not Started / In Progress / Blocked / Complete); filter by player, category, priority, or search by name
+- **Item Requests** — 35+ pre-loaded suggestions covering Dungeoneering cape & rewards (Chaotic weapons, Hex/Farsight, Stalker bow, Balmung), Archaeology artefacts (Pontifex ring, Inquisitor staff, Guildmaster's aura), Shattered Worlds codices (Double Surge, Double Escape, Bladed Dive, Natural Instinct, etc.), ports armour, boss drops and more; item request goals appear in **Active Goals** and the **Overview Goals panel**
+- **Active Goals board** — Kanban-style columns (Not Started / In Progress / Blocked); **drag-and-drop** cards between columns to update status; the target column highlights gold during a drag
+- **Goal card actions** — ✏️ Edit (opens pre-filled modal), 🚫 Blocked, ▶ Advance (step status forward), ✕ Delete
+- **Edit Goal modal** — ✏️ opens the goal modal pre-filled with all existing values; submits a PUT update instead of creating a new goal
 - **Goal creation modal** — six types matching the browser categories; Quest type shows prerequisite quests + skill requirement checker with one-click "add missing prereqs" buttons; Skill type shows XP-to-go and progress bar
 - Any suggestion can be added to Active Goals in one click; Custom Goal button for anything not in the library
 
@@ -429,6 +431,19 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v2.0.0 — May 2026
+- 🖱️ **Active Goals drag-and-drop** — goal cards can be dragged between Not Started, In Progress, and Blocked columns; target column highlights gold during drag; empty columns show a "Drop here" hint
+- ✏️ **Edit Goal** — new edit button on every goal card opens the modal pre-filled with all current values; submits a PUT update instead of creating a new goal
+- 🚫 **Blocked status button** — new 🚫 button on goal cards to directly move a goal to Blocked; hidden once the goal is already blocked or complete
+- ✕ **Delete button** — replaced the pause icon with ✕ to remove goals entirely (with confirmation); the ▶ advance button is kept
+- 📦 **Item Requests → Active Goals** — Item Request goals created via + Custom Goal now appear in Active Goals and the Overview Goals panel; the app derives pending requests directly from the `goals` table (legacy `item_requests` table no longer used)
+- 🔗 **Overview Goals link** — "View in Active Goals →" in the Overview Goals panel navigates to Goals tab and auto-switches to the Active Goals board
+- 📈 **Gains tab — live levels** — current skill levels always read from the live `skills` table; fixes stale/outdated levels shown after a Sync All
+- 🩹 **Gains tab — snapshot healing** — snapshot INSERT heals rows where `skills_json` was null; historical diffs populate correctly on the next sync
+- 🥇 **Gains tab — top-gainer highlight only** — only the single top-gaining player per skill is highlighted in gold; other players with gains are no longer highlighted
+- 🎨 **Gains tab — formatting** — removed "Total lvls" column; current level display matches Skills tab size and colour
+- 🌐 **Favicon** — browser tab now shows the site logo (`favicon.png`) instead of the old SVG shield
 
 ### v1.9.0 — May 2026
 - 🖼️ **New branding logo** — "Group Ironman RS3 Companion" banner replaces the SVG shield icon on the landing page and header; transparent background applied automatically; subtitle updated to summarise all current features

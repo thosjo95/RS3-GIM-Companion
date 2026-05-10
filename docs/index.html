@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v2.0</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -41,7 +41,7 @@
       "@type": "Person",
       "name": "thosjo95"
     },
-    "softwareVersion": "1.9.0",
+    "softwareVersion": "2.0.0",
     "keywords": "RuneScape 3, RS3, Group Ironman, GIM, tracker, hiscores, goals, gear loadouts"
   }
   </script>
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9 documentation</div>
+        <div class="sidebar-version">v2.0 documentation</div>
       </div>
     </div>
 
@@ -275,7 +275,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.0</span>
+          <span class="badge badge-green">v2.0.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -395,7 +395,7 @@
 
     <!-- Tab: Goals -->
     <h2 id="tab-goals">Goals Tab</h2>
-    <p>The Goals tab is the central planning board for your GIM group. It replaces the old Item Requests panel with a more flexible system covering all goal types.</p>
+    <p>The Goals tab is the central planning board for your GIM group. It covers two sections — the <strong>Goal Browser</strong> (curated suggestions) and the <strong>Active Goals</strong> Kanban board — plus an item-request flow that feeds directly into both.</p>
 
     <h3>Goal Types</h3>
     <table>
@@ -404,7 +404,7 @@
         <tr><td><strong>Quest</strong></td><td>Track a quest with all its skill requirements and prereqs</td></tr>
         <tr><td><strong>Skill Unlock</strong></td><td>Target a skill level for a specific player (with XP-to-go tracking)</td></tr>
         <tr><td><strong>Key Item</strong></td><td>Boss drops, rare rewards, or key gear pieces to obtain</td></tr>
-        <tr><td><strong>Item Request</strong></td><td>Dungeoneering tokens, Archaeology materials, or special currency rewards</td></tr>
+        <tr><td><strong>Item Request</strong></td><td>Dungeoneering tokens, Archaeology materials, or special currency rewards — now appears in Active Goals and the Overview Goals panel</td></tr>
         <tr><td><strong>Achievement Diary</strong></td><td>Diary completion or task set milestone goals</td></tr>
         <tr><td><strong>Boss Kill</strong></td><td>Combat milestones or boss completion goals</td></tr>
       </tbody>
@@ -419,21 +419,33 @@
       <li><strong>Player</strong> — per-member filter chips (same chip design used across the entire app)</li>
     </ul>
 
-    <h3>Adding Goals</h3>
-    <p>Click <strong>+ Add Goal</strong> (visible only when the group is unlocked) to open the goal modal. Fill in the type, title, priority, and optional notes. Skill Unlock goals automatically calculate XP remaining. Quest goals let you track individual step completion.</p>
+    <h3>Active Goals Board</h3>
+    <p>The Active Goals section shows all in-progress goals as cards organised into three columns: <strong>Not Started</strong>, <strong>In Progress</strong>, and <strong>Blocked</strong>. Each card has a set of action buttons:</p>
+    <ul>
+      <li><strong>✏️ Edit</strong> — opens a pre-filled goal modal so you can update the title, description, priority, or any other field without losing context</li>
+      <li><strong>🚫 Blocked</strong> — moves the card to the Blocked column (hidden once already blocked or complete)</li>
+      <li><strong>▶ Advance</strong> — moves the card to the next status (Not Started → In Progress → Complete)</li>
+      <li><strong>✕ Delete</strong> — removes the goal entirely (with confirmation)</li>
+    </ul>
+    <p>Cards can also be <strong>drag-and-dropped</strong> directly between columns — grab any card and drop it into a different column to update its status instantly. The target column highlights with a gold border while you drag. Empty columns show a "Drop here" hint during a drag.</p>
+
+    <h3>Adding &amp; Editing Goals</h3>
+    <p>Click <strong>+ Custom Goal</strong> (visible only when the group is unlocked) to open the goal modal. Fill in the type, title, priority, and optional notes. Item Requests created here appear immediately in Active Goals and in the Overview Goals panel. The modal title changes to <strong>Edit Goal</strong> when opened from the ✏️ button, and submits a PUT request instead of creating a new goal.</p>
 
     <h3>Goal Status</h3>
     <table>
       <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
       <tbody>
+        <tr><td><span class="tag-dim">Not Started</span></td><td>Queued — visible in the Active Goals board</td></tr>
         <tr><td><span class="tag-dim">Active</span></td><td>In progress — shown on the Goals tab and Overview panel</td></tr>
+        <tr><td><span class="tag-gold">Blocked</span></td><td>Waiting on a prerequisite — surfaced in the Blocked column</td></tr>
         <tr><td><span class="tag-green">Complete</span></td><td>Done — can be moved to Vaulted to archive</td></tr>
         <tr><td><span class="tag-gold">Vaulted</span></td><td>Archived in the Group Vault achievements section</td></tr>
       </tbody>
     </table>
 
     <h3>Goal Suggestions</h3>
-    <p>The app ships with a library of pre-built goal suggestions covering common RS3 GIM priorities — quests, skill milestones, boss targets, and key items. These populate the "Add Goal" picker with one click.</p>
+    <p>The app ships with a library of pre-built goal suggestions covering common RS3 GIM priorities — quests, skill milestones, boss targets, and key items. These populate the "Add Goal" picker with one click. Any suggestion added from the browser also lands in Active Goals.</p>
 
     <hr />
 
@@ -771,7 +783,21 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v2.0.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Active Goals board — drag-and-drop</strong> — goal cards can be grabbed and dropped between the Not Started, In Progress, and Blocked columns; the target column highlights with a gold border during drag; empty columns show a "Drop here" hint</li>
+      <li><strong>Goal card actions redesigned</strong> — each card now has four buttons: ✏️ Edit (opens pre-filled modal), 🚫 Blocked (moves to blocked column; hidden once blocked/complete), ▶ Advance (steps status forward), ✕ Delete (removes with confirmation); the old pause icon is gone</li>
+      <li><strong>Edit Goal modal</strong> — ✏️ opens the existing GoalModal pre-filled with the goal's current title, description, category, skill, target, priority, and details; submits a PUT request instead of POST; modal title reads "Edit Goal"</li>
+      <li><strong>Item Requests → Active Goals</strong> — Item Request goals created via + Custom Goal now appear in Active Goals and the Overview Goals panel; the app no longer reads from the legacy <code>item_requests</code> table — pending requests are derived directly from the <code>goals</code> table</li>
+      <li><strong>Overview Goals panel</strong> — "View in Active Goals →" link navigates to the Goals tab and auto-switches to the Active Goals section</li>
+      <li><strong>Gains tab — live current levels</strong> — current skill levels are now always read from the live <code>skills</code> table (updated on every Sync All) rather than from the daily snapshot; fixes stale/outdated levels shown after a sync</li>
+      <li><strong>Gains tab — snapshot healing</strong> — snapshot INSERT now heals rows where <code>skills_json</code> was previously null, so historical diffs populate correctly on the next Sync All</li>
+      <li><strong>Gains tab — top-gainer highlight only</strong> — only the player with the most levels gained in each skill is highlighted in gold; players with gains but not the top gain are no longer highlighted</li>
+      <li><strong>Gains tab — formatting</strong> — "Total lvls" column removed; current level numbers and table styling now match the Skills tab (same size, colour, and icon dimensions)</li>
+      <li><strong>Favicon</strong> — browser tab now shows the site logo (<code>favicon.png</code>, cropped from the logo banner) instead of the old SVG shield</li>
+    </ul>
+
+    <h3>v1.9.0 — May 2026 &nbsp;<span class="tag-dim">Previous</span></h3>
     <ul>
       <li><strong>New branding logo</strong> — "Group Ironman RS3 Companion" banner replaces the SVG shield on the landing page and in the header; transparent background; subtitle updated to summarise all current features</li>
       <li><strong>Gains tab (Group Stats)</strong> — new tab showing per-player, per-skill level and XP gains over Day / Week / Month / Year; defaults to Day; cells show current level + green level gains; hover any cell to see exact XP; skill order matches the Skills tab</li>
@@ -878,7 +904,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.0 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v2.0.0 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
