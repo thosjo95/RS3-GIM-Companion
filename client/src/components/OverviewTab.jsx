@@ -576,6 +576,12 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
     return counts;
   }, [skillLeaders, players]);
 
+  // Skills that require other skills to unlock (not unlocked via quests)
+  const SKILL_UNLOCK_REQS = {
+    Invention:     { Crafting: 80, Divination: 80, Smithing: 80 },
+    Dungeoneering: { Attack: 1, Strength: 1, Defence: 1, Magic: 1, Ranged: 1 }, // no hard reqs, placeholder
+  };
+
   // Gaps tab filter state
   const [gapsSkill, setGapsSkill] = useState('');       // '' = all skills
   const [gapsLevel, setGapsLevel] = useState('');       // '' = use GOAL_SUGGESTIONS threshold
@@ -604,8 +610,8 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
 
   const TABS = [
     { id: 'xp',     label: '📊 XP' },
-    { id: 'skills', label: '⭐ Skills' },
     { id: 'combat', label: '⚔️ Combat' },
+    { id: 'skills', label: '⭐ Skills' },
     { id: 'gains',  label: '📅 Gains' },
     { id: 'gaps',   label: '🎯 Gaps' },
   ];
@@ -897,6 +903,21 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
           }
         }
 
+        // ── If selected skill has unlock prerequisites, inject them ──────────
+        if (gapsSkill && SKILL_UNLOCK_REQS[gapsSkill] && customLevel === null) {
+          // Clear the direct skill gap and instead show the unlock prerequisites
+          delete skillGapMap[gapsSkill];
+          for (const [prereqSkill, prereqLevel] of Object.entries(SKILL_UNLOCK_REQS[gapsSkill])) {
+            const entry = { skill: prereqSkill, maxNeed: prereqLevel, quests: new Set([`Unlock ${gapsSkill}`]), players: {} };
+            for (const player of players) {
+              const have = player.skills?.find(s => s.skill_name === prereqSkill)?.level ?? 1;
+              if (have < prereqLevel)
+                entry.players[player.rsn] = { rsn: player.rsn, have, need: prereqLevel, gap: prereqLevel - have };
+            }
+            if (Object.keys(entry.players).length > 0) skillGapMap[prereqSkill] = entry;
+          }
+        }
+
         // ── If a custom level is set for a specific skill, override/inject ──
         if (gapsSkill && customLevel !== null && customLevel >= 1 && customLevel <= 120) {
           const entry = skillGapMap[gapsSkill] || { skill: gapsSkill, maxNeed: customLevel, quests: new Set(), players: {} };
@@ -988,9 +1009,11 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
 
             {gapList.length === 0 ? (
               <div style={{ color: 'var(--green-bright)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-                ✓ {isFiltered
-                  ? `All players are at or above the required ${gapsSkill} level!`
-                  : 'All players meet every skill requirement across all quest suggestions!'}
+                ✓ {SKILL_UNLOCK_REQS[gapsSkill] && customLevel === null
+                  ? `All players meet every prerequisite to unlock ${gapsSkill}!`
+                  : isFiltered
+                    ? `All players are at or above the required ${gapsSkill} level!`
+                    : 'All players meet every skill requirement across all quest suggestions!'}
               </div>
             ) : gapList.map(({ skill, maxNeed, quests, players: affPlayers }) => {
               const affected = Object.values(affPlayers);
