@@ -576,6 +576,10 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
     return counts;
   }, [skillLeaders, players]);
 
+  // Gaps tab filter state
+  const [gapsSkill, setGapsSkill] = useState('');       // '' = all skills
+  const [gapsLevel, setGapsLevel] = useState('');       // '' = use GOAL_SUGGESTIONS threshold
+
   // Fetch per-skill XP gains from snapshots API
   const GAIN_PERIODS = [
     { label: 'Day',   days: 1  },
@@ -853,56 +857,114 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
 
       {/* Gaps tab — automatic skill gap analysis across all quest suggestions */}
       {tab === 'gaps' && (() => {
-        // Scan ALL quest suggestions (no goals required) and find skill shortfalls per player
+        const customLevel = gapsLevel !== '' ? parseInt(gapsLevel, 10) : null;
+
+        // ── Build gap map from GOAL_SUGGESTIONS (default mode) ──────────────
         const questSuggestions = GOAL_SUGGESTIONS.filter(s =>
           s.requirements?.skills && Object.keys(s.requirements.skills).length > 0
         );
-
-        // skillGapMap[skill] = { skill, maxNeed, quests: Set, players: { rsn: { have, need, gap } } }
         const skillGapMap = {};
-
         for (const sugg of questSuggestions) {
           for (const [skill, need] of Object.entries(sugg.requirements.skills)) {
+            if (gapsSkill && skill !== gapsSkill) continue;
             for (const player of players) {
               const have = player.skills?.find(s => s.skill_name === skill)?.level ?? 1;
               if (have < need) {
                 if (!skillGapMap[skill]) skillGapMap[skill] = { skill, maxNeed: 0, quests: new Set(), players: {} };
                 if (need > skillGapMap[skill].maxNeed) skillGapMap[skill].maxNeed = need;
                 skillGapMap[skill].quests.add(sugg.title);
-                // Store the worst gap per player per skill
                 const existing = skillGapMap[skill].players[player.rsn];
-                if (!existing || need > existing.need) {
+                if (!existing || need > existing.need)
                   skillGapMap[skill].players[player.rsn] = { rsn: player.rsn, have, need, gap: need - have };
-                }
               }
             }
           }
         }
 
-        // Sort by: most players affected → highest level needed
+        // ── If a custom level is set for a specific skill, override/inject ──
+        if (gapsSkill && customLevel !== null && customLevel >= 1 && customLevel <= 120) {
+          const entry = skillGapMap[gapsSkill] || { skill: gapsSkill, maxNeed: customLevel, quests: new Set(), players: {} };
+          entry.maxNeed = customLevel;
+          entry.players = {};
+          for (const player of players) {
+            const have = player.skills?.find(s => s.skill_name === gapsSkill)?.level ?? 1;
+            if (have < customLevel)
+              entry.players[player.rsn] = { rsn: player.rsn, have, need: customLevel, gap: customLevel - have };
+          }
+          skillGapMap[gapsSkill] = entry;
+        }
+
         const gapList = Object.values(skillGapMap).sort((a, b) => {
           const diff = Object.keys(b.players).length - Object.keys(a.players).length;
           return diff !== 0 ? diff : b.maxNeed - a.maxNeed;
         });
 
         if (!players.length) return (
-          <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-            No players loaded.
-          </div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>No players loaded.</div>
         );
 
-        if (gapList.length === 0) return (
-          <div style={{ color: 'var(--green-bright)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-            ✓ All players meet every skill requirement across all quest suggestions!
-          </div>
-        );
+        const isFiltered = !!gapsSkill;
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>
-              Skills holding players back from quests — sorted by players affected. Based on {questSuggestions.length} quest suggestions.
+
+            {/* ── Filter bar ── */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+              <select
+                value={gapsSkill}
+                onChange={e => { setGapsSkill(e.target.value); setGapsLevel(''); }}
+                style={{
+                  background: 'var(--bg-input)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)', color: gapsSkill ? 'var(--text-bright)' : 'var(--text-dim)',
+                  fontSize: 11, padding: '4px 8px', cursor: 'pointer',
+                }}>
+                <option value="">All skills</option>
+                {SKILL_ORDER.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+
+              {gapsSkill && (
+                <>
+                  <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>level</span>
+                  <input
+                    type="number" min={1} max={120}
+                    value={gapsLevel}
+                    onChange={e => setGapsLevel(e.target.value)}
+                    placeholder={skillGapMap[gapsSkill] ? String(skillGapMap[gapsSkill].maxNeed) : '—'}
+                    style={{
+                      width: 60, background: 'var(--bg-input)', border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius)', color: 'var(--text-bright)',
+                      fontSize: 11, padding: '4px 8px', textAlign: 'center',
+                    }}
+                  />
+                </>
+              )}
+
+              {isFiltered && (
+                <button
+                  onClick={() => { setGapsSkill(''); setGapsLevel(''); }}
+                  style={{
+                    background: 'transparent', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)', color: 'var(--text-dim)',
+                    fontSize: 10, padding: '3px 8px', cursor: 'pointer',
+                  }}>
+                  ✕ Clear
+                </button>
+              )}
+
+              <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 'auto' }}>
+                {isFiltered
+                  ? `Filtered: ${gapsSkill}${customLevel ? ` @ ${customLevel}` : ''}`
+                  : `${questSuggestions.length} quest suggestions`}
+              </span>
             </div>
-            {gapList.map(({ skill, maxNeed, quests, players: affPlayers }) => {
+
+            {gapList.length === 0 ? (
+              <div style={{ color: 'var(--green-bright)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
+                ✓ {isFiltered
+                  ? `All players are at or above the required ${gapsSkill} level!`
+                  : 'All players meet every skill requirement across all quest suggestions!'}
+              </div>
+            ) : gapList.map(({ skill, maxNeed, quests, players: affPlayers }) => {
               const affected = Object.values(affPlayers);
               const questList = [...quests].slice(0, 4);
               const extra = quests.size - questList.length;
@@ -912,13 +974,13 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                     <SkillIcon name={skill} size={18} />
                     <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)' }}>{skill}</span>
                     <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 10, background: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.3)', color: 'var(--gold)' }}>
-                      up to {maxNeed}
+                      {customLevel && gapsSkill === skill ? `target ${customLevel}` : `up to ${maxNeed}`}
                     </span>
                     <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-                      {affected.length} player{affected.length !== 1 ? 's' : ''} · {quests.size} quest{quests.size !== 1 ? 's' : ''}
+                      {affected.length} player{affected.length !== 1 ? 's' : ''}{quests.size > 0 ? ` · ${quests.size} quest${quests.size !== 1 ? 's' : ''}` : ''}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: quests.size > 0 ? 6 : 0 }}>
                     {affected.map(({ rsn, have, need }) => {
                       const pColor = colorMap[players.find(p => p.rsn === rsn)?.id] ?? 'var(--text)';
                       return (
@@ -928,9 +990,11 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                       );
                     })}
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                    Blocks: {questList.join(' · ')}{extra > 0 ? ` +${extra} more` : ''}
-                  </div>
+                  {quests.size > 0 && (
+                    <div style={{ fontSize: 10, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                      Blocks: {questList.join(' · ')}{extra > 0 ? ` +${extra} more` : ''}
+                    </div>
+                  )}
                 </div>
               );
             })}
