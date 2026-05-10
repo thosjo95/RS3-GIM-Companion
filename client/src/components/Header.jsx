@@ -64,7 +64,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         {group && <span style={{ fontWeight: 400, opacity: 0.7 }}>— {group.name}</span>}
       </div>
       <div className="header-right">
-        {lastSync && <span className="last-sync">Hiscores: {syncAgo}</span>}
+        {lastSync && <span className="last-sync">Sync: {syncAgo}</span>}
 
         {/* ── Auth indicator ── */}
 
@@ -128,10 +128,12 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
             onClick={() => setNotesOpen(n => !n)}
             title="Group Notes"
             style={{
+              width: 32, height: 32, padding: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, fontSize: 16,
               background: notesOpen ? 'rgba(200,168,75,0.15)' : 'transparent',
               border: `1px solid ${notesOpen ? 'var(--gold)' : 'var(--border)'}`,
               color: 'var(--gold)',
-              padding: '0 10px', fontSize: 18,
             }}>
             📝
           </button>
@@ -144,10 +146,12 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
             onClick={onWebhookClick}
             title="Discord notification settings"
             style={{
+              width: 32, height: 32, padding: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, fontSize: 16,
               background: 'transparent',
               border: '1px solid var(--border)',
               color: 'var(--text-dim)',
-              padding: '0 10px', fontSize: 14,
             }}>
             🔔
           </button>
@@ -160,10 +164,12 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
             onClick={onTourClick}
             title="Show feature tour"
             style={{
+              width: 32, height: 32, padding: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, fontSize: 16, fontWeight: 700,
               background: 'transparent',
               border: '1px solid var(--border)',
               color: 'var(--text-dim)',
-              padding: '0 10px', fontSize: 14, fontWeight: 700,
             }}>
             ?
           </button>
