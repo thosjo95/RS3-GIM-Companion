@@ -596,7 +596,7 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
     { label: 'Month', days: 30 },
     { label: 'Year',  days: 365 },
   ];
-  const [gainPeriod, setGainPeriod] = useState(7);
+  const [gainPeriod, setGainPeriod] = useState(1);
   const [skillGains, setSkillGains] = useState([]);
   const [gainsLoading, setGainsLoading] = useState(false);
   useEffect(() => {
@@ -856,10 +856,12 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                                 {curLvl !== null && (
                                   <span style={{ color: 'var(--text-dim)', fontSize: 10, marginRight: 3 }}>{curLvl}</span>
                                 )}
-                                {lvlGain > 0
-                                  ? <span style={{ color: 'var(--green-bright)', fontWeight: 700 }}>+{lvlGain}</span>
-                                  : <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>+{fmtXp(p.gains[skill])} xp</span>
-                                }
+                                {lvlGain > 0 && (
+                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700, marginRight: 4 }}>+{lvlGain}</span>
+                                )}
+                                <span style={{ color: '#8a6a2a', fontSize: 9, fontWeight: 400 }}>
+                                  +{fmtXp(p.gains[skill])}
+                                </span>
                               </td>
                             );
                           })}
