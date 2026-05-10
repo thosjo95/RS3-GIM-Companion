@@ -852,16 +852,18 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                               <td key={p.playerId} align="right" style={{ padding: '5px 8px', color: 'var(--text-dim)' }}>—</td>
                             );
                             return (
-                              <td key={p.playerId} align="right" style={{ padding: '5px 8px', whiteSpace: 'nowrap' }}>
+                              <td key={p.playerId} align="right"
+                                title={`+${(p.gains[skill] ?? 0).toLocaleString()} XP`}
+                                style={{ padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'default' }}>
                                 {curLvl !== null && (
                                   <span style={{ color: 'var(--text-dim)', fontSize: 10, marginRight: 3 }}>{curLvl}</span>
                                 )}
                                 {lvlGain > 0 && (
-                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700, marginRight: 4 }}>+{lvlGain}</span>
+                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700 }}>+{lvlGain}</span>
                                 )}
-                                <span style={{ color: '#8a6a2a', fontSize: 9, fontWeight: 400 }}>
-                                  +{fmtXp(p.gains[skill])}
-                                </span>
+                                {lvlGain === 0 && (
+                                  <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>—</span>
+                                )}
                               </td>
                             );
                           })}
