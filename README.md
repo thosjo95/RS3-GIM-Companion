@@ -197,9 +197,11 @@ RS3-GIM-Companion/
 │           ├── GearLoadouts.jsx     # Equipment grid, item picker, wiki-verified requirements, player chips
 │           ├── AchievementsTab.jsx  # Achievement Diaries — grid + player view
 │           ├── LeaderboardsTab.jsx  # Boss Kills · Firsts · Milestones · Skill Mastery · Clue Scrolls
-│           ├── GoalModal.jsx        # Goal creation modal (Quest / Skill / Key Item / Item Request / Diary / Boss)
+│           ├── GoalModal.jsx        # Goal creation / edit modal (Quest / Skill / Key Item / Item Request / Diary / Boss)
 │           ├── GroupNotesOverlay.jsx # Floating slide-in pinboard, auto-save
-│           └── WebhookSettings.jsx  # Discord webhook config modal (URL + event toggles + test)
+│           ├── WebhookSettings.jsx  # Discord webhook config modal (URL + event toggles + test)
+│           └── admin/
+│               └── AdminPortal.jsx  # Full admin SPA: login, queue, groups, table browser, maintenance, audit log
 │   └── data/
 │       ├── gearSuggestions.js       # getBestAndNext() helper used by GearLoadouts (items sourced live from DB via useRs3Gear hook)
 │       ├── goalSuggestions.js       # Curated goal library: 220+ suggestions across 7 categories
@@ -221,6 +223,53 @@ RS3-GIM-Companion/
     │   └── discord.js               # Webhook sender + embed builders for all notification types
     └── utils/
         └── auth.js                  # SHA-256 hashing · checkGroupAuth middleware
+```
+
+---
+
+## ⚙️ Admin Portal
+
+A password-protected management interface available at `/admin` on any RS3 GIM Companion deployment. Gives server operators a full UI to manage groups, review data submissions, inspect reference tables, and run maintenance operations — **without needing SSH or direct database access**.
+
+### Access
+Navigate to `https://groupiron.com/admin` (or `http://localhost:5173/admin` in dev). Log in with your admin credentials. Sessions last **8 hours** (stored in `sessionStorage`). After 5 failed login attempts per IP a 15-minute lockout applies.
+
+### Tabs
+
+| Tab | What it does |
+|---|---|
+| **📥 Queue** | Review pending data submissions (create / update / delete on RS3 reference tables). Side-by-side JSON diff, optional review note, Approve & Apply or Reject. Live count badge in the tab label. |
+| **👥 Groups** | Searchable table of every registered group — ID, name, type, size, player count, claimed status, sync errors, Discord webhook. Click any row to expand and see all players with their IDs and sync status. |
+| **📊 Browse Tables** | Read-only browser for all 7 RS3 reference tables (bosses, quests, gear items, gear paths, milestones, slayer, skill levels). Row counts, search, click-to-expand detail with pretty-printed JSON and inline wiki icons. |
+| **🔧 Maintenance** | 12 tool cards — fill in a group/player ID and click Run (no SSH needed): |
+| **📜 Audit Log** | Last 200 approved / rejected submissions with reviewer and timestamp. |
+
+### Maintenance tools
+
+| Tool | Fixes |
+|---|---|
+| 📋 Browse Groups | Find group IDs before running other tools |
+| 👤 Browse Players in Group | Find player IDs; see sync errors per player |
+| 🔀 Move Players Between Groups | Fix "Group shows 0 members" — moves all players from the old unclaimed record to the claimed one |
+| 🗑️ Delete Empty Group | Remove a 0-player group after moving its players away |
+| 🔓 Reset Group Secret | Clear `password_hash` so a group can re-claim; all data intact |
+| 💀 Permanently Delete Group | Delete group + all its data (destructive — requires confirmation checkbox) |
+| ✏️ Fix Player RSN | Overwrite a stored RSN and clear sync error in one step |
+| 🔄 Trigger Activity Sync | Run the RuneMetrics cron on demand for a group |
+| ⟳ Sync Individual Player | Re-run hiscores sync for one player by ID |
+| 🌱 Re-run Seed Data | Re-apply the full reference data seed (idempotent, safe at any time) |
+| 📜 Scan Wiki for New Quests | Diff RS Wiki quest list vs database; one-click stub insertion for missing entries |
+| ⚔️ Scan Wiki for New Bosses | Same for bosses |
+
+### Security
+- Passwords hashed with **PBKDF2-SHA512** (600,000 iterations, random salt)
+- Tokens signed with **HS256** (HMAC-SHA256), expire after 8 hours
+- JWT secret generated on first run, persisted to `server/data/jwt_secret.bin` (survives server restarts)
+- Rate limit: 5 failed attempts → 15-minute IP lockout
+
+**Create the first admin account on your server:**
+```bash
+node server/scripts/createAdmin.js <username> <password>
 ```
 
 ---

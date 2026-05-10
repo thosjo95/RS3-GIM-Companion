@@ -255,6 +255,7 @@
       <a href="#tech">Tech Stack</a>
       <a href="#database">Database</a>
       <a href="#selfhost">Self-Hosting</a>
+      <a href="#admin">Admin Portal</a>
       <a href="#faq">Admin FAQ</a>
       <a href="#changelog">Changelog</a>
     </nav>
@@ -684,11 +685,144 @@ cd /var/www/RS3-GIM-Companion &amp;&amp; node server/scripts/seedRs3Data.js</cod
 
     <hr />
 
+    <!-- Admin Portal -->
+    <h2 id="admin">Admin Portal</h2>
+    <p>The admin portal is a separate, password-protected management interface accessible at <code>/admin</code> on any RS3 GIM Companion deployment. It gives server operators a full UI for managing groups, reviewing data submissions, inspecting reference tables, and running maintenance operations — without needing SSH or direct database access.</p>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">🔒</span>
+      <p><strong>Access:</strong> Navigate to <code>https://groupiron.com/admin</code> (or <code>http://localhost:5173/admin</code> in dev). Log in with your admin credentials. Sessions last <strong>8 hours</strong> and are stored in <code>sessionStorage</code> — they survive page refreshes but not closing the browser tab.</p>
+    </div>
+
+    <h3>Authentication</h3>
+    <p>Admin credentials are stored in the <code>admin_users</code> database table. Passwords are hashed with <strong>PBKDF2-SHA512</strong> (600,000 iterations) with a random salt. Tokens are signed with <strong>HS256</strong> (HMAC-SHA256) and expire after 8 hours. The JWT secret is generated on first run and persisted to <code>server/data/jwt_secret.bin</code> so tokens survive server restarts.</p>
+    <p>Failed login attempts are rate-limited: <strong>5 failed attempts per IP triggers a 15-minute lockout</strong>. Successful login clears the counter.</p>
+
+    <h3>📥 Queue — Data submission review</h3>
+    <p>The Queue tab is the default view. It lists all pending data submissions — proposed changes to RS3 reference tables (quests, bosses, gear items, skill milestones, slayer creatures, gear paths) that have been queued but not yet applied to the database.</p>
+    <ul>
+      <li>Filter by status: <strong>Pending</strong> · <strong>Approved</strong> · <strong>Rejected</strong> · <strong>Superseded</strong></li>
+      <li>Each row shows the action (CREATE / UPDATE / DELETE), the target table, the record ID, who submitted it, and when</li>
+      <li>Click <strong>Review →</strong> to open the review modal: a side-by-side JSON diff (current record vs proposed), an optional review note field, and <strong>✓ Approve &amp; Apply</strong> / <strong>✗ Reject</strong> buttons</li>
+      <li>Approving writes the change to the database in a transaction; if the same record has other pending submissions they are automatically marked <em>Superseded</em></li>
+      <li>The header shows a live count badge — <code>📥 Queue (3)</code> — whenever there are unreviewed submissions</li>
+    </ul>
+
+    <h3>👥 Groups — Group overview</h3>
+    <p>The Groups tab shows every group registered on the platform in a searchable, sortable table.</p>
+    <ul>
+      <li><strong>Stat cards</strong> at the top: Total groups · Claimed · Unclaimed · Total players · Avg players/group · ⚠ Sync errors · 🔔 Discord wired</li>
+      <li>Table columns: ID · Name · Group RSN · Type · Size · Players · Claimed ✓ · Errors · Discord · Last Activity · Created</li>
+      <li>Search by group name, ID, or group RSN</li>
+      <li><strong>Click any row</strong> to expand it and see all players in that group — player IDs, RSNs, combat levels, last synced time, and any active sync error</li>
+    </ul>
+
+    <h3>📊 Browse Tables — Reference data inspector</h3>
+    <p>Browse and search the seven RS3 reference tables that power the Goal Browser, Gear Loadouts, and Skill Gaps features.</p>
+    <table>
+      <thead><tr><th>Table</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td>⚔️ <code>rs3_bosses</code></td><td>Boss names, difficulty, requirements, drop tables, wiki URLs</td></tr>
+        <tr><td>📜 <code>rs3_quests</code></td><td>Quest names, skill requirements, rewards, prerequisites, wiki URLs</td></tr>
+        <tr><td>🛡️ <code>rs3_gear_items</code></td><td>410+ gear items with slot, style, tier, equip requirements, wiki icons</td></tr>
+        <tr><td>📈 <code>rs3_gear_paths</code></td><td>Gear progression paths per combat style and slot</td></tr>
+        <tr><td>🏆 <code>rs3_milestone_items</code></td><td>168 skill milestone unlocks (items, abilities, rewards)</td></tr>
+        <tr><td>🗡️ <code>rs3_slayer_creatures</code></td><td>48 slayer monsters with levels, locations, and drop tables</td></tr>
+        <tr><td>⚡ <code>rs3_skill_milestones</code></td><td>Per-skill level milestones and their unlock descriptions</td></tr>
+      </tbody>
+    </table>
+    <p>Each table shows a row-count badge. Click any row to expand the full record in a detail modal — JSON fields are pretty-printed, wiki icon URLs render as inline images. The header stat badges are clickable shortcuts that jump directly to a specific table.</p>
+
+    <h3>🔧 Maintenance — Operations toolkit</h3>
+    <p>Twelve tool cards covering the most common server-side operations. Click a card to expand its form, fill in the required fields, and run it — no SSH or SQL needed. Results are shown inline. Destructive operations require ticking a confirmation checkbox before the Run button becomes active.</p>
+
+    <table>
+      <thead><tr><th>Tool</th><th>What it does</th><th>See also</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>📋 <strong>Browse Groups</strong></td>
+          <td>Lists all groups with their IDs, player counts, and claim status. Use this first to find group IDs before running other tools.</td>
+          <td><a href="#faq">Admin FAQ</a></td>
+        </tr>
+        <tr>
+          <td>👤 <strong>Browse Players in Group</strong></td>
+          <td>Shows all players in a group with their IDs, RSNs, combat levels, last sync time, and any active sync error.</td>
+          <td><a href="#faq-rsn">RSN / sync FAQ</a></td>
+        </tr>
+        <tr>
+          <td>🔀 <strong>Move Players Between Groups</strong></td>
+          <td>Moves all players from one group to another. The primary fix for the "Group shows 0 members" bug — moves players from the old unclaimed record to the claimed one.</td>
+          <td><a href="#faq-zero-members">Zero members FAQ</a></td>
+        </tr>
+        <tr>
+          <td>🗑️ <strong>Delete Empty Group</strong></td>
+          <td>Removes a 0-player group from the database. Refuses with an error if any players are still attached — move them first with the tool above.</td>
+          <td><a href="#faq-zero-members">Zero members FAQ</a></td>
+        </tr>
+        <tr>
+          <td>🔓 <strong>Reset Group Secret</strong></td>
+          <td>Clears the <code>password_hash</code> so the group becomes unclaimed. The owner can then re-claim via "🔒 Claim group" in the app. All goals, drops, gear, and notes are untouched.</td>
+          <td><a href="#faq-secret">Lost secret FAQ</a></td>
+        </tr>
+        <tr>
+          <td>💀 <strong>Permanently Delete Group</strong></td>
+          <td><span style="color:var(--red-bright)">Destructive.</span> Deletes the group and all its players, goals, drops, gear, and notes. Requires ticking a confirmation checkbox. Cannot be undone.</td>
+          <td><a href="#faq-delete">Delete group FAQ</a></td>
+        </tr>
+        <tr>
+          <td>✏️ <strong>Fix Player RSN</strong></td>
+          <td>Overwrites the stored RSN for a player and clears their sync error in one step. Use this for non-breaking spaces, typos, or casing errors. Get the player ID from Browse Players first.</td>
+          <td><a href="#faq-rsn">RSN FAQ</a></td>
+        </tr>
+        <tr>
+          <td>🔄 <strong>Trigger Activity Sync</strong></td>
+          <td>Runs the RuneMetrics activity fetch for all players in a group on demand — same as the 2-hour background cron, but immediate. Shows per-player results with new activity counts.</td>
+          <td><a href="#faq-feed">Feed empty FAQ</a></td>
+        </tr>
+        <tr>
+          <td>⟳ <strong>Sync Individual Player</strong></td>
+          <td>Re-runs the hiscores sync for a single player and clears their sync error. Equivalent to clicking ↻ on the member card but usable when you only have a player ID.</td>
+          <td><a href="#faq-rsn">RSN / sync FAQ</a></td>
+        </tr>
+        <tr>
+          <td>🌱 <strong>Re-run Seed Data</strong></td>
+          <td>Re-applies the full reference data seed script (quests, bosses, gear, milestones, slayer). All inserts are <code>INSERT OR REPLACE</code> — safe to run at any time. Script output is shown in a collapsible panel.</td>
+          <td><a href="#faq-icons">Gear icons FAQ</a></td>
+        </tr>
+        <tr>
+          <td>📜 <strong>Scan Wiki for New Quests</strong></td>
+          <td>Fetches the RS Wiki quest category (up to 1,500 entries) and diffs it against the local database. Quests on the wiki but missing from the DB are listed; click <strong>+ Add stub</strong> to insert a placeholder record that can be filled in via Browse Tables.</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>⚔️ <strong>Scan Wiki for New Bosses</strong></td>
+          <td>Same as above for bosses — fetches the RS Wiki boss category and shows missing entries for stub insertion.</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>📜 Audit Log</h3>
+    <p>Shows the last 200 approved and rejected data submissions with reviewer name, timestamp, and any review note. Useful for tracking what changed and why.</p>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">💡</span>
+      <p><strong>Self-hosting tip:</strong> To create the first admin account, run the setup script on your server:<br>
+      <code>node server/scripts/createAdmin.js &lt;username&gt; &lt;password&gt;</code><br>
+      This hashes the password with PBKDF2-SHA512 and inserts it into the <code>admin_users</code> table.</p>
+    </div>
+
+    <hr />
+
     <!-- Admin FAQ -->
     <h2 id="faq">Admin FAQ</h2>
-    <p>Common issues encountered when running the server or managing groups.</p>
+    <p>Common issues encountered when running the server or managing groups. Most of these can now be resolved directly in the <a href="#admin">Admin Portal</a> without SSH access.</p>
 
-    <h3>Group shows 0 members / members not loading</h3>
+    <h3 id="faq-zero-members">Group shows 0 members / members not loading</h3>
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚙️</span>
+      <p><strong>Easier via Admin Portal:</strong> Use <strong>Maintenance → Browse Groups</strong> to find both group IDs, then <strong>Move Players Between Groups</strong> to move them, and <strong>Delete Empty Group</strong> to remove the orphan — no SSH required.</p>
+    </div>
     <p><strong>Symptom:</strong> A group was added and claimed, but the member list is empty — even though another unclaimed group with the same name has all the players.</p>
     <p><strong>Cause:</strong> Players were added to the group before claiming. Claiming created a new database entry with a different <code>id</code>, leaving players attached to the old unclaimed record.</p>
     <p><strong>Step 1 — diagnose:</strong> Find both groups and note their IDs.</p>
@@ -712,11 +846,15 @@ console.log('Moved:', moved.changes, 'players. Deleted:', del.changes, 'group(s)
 "</code></pre>
     <p>Replace <code>OLD_ID</code> and <code>NEW_ID</code> with the values you found. Refresh the app — all members appear immediately.</p>
 
-    <h3>Activity feed is empty</h3>
+    <h3 id="faq-feed">Activity feed is empty</h3>
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚙️</span>
+      <p><strong>Easier via Admin Portal:</strong> Use <strong>Maintenance → Trigger Activity Sync</strong> — enter the group ID and click Run. Shows per-player results with new activity counts instantly.</p>
+    </div>
     <p><strong>Cause:</strong> The activity feed is populated by a 2-hour background cron (RuneMetrics API). <strong>Sync All</strong> only updates hiscores — it does not touch RuneMetrics.</p>
     <p>Check the last cron run:</p>
     <pre><code>pm2 logs rs3-gim --lines 50</code></pre>
-    <p>To trigger immediately (server-side only):</p>
+    <p>To trigger immediately without the portal (server-side only):</p>
     <pre><code># Replace 5 with your group's numeric ID
 curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m json.tool</code></pre>
 
@@ -728,15 +866,23 @@ curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m
       <p><strong>502</strong> = Jagex server error (just wait). <strong>429</strong> = rate limited (reduce sync frequency). At 1 req/sec with a 2-hour window the app is well within safe limits.</p>
     </div>
 
-    <h3>Gear icons missing in the vault or loadouts</h3>
+    <h3 id="faq-icons">Gear icons missing in the vault or loadouts</h3>
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚙️</span>
+      <p><strong>Easier via Admin Portal:</strong> Use <strong>Maintenance → Re-run Seed Data</strong> — no fields to fill, just click Run. The script output is shown in a collapsible panel so you can confirm it completed.</p>
+    </div>
     <p><strong>Cause:</strong> The <code>rs3_items</code> table has not been seeded on this server.</p>
-    <p><strong>Fix:</strong></p>
+    <p><strong>Fix (SSH alternative):</strong></p>
     <pre><code>cd /var/www/RS3-GIM-Companion
 node server/scripts/seedRs3Data.js</code></pre>
     <p>The seed script uses <code>INSERT OR REPLACE</code> and is safe to re-run at any time. No restart needed — icons and gear suggestions appear on the next page load.</p>
 
-    <h3>A group lost their secret / need to re-claim</h3>
-    <p><strong>Fix:</strong> Clear the <code>password_hash</code> — this resets the group to unclaimed so they can claim again. All data is untouched.</p>
+    <h3 id="faq-secret">A group lost their secret / need to re-claim</h3>
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚙️</span>
+      <p><strong>Easier via Admin Portal:</strong> Use <strong>Maintenance → Reset Group Secret</strong> — enter the group ID (find it via Browse Groups) and click Run. Done in one step.</p>
+    </div>
+    <p><strong>Fix (SSH alternative):</strong> Clear the <code>password_hash</code> — this resets the group to unclaimed so they can claim again. All data is untouched.</p>
     <pre><code>node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
 // List groups to find the ID
@@ -750,7 +896,11 @@ const result = db.prepare('UPDATE groups SET password_hash = NULL WHERE id = ?')
 console.log('Updated rows:', result.changes);
 "</code></pre>
 
-    <h3>Permanently delete a group</h3>
+    <h3 id="faq-delete">Permanently delete a group</h3>
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚙️</span>
+      <p><strong>Easier via Admin Portal:</strong> Use <strong>Maintenance → Permanently Delete Group</strong> — requires ticking a confirmation checkbox before the Run button activates. All cascades happen automatically.</p>
+    </div>
     <pre><code>node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
 const id = GROUP_ID;
@@ -759,7 +909,11 @@ const result = db.prepare('DELETE FROM groups WHERE id = ?').run(id);
 console.log('Deleted groups:', result.changes);
 "</code></pre>
 
-    <h3>Player shows "Not synced" / hiscores lookup fails</h3>
+    <h3 id="faq-rsn">Player shows "Not synced" / hiscores lookup fails</h3>
+    <div class="callout callout-tip">
+      <span class="callout-icon">⚙️</span>
+      <p><strong>Easier via Admin Portal:</strong> Use <strong>Maintenance → Browse Players in Group</strong> to find the player ID, then <strong>Fix Player RSN</strong> to overwrite the RSN and clear the sync error in one operation.</p>
+    </div>
     <p><strong>Cause:</strong> The RSN was entered with a non-breaking space instead of a regular space — common when copy-pasting from Discord or mobile. Fix by overwriting the RSN with a clean version:</p>
     <pre><code>node -e "
 const db = require('/var/www/RS3-GIM-Companion/server/database');
