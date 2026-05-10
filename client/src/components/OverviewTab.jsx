@@ -807,14 +807,16 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
           ) : (() => {
             const periodLabel = GAIN_PERIODS.find(p => p.days === gainPeriod)?.label.toLowerCase() ?? 'period';
 
-            // Collect all skills any player gained XP in, sorted by total group level gains then XP
-            const allSkills = new Set();
-            for (const p of skillGains) Object.keys(p.gains).forEach(s => allSkills.add(s));
-            const skillTotals = [...allSkills].map(skill => ({
-              skill,
-              totalXp:  skillGains.reduce((sum, p) => sum + (p.gains[skill] ?? 0), 0),
-              totalLvl: skillGains.reduce((sum, p) => sum + (p.levelGains?.[skill] ?? 0), 0),
-            })).sort((a, b) => b.totalLvl !== a.totalLvl ? b.totalLvl - a.totalLvl : b.totalXp - a.totalXp);
+            // Collect all skills any player gained XP in, ordered by SKILL_ORDER (same as Skills tab)
+            const gainedSkills = new Set();
+            for (const p of skillGains) Object.keys(p.gains).forEach(s => gainedSkills.add(s));
+            const skillTotals = SKILL_ORDER
+              .filter(skill => gainedSkills.has(skill))
+              .map(skill => ({
+                skill,
+                totalXp:  skillGains.reduce((sum, p) => sum + (p.gains[skill] ?? 0), 0),
+                totalLvl: skillGains.reduce((sum, p) => sum + (p.levelGains?.[skill] ?? 0), 0),
+              }));
 
             if (skillTotals.length === 0) return (
               <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
