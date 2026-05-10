@@ -64,7 +64,7 @@ export const api = {
   syncPlayer: (id) => request(`/players/${id}/sync`, { method: 'POST' }),
   syncAll: (groupId) => request(`/players/sync-all/${groupId}`, { method: 'POST' }),
   getSnapshots: (id) => request(`/players/${id}/snapshots`),
-  getGroupSnapshots: (groupId) => request(`/players/group-snapshots/${groupId}`),
+  getGroupSnapshots: (groupId, days = 7) => request(`/players/group-snapshots/${groupId}?days=${days}`),
   shareSnapshot:     (groupId, body) => request(`/groups/${groupId}/share-snapshot`, { method: 'POST', body }),
 
   // Goals

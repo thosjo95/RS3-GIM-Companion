@@ -576,12 +576,24 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
     return counts;
   }, [skillLeaders, players]);
 
-  // Fetch per-skill weekly gains from snapshots API
+  // Fetch per-skill XP gains from snapshots API
+  const GAIN_PERIODS = [
+    { label: 'Day',   days: 1  },
+    { label: 'Week',  days: 7  },
+    { label: 'Month', days: 30 },
+    { label: 'Year',  days: 365 },
+  ];
+  const [gainPeriod, setGainPeriod] = useState(7);
   const [skillGains, setSkillGains] = useState([]);
+  const [gainsLoading, setGainsLoading] = useState(false);
   useEffect(() => {
     if (!groupId) return;
-    api.getGroupSnapshots(groupId).then(setSkillGains).catch(() => {});
-  }, [groupId]);
+    setGainsLoading(true);
+    api.getGroupSnapshots(groupId, gainPeriod)
+      .then(setSkillGains)
+      .catch(() => {})
+      .finally(() => setGainsLoading(false));
+  }, [groupId, gainPeriod]);
 
   const TABS = [
     { id: 'xp',     label: '📊 XP' },
@@ -752,14 +764,35 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
         </div>
       )}
 
-      {/* Gains tab — per-skill weekly XP breakdown */}
+      {/* Gains tab — per-skill XP breakdown with period filter */}
       {tab === 'gains' && (
         <div>
+          {/* Period filter pills */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+            {GAIN_PERIODS.map(({ label, days }) => (
+              <button
+                key={days}
+                onClick={() => setGainPeriod(days)}
+                style={{
+                  padding: '3px 12px', fontSize: 11, fontWeight: gainPeriod === days ? 700 : 400,
+                  borderRadius: 12, cursor: 'pointer',
+                  background: gainPeriod === days ? 'var(--gold)' : 'transparent',
+                  border: `1px solid ${gainPeriod === days ? 'var(--gold)' : 'var(--border)'}`,
+                  color: gainPeriod === days ? '#1a1508' : 'var(--text-dim)',
+                  transition: 'all 0.15s',
+                }}>
+                {label}
+              </button>
+            ))}
+            {gainsLoading && <span className="spinner" style={{ width: 12, height: 12, alignSelf: 'center' }} />}
+          </div>
+
           {skillGains.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
               No snapshot data yet — gains appear after the first daily sync.
             </div>
           ) : (() => {
+            const periodLabel = GAIN_PERIODS.find(p => p.days === gainPeriod)?.label.toLowerCase() ?? 'period';
             // Collect all skills that any player gained XP in, sorted by total group gain
             const allSkills = new Set();
             for (const p of skillGains) Object.keys(p.gains).forEach(s => allSkills.add(s));
@@ -770,7 +803,7 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
 
             if (skillTotals.length === 0) return (
               <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-                No XP gains recorded in the past 7 days.
+                No XP gains recorded in the past {periodLabel}.
               </div>
             );
 

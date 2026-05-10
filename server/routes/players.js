@@ -380,11 +380,12 @@ router.post('/sync-activities/:groupId', async (req, res) => {
   res.json(results);
 });
 
-// GET /api/players/group-snapshots/:groupId
-// Returns per-player per-skill weekly XP gains (current snapshot minus 7-day-old snapshot)
+// GET /api/players/group-snapshots/:groupId?days=7
+// Returns per-player per-skill XP gains over the given number of days (default 7)
 router.get('/group-snapshots/:groupId', (req, res) => {
   const { groupId } = req.params;
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const days = Math.max(1, Math.min(365, parseInt(req.query.days, 10) || 7));
+  const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const players = db.prepare('SELECT id, rsn FROM players WHERE group_id = ? ORDER BY rsn').all(groupId);
 
   const result = players.map(player => {
@@ -393,7 +394,7 @@ router.get('/group-snapshots/:groupId', (req, res) => {
     ).get(player.id);
     const weekSnap = db.prepare(
       'SELECT skills_json FROM snapshots WHERE player_id = ? AND snapshot_date <= ? ORDER BY snapshot_date DESC LIMIT 1'
-    ).get(player.id, weekAgo);
+    ).get(player.id, sinceDate);
 
     let gains = {};
     try {
