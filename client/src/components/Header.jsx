@@ -58,10 +58,9 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
           {mobileMenuOpen ? '✕' : '☰'}
         </button>
       )}
-      <div className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <img src="/logo.svg" alt="RS3 GIM Companion" style={{ height: 30, width: 'auto', flexShrink: 0 }} />
-        <span>RS3 GIM Companion</span>
-        {group && <span style={{ fontWeight: 400, opacity: 0.7 }}>— {group.name}</span>}
+      <div className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{ height: 34, width: 'auto', flexShrink: 0 }} />
+        {group && <span style={{ fontWeight: 400, opacity: 0.6, fontSize: 13 }}>— {group.name}</span>}
       </div>
       <div className="header-right">
         {lastSync && <span className="last-sync">Sync: {syncAgo}</span>}

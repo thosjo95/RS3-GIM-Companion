@@ -345,8 +345,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   if (step === 'setting-up') {
     return (
       <div className="setup-screen">
-        <img src="/logo.svg" alt="RS3 GIM Companion" style={{height:84,width:'auto',marginBottom:8}} />
-        <h1>RS3 GIM Companion</h1>
+        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{maxWidth:420,width:'100%',height:'auto',marginBottom:20}} />
         <div className="panel" style={cardStyle}>
           <div className="panel-body" style={{textAlign:'center',padding:'32px 24px'}}>
             <span className="spinner" style={{width:32,height:32,marginBottom:16,display:'block',margin:'0 auto 16px'}} />
@@ -363,8 +362,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   if (step === 'preview' && lookupResult) {
     return (
       <div className="setup-screen">
-        <img src="/logo.svg" alt="RS3 GIM Companion" style={{height:84,width:'auto',marginBottom:8}} />
-        <h1>RS3 GIM Companion</h1>
+        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{maxWidth:420,width:'100%',height:'auto',marginBottom:20}} />
         <div className="panel" style={cardStyle}>
           <div className="panel-header">
             <span className="panel-title">✓ Group Found</span>
@@ -407,8 +405,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   if (step === 'manual') {
     return (
       <div className="setup-screen">
-        <img src="/logo.svg" alt="RS3 GIM Companion" style={{height:84,width:'auto',marginBottom:8}} />
-        <h1>RS3 GIM Companion</h1>
+        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{maxWidth:420,width:'100%',height:'auto',marginBottom:20}} />
         <div className="panel" style={cardStyle}>
           <div className="panel-header">
             <span className="panel-title">
@@ -452,9 +449,10 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   // ── Step: Search ─────────────────────────────────────────────────────────
   return (
     <div className="setup-screen">
-      <div style={{fontSize:56,marginBottom:12}}>⚔️</div>
-      <h1>RS3 GIM Companion</h1>
-      <p>Track your Group Ironman progress — hiscores, XP gains, goals, and weakness maps.</p>
+      <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{maxWidth:480,width:'100%',height:'auto',marginBottom:16}} />
+      <p style={{maxWidth:460,textAlign:'center',lineHeight:1.7,color:'var(--text-dim)',fontSize:14}}>
+        Auto-sync hiscores · track weekly XP gains · manage group goals · analyse skill gaps · log drops · share progress to Discord
+      </p>
       <div className="panel" style={cardStyle}>
         <div className="panel-header"><span className="panel-title">Find Your Group</span></div>
         <form onSubmit={handleSearch}>
