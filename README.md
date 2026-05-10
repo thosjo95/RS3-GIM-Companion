@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.7.0-4caf50?style=flat-square" alt="v1.7.0"/>
+    <img src="https://img.shields.io/badge/version-1.8.0-4caf50?style=flat-square" alt="v1.8.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -30,7 +30,7 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Activity feed** — RuneMetrics feed showing recent drops, quests, milestones; entries are persisted permanently in the database and auto-refreshed every 2 hours in the background
 
 ### 🎯 Goals
-- **Goal Browser** — curated suggestion library organised into seven categories: Quest Series, Skill Unlocks, Key Items, Item Requests, Achievement Diaries, Boss Kills, Slayer Drops
+- **Goal Browser** — curated suggestion library with 263+ suggestions across seven categories: Quest Series (66 quest chains spanning early/mid/end game), Skill Unlocks, Key Items, Item Requests, Achievement Diaries, Boss Kills, Slayer Drops; completed/vaulted goals are automatically hidden so the list stays focused
 - **Item Requests** — 35+ pre-loaded suggestions covering Dungeoneering cape & rewards (Chaotic weapons, Hex/Farsight, Stalker bow, Balmung), Archaeology artefacts (Pontifex ring, Inquisitor staff, Guildmaster's aura), Shattered Worlds codices (Double Surge, Double Escape, Bladed Dive, Natural Instinct, etc.), ports armour, boss drops and more
 - **Active Goals** — personal and group goals with status tracking (Not Started / In Progress / Blocked / Complete); filter by player, category, priority, or search by name
 - **Goal creation modal** — six types matching the browser categories; Quest type shows prerequisite quests + skill requirement checker with one-click "add missing prereqs" buttons; Skill type shows XP-to-go and progress bar
@@ -429,6 +429,14 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.8.0 — May 2026
+- 📜 **Quest series library expanded** — Goal Browser now ships with 66 quest-series suggestions covering all major chains across early, mid, and end game: Elf/Elven city chain (Biohazard → Within the Light → The Light Within), Myreque series (In Aid of the Myreque → Legacy of Seergaze → River of Blood), Desert / Mahjarrat storyline, Gnome / Troll / God Wars chain, Elder Gods arc (Azzanadra's Quest → City of Senntisten → Extinction), Missing Presumed Death, Fort Forinthry, and more
+- 🛠️ **Quest reward corrections** — *While Guthix Sleeps* description and unlocks corrected: WGS does **not** unlock Ancient Curses; real rewards are Tormented Demon access (Dragon Claws, Dragon Limbs, Dragon Platebody parts), Elite Black Armour, Dagon'hai Robes, and 400,000 XP (4 × 100k lamps). *The Temple at Senntisten* is now correctly flagged as the quest that unlocks Ancient Curses (Soul Split, Deflect prayers, Turmoil, Anguish, Torment); its quest prerequisites updated to include Devious Minds and The Curse of Arrav
+- ✅ **Goal Browser hides completed goals** — suggestions whose corresponding active goal has been marked complete or vaulted are automatically removed from the browser, keeping the list focused on remaining work; a "✓ N completed goals hidden" link lets you reveal them temporarily if needed
+- 👤 **Goal Browser defaults to 'me'** — the Players chip filter now defaults to just the current user (set via "Set your name" in the header) instead of selecting all players; readiness checks and the add-goal action focus on your own character by default; other players can still be toggled in
+- 🔍 **? tour button moved** — the context-aware tour replay button (`?`) has been moved to sit immediately left of the Docs link in the header
+- 🌐 **SEO improvements** — `robots.txt` and `sitemap.xml` added to `client/public/` so they are served at `groupiron.com/robots.txt` and `groupiron.com/sitemap.xml` after build; `index.html` already had full meta tags (description, canonical, Open Graph, Twitter Card, JSON-LD structured data)
 
 ### v1.7.0 — May 2026
 - 🗺️ **Per-tab product tours** — interactive guided tours for Goals, Group Vault, Achievement Diaries, and Leaderboards tabs; auto-trigger on your first visit to each tab; completing a tour saves the state per-tab so it only shows once; context-aware `?` button in the header replays the tour for whichever tab you're currently on (Overview `?` replays the full app tour)

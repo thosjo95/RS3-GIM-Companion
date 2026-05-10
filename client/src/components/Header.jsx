@@ -153,6 +153,22 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
           </button>
         )}
 
+        {/* Tour replay button — left of Docs */}
+        {group && onTourClick && (
+          <button
+            className="sync-btn"
+            onClick={onTourClick}
+            title="Show feature tour"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              padding: '0 10px', fontSize: 14, fontWeight: 700,
+            }}>
+            ?
+          </button>
+        )}
+
         {/* Docs link */}
         <a
           href="https://thosjo95.github.io/RS3-GIM-Companion/"
@@ -197,22 +213,6 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
           </svg>
           Discord
         </a>
-
-        {/* Tour replay button */}
-        {group && onTourClick && (
-          <button
-            className="sync-btn"
-            onClick={onTourClick}
-            title="Show feature tour"
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--border)',
-              color: 'var(--text-dim)',
-              padding: '0 10px', fontSize: 14, fontWeight: 700,
-            }}>
-            ?
-          </button>
-        )}
 
         {group && (
           <button data-tour="sync" className="sync-btn" onClick={syncAll} disabled={syncing}>
