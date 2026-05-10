@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.8.0-4caf50?style=flat-square" alt="v1.8.0"/>
+    <img src="https://img.shields.io/badge/version-1.9.0-4caf50?style=flat-square" alt="v1.9.0"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -429,6 +429,15 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.0 — May 2026
+- 🖼️ **New branding logo** — "Group Ironman RS3 Companion" banner replaces the SVG shield icon on the landing page and header; transparent background applied automatically; subtitle updated to summarise all current features
+- 📅 **Gains tab (Group Stats)** — new tab showing per-player, per-skill XP and level gains over selectable periods (Day / Week / Month / Year); defaults to Day; cells show current level + levels gained in green; hover to see exact XP gained; skill order matches the Skills tab
+- 🎯 **Gaps tab (Group Stats)** — automatic skill gap analysis scanning all 260+ quest suggestions against player skill levels; no goals required; skill dropdown + custom level override; sort toggle (most affected / level high→low / level low→high); player badges show current level in parentheses and levels needed in gold (+X); Invention filter shows unlock prerequisites (Crafting 80, Divination 80, Smithing 80)
+- 🗂️ **Group Stats tab layout** — reordered to XP | Combat | **Skills** | Gains | Gaps; Skills centred and selected by default on load
+- 🤖 **Auto-complete quest goals** — RuneMetrics activity feed entries matching "I completed the quest: X" now automatically mark the matching quest goal as complete and fire a Discord notification
+- 📸 **Snapshot export** — "Share" button in Group Stats header generates a Canvas-drawn PNG card of the current view; download locally or post directly to Discord via the group's configured webhook (multipart file upload, no external libraries)
+- 🧹 **UI polish** — "Active This Week" stat box is no longer clickable and has no info icon; vault "auto-synced from activity feed" label has emoji removed; icon buttons in header are uniformly sized (32×32 px)
 
 ### v1.8.0 — May 2026
 - 📜 **Quest series library expanded** — Goal Browser now ships with 66 quest-series suggestions covering all major chains across early, mid, and end game: Elf/Elven city chain (Biohazard → Within the Light → The Light Within), Myreque series (In Aid of the Myreque → Legacy of Seergaze → River of Blood), Desert / Mahjarrat storyline, Gnome / Troll / God Wars chain, Elder Gods arc (Azzanadra's Quest → City of Senntisten → Extinction), Missing Presumed Death, Fort Forinthry, and more

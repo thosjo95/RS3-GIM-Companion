@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.8</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -41,7 +41,7 @@
       "@type": "Person",
       "name": "thosjo95"
     },
-    "softwareVersion": "1.7.0",
+    "softwareVersion": "1.9.0",
     "keywords": "RuneScape 3, RS3, Group Ironman, GIM, tracker, hiscores, goals, gear loadouts"
   }
   </script>
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.8 documentation</div>
+        <div class="sidebar-version">v1.9 documentation</div>
       </div>
     </div>
 
@@ -275,7 +275,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.8.0</span>
+          <span class="badge badge-green">v1.9.0</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -771,7 +771,18 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.8.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.0 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>New branding logo</strong> — "Group Ironman RS3 Companion" banner replaces the SVG shield on the landing page and in the header; transparent background; subtitle updated to summarise all current features</li>
+      <li><strong>Gains tab (Group Stats)</strong> — new tab showing per-player, per-skill level and XP gains over Day / Week / Month / Year; defaults to Day; cells show current level + green level gains; hover any cell to see exact XP; skill order matches the Skills tab</li>
+      <li><strong>Gaps tab (Group Stats)</strong> — automatic skill gap analysis across all 260+ quest suggestions; no goals required; skill dropdown + custom level override; sort toggle (most affected / level high→low / level low→high); badges show current level in parentheses and levels still needed in gold; Invention filter shows its three unlock prerequisites (Crafting 80, Divination 80, Smithing 80)</li>
+      <li><strong>Group Stats tab layout</strong> — tabs reordered to XP | Combat | Skills | Gains | Gaps; Skills is centred and selected by default</li>
+      <li><strong>Auto-complete quest goals</strong> — RuneMetrics "I completed the quest: X" entries automatically mark matching quest goals as complete and fire a Discord notification</li>
+      <li><strong>Snapshot export</strong> — "Share" button in Group Stats draws a PNG card of the current view; download locally or post directly to Discord via the group's webhook</li>
+      <li><strong>UI polish</strong> — "Active This Week" card is no longer clickable and has no info icon; vault "auto-synced" label has emoji removed; header icon buttons are uniformly 32×32 px</li>
+    </ul>
+
+    <h3>v1.8.0 — May 2026 &nbsp;<span class="tag-dim">Previous</span></h3>
     <ul>
       <li><strong>Quest series library expanded</strong> — Goal Browser now ships with 66 quest-series suggestions covering every major chain across early, mid, and end game: Elf/Elven city chain (Biohazard → Within the Light → The Light Within), Myreque series (In Aid of the Myreque → Legacy of Seergaze → River of Blood), Desert / Mahjarrat storyline, Gnome / Troll / God Wars chain, Elder Gods arc (Azzanadra's Quest → City of Senntisten → Extinction), Missing Presumed Death, Fort Forinthry, and more</li>
       <li><strong>Quest reward corrections</strong> — <em>While Guthix Sleeps</em> correctly shows its actual rewards (Tormented Demon access → Dragon Claws / Dragon Platebody parts, Elite Black Armour, Dagon'hai Robes, 400k XP lamps) — it does <em>not</em> unlock Ancient Curses. <em>The Temple at Senntisten</em> is now correctly labelled as the Ancient Curses unlock quest (Soul Split, Deflect prayers, Turmoil, Anguish, Torment); quest prerequisites updated to include Devious Minds and The Curse of Arrav</li>
@@ -867,7 +878,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.8.0 · <a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.0 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 

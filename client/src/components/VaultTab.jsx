@@ -553,7 +553,7 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
             {vaultItems.length} item{vaultItems.length !== 1 ? 's' : ''} logged
             &nbsp;·&nbsp;
             <span title="Boss drops and item pickups detected in the RS3 activity feed are added here automatically when you sync">
-              🔄 auto-synced from activity feed
+              auto-synced from activity feed
             </span>
           </div>
         </div>
