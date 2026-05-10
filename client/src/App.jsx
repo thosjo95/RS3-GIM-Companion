@@ -449,8 +449,8 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   // ── Step: Search ─────────────────────────────────────────────────────────
   return (
     <div className="setup-screen">
-      <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{maxWidth:480,width:'100%',height:'auto',marginBottom:16}} />
-      <p style={{maxWidth:460,textAlign:'center',lineHeight:1.7,color:'var(--text-dim)',fontSize:14}}>
+      <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{maxWidth:480,width:'100%',height:'auto',marginBottom:0}} />
+      <p style={{maxWidth:460,textAlign:'center',lineHeight:1.7,color:'var(--text-dim)',fontSize:14,marginTop:0}}>
         Auto-sync hiscores · track weekly XP gains · manage group goals · analyse skill gaps · log drops · share progress to Discord
       </p>
       <div className="panel" style={cardStyle}>
