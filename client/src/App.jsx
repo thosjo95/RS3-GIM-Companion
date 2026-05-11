@@ -26,6 +26,21 @@ function fmtXp(n) {
 }
 
 function GimTypeLabel({ type, size = 14, iconOnly = false }) {
+  // Custom groups: teal badge icon instead of GIM wiki images
+  if (type === 'custom') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: iconOnly ? 0 : 5 }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: size, height: size, borderRadius: '50%',
+          background: 'rgba(56,189,248,0.18)', border: '1.5px solid rgba(56,189,248,0.55)',
+          color: '#38bdf8', fontSize: Math.round(size * 0.56), fontWeight: 800, flexShrink: 0,
+          lineHeight: 1, userSelect: 'none',
+        }}>C</span>
+        {!iconOnly && <span style={{ color: '#38bdf8' }}>Custom</span>}
+      </span>
+    );
+  }
   const isCompetitive = type === 'competitive';
   const isUnranked    = type === 'regular_unranked';
   const src = isCompetitive
@@ -300,8 +315,8 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
     e.preventDefault();
     if (!groupName.trim()) return;
 
-    // ── Unranked groups bypass hiscores entirely — go straight to manual RSN entry ──
-    if (gimType === 'regular_unranked') {
+    // ── Unranked & custom groups bypass hiscores — go straight to manual RSN entry ──
+    if (gimType === 'regular_unranked' || gimType === 'custom') {
       const existing = groups?.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
       if (existing) { onSwitchToGroup?.(existing.id); return; }
       setSearching(true);
@@ -310,7 +325,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
         const dbMatch = dbResults.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
         if (dbMatch) { onSwitchToGroup?.(dbMatch.id); return; }
       } catch {} finally { setSearching(false); }
-      setManualRsns(Array(gimSize).fill(''));
+      setManualRsns(Array(gimType === 'custom' ? 2 : gimSize).fill(''));
       setStep('manual');
       return;
     }
@@ -346,8 +361,8 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
     setStep('setting-up');
     setSyncProgress(`Adding ${rsns.length} members and syncing hiscores…`);
     try {
-      // For unranked groups the size is just the number of members added
-      const size = gimType === 'regular_unranked' ? rsns.length : gimSize;
+      // For unranked/custom groups the size is just the number of members added
+      const size = (gimType === 'regular_unranked' || gimType === 'custom') ? rsns.length : gimSize;
       const result = await api.setupGroup({ name: groupName.trim(), type: gimType, size, member_rsns: rsns });
       if (result.failed?.length) {
         onToast(`Setup done. ${result.failed.length} member(s) couldn't sync from RS3.`, 'error');
@@ -429,12 +444,14 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
         <div className="panel" style={cardStyle}>
           <div className="panel-header">
             <span className="panel-title">
-              {gimType === 'regular_unranked' ? `Add Members — ${groupName}` : 'Enter Member RSNs'}
+              {gimType === 'custom' ? `Add Members — ${groupName}` : gimType === 'regular_unranked' ? `Add Members — ${groupName}` : 'Enter Member RSNs'}
             </span>
           </div>
           <div className="panel-body">
             <div style={{color:'var(--text-dim)',fontSize:13,marginBottom:14}}>
-              {gimType === 'regular_unranked'
+              {gimType === 'custom'
+                ? 'Enter each player\'s RuneScape name. Stats will be synced from the RS3 hiscores automatically.'
+                : gimType === 'regular_unranked'
                 ? 'Enter each member\'s RuneScape name. Each will be verified individually on the RS3 hiscores and synced in.'
                 : 'Enter each group member\'s exact RuneScape name as shown on the hiscores.'}
             </div>
@@ -485,6 +502,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                   ['regular',          'Regular'],
                   ['competitive',      'Competitive'],
                   ['regular_unranked', 'Unranked'],
+                  ...(import.meta.env.DEV ? [['custom', 'Custom Group']] : []),
                 ].map(([val, label]) => (
                   <button key={val} type="button"
                     className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
@@ -499,8 +517,14 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                   For groups not on the RS3 GIM hiscores. Members are added manually by RSN in the next step.
                 </div>
               )}
+              {gimType === 'custom' && (
+                <div className="text-xs mt-8" style={{textAlign:'center',color:'#38bdf8'}}>
+                  For regular RS3 players tracking progress together — no GIM required.
+                </div>
+              )}
             </div>
 
+            {gimType !== 'custom' && (
             <div className="form-group">
               <label className="form-label" style={{display:'block',textAlign:'center'}}>Group Size</label>
               <div className="flex gap-8" style={{justifyContent:'center'}}>
@@ -513,6 +537,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                 ))}
               </div>
             </div>
+            )}
 
             <div className="form-group">
               <label className="form-label" style={{display:'block',textAlign:'center'}}>Group Name (exact in-game name)</label>
@@ -846,8 +871,8 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
           {/* Separator */}
           <div style={{display:'flex',alignItems:'center',gap:8,margin:'14px 0 12px'}}>
             <div style={{flex:1,height:1,background:'var(--border)'}} />
-            <span style={{fontSize:11,color:'var(--text-dim)'}}>
-              {gimType === 'regular_unranked' ? 'Create unranked group' : 'Add new from RS3 hiscores'}
+            <span style={{fontSize:11,color: gimType === 'custom' ? '#38bdf8' : 'var(--text-dim)'}}>
+              {gimType === 'regular_unranked' ? 'Create unranked group' : gimType === 'custom' ? 'Create custom group' : 'Add new from RS3 hiscores'}
             </span>
             <div style={{flex:1,height:1,background:'var(--border)'}} />
           </div>
@@ -855,7 +880,12 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
           <form onSubmit={handleRs3Search}>
             {/* Type buttons */}
             <div style={{display:'flex',gap:6,marginBottom:6,justifyContent:'center',flexWrap:'wrap'}}>
-              {[['regular','Regular'],['competitive','Competitive'],['regular_unranked','Unranked']].map(([val,label]) => (
+              {[
+                ['regular','Regular'],
+                ['competitive','Competitive'],
+                ['regular_unranked','Unranked'],
+                ...(import.meta.env.DEV ? [['custom','Custom Group']] : []),
+              ].map(([val,label]) => (
                 <button key={val} type="button"
                   className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => { setGimType(val); setRs3Result(null); }}
@@ -865,7 +895,8 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
               ))}
             </div>
 
-            {/* Size picker — always shown */}
+            {/* Size picker — hidden for custom groups (flexible member count) */}
+            {gimType !== 'custom' && (
             <div style={{display:'flex',gap:6,marginBottom:10,justifyContent:'center'}}>
               {[2,3,4,5].map(n => (
                 <button key={n} type="button"
@@ -873,9 +904,10 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
                   onClick={() => setGimSize(n)}>{n} members</button>
               ))}
             </div>
+            )}
 
             {/* Action */}
-            <div style={{textAlign:'center', marginTop: gimType === 'regular_unranked' ? 10 : 0}}>
+            <div style={{textAlign:'center', marginTop: (gimType === 'regular_unranked' || gimType === 'custom') ? 10 : 0}}>
               {gimType === 'regular_unranked' ? (
                 <>
                   <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:8}}>
@@ -888,6 +920,20 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
                     disabled={!query.trim()}
                     onClick={() => { onClose(); onAddNew({ name: query.trim(), type: 'regular_unranked', size: gimSize }); }}>
                     👥 Create Unranked Group →
+                  </button>
+                </>
+              ) : gimType === 'custom' ? (
+                <>
+                  <div style={{fontSize:11,color:'#38bdf8',marginBottom:8}}>
+                    Type your group name above, then click Create. Members are added manually.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    style={{minWidth:180,display:'inline-flex',alignItems:'center',gap:6}}
+                    disabled={!query.trim()}
+                    onClick={() => { onClose(); onAddNew({ name: query.trim(), type: 'custom', size: 2 }); }}>
+                    <GimTypeLabel type="custom" size={12} iconOnly /> Create Custom Group →
                   </button>
                 </>
               ) : (
@@ -1339,9 +1385,16 @@ export default function App() {
             <>
               <div className="page-title">{group.name}</div>
               <div className="page-sub">
-                {/* GIM type icon badge */}
+                {/* Group type badge */}
                 {(() => {
                   const type = group.gim_type ?? 'regular';
+                  if (type === 'custom') {
+                    return (
+                      <span title="Custom Group" style={{ marginRight: 10, display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}>
+                        <GimTypeLabel type="custom" size={16} />
+                      </span>
+                    );
+                  }
                   const src = type === 'competitive'
                     ? 'https://runescape.wiki/images/Competitive_Group_Ironman_badge.png'
                     : 'https://runescape.wiki/images/Group_Ironman_badge.png';

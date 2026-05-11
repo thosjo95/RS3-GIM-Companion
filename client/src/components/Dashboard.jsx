@@ -1,4 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+function CustomGroupBanner({ groupId }) {
+  const [dismissed, setDismissed] = useState(false);
+  const dismiss = useCallback(() => {
+    localStorage.setItem(`customGroupBanner_${groupId}`, '1');
+    setDismissed(true);
+  }, [groupId]);
+  if (dismissed) return null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 10,
+      padding: '10px 14px', marginBottom: 14,
+      background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.3)',
+      borderRadius: 'var(--radius)', fontSize: 13,
+    }}>
+      <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>ℹ️</span>
+      <span style={{ flex: 1, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+        <strong style={{ color: '#38bdf8' }}>Custom Group</strong> — for regular RS3 players tracking shared progress together.
+        Stats sync from the RS3 hiscores just like a GIM group.{' '}
+        <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
+          Note: activity feed &amp; drops require a public RuneMetrics profile.
+        </span>
+      </span>
+      <button
+        onClick={dismiss}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 16, flexShrink: 0, padding: 0 }}
+        title="Dismiss">✕</button>
+    </div>
+  );
+}
 import VaultTab from './VaultTab';
 import OverviewTab from './OverviewTab';
 import LeaderboardsTab from './LeaderboardsTab';
@@ -98,6 +128,7 @@ const TAB_TOUR_KEY = {
 
 export default function Dashboard({ group, goals, pendingRequests, onRefresh, onToast, activeTab, onTabChange, onAddPlayer, groupId, myRsn, canWrite, tabTourReplayKey }) {
   const players = group?.players || [];
+  const isCustomGroup = group?.gim_type === 'custom';
 
   const [tabTour, setTabTour]       = useState(null); // null | 'goals' | 'vault' | ...
   const [goalsJumpKey, setGoalsJumpKey] = useState(0); // incremented to force GoalsTab → Active Goals
@@ -157,6 +188,11 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
           </button>
         ))}
       </div>
+
+      {/* Custom group info banner — dismissable */}
+      {isCustomGroup && !localStorage.getItem(`customGroupBanner_${groupId}`) && (
+        <CustomGroupBanner groupId={groupId} />
+      )}
 
       {/* Tab content — universal top gap */}
       <div style={{ paddingTop: 12 }}>

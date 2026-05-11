@@ -98,15 +98,18 @@ router.post('/', async (req, res) => {
 
   // Step 1 — Confirm the player exists on hiscores (definitive 404 blocks the add;
   // other network errors are non-fatal so the user isn't locked out when Jagex is slow).
+  // Custom groups skip the hard 404 block — low-level accounts may not be on hiscores yet.
+  const targetGroup = group_id ? db.prepare('SELECT gim_type FROM groups WHERE id = ?').get(group_id) : null;
+  const isCustomGroup = targetGroup?.gim_type === 'custom';
   try {
     await fetchHiscores(cleanRSN);
   } catch (err) {
-    if (err.message.includes('not found on hiscores')) {
+    if (err.message.includes('not found on hiscores') && !isCustomGroup) {
       return res.status(400).json({
         error: `"${cleanRSN}" was not found on the RS3 hiscores. Check the exact in-game name (player must be ranked).`,
       });
     }
-    console.warn(`[add-player] Hiscores check failed for "${cleanRSN}": ${err.message} — proceeding anyway`);
+    console.warn(`[add-player] Hiscores check failed for "${cleanRSN}": ${err.message}${isCustomGroup ? ' (custom group — proceeding anyway)' : ' — proceeding anyway'}`);
   }
 
   // Step 2 — Resolve the canonical display name from RuneMetrics.
@@ -192,11 +195,11 @@ router.post('/:id/sync', async (req, res) => {
     try {
       const rm = await fetchRuneMetrics(player.rsn, 0);
       if (rm.name && rm.name.length > 0 && rm.name !== player.rsn) {
-        // Only rename if no other player already has the canonical name
-        const conflict = db.prepare('SELECT id FROM players WHERE rsn = ? AND id != ?').get(rm.name, player.id);
+        // Only rename if no other player in the same group already has the canonical name
+        const conflict = db.prepare('SELECT id FROM players WHERE rsn = ? AND group_id = ? AND id != ?').get(rm.name, player.group_id, player.id);
         if (conflict) {
-          // Duplicate record — delete this stale copy and abort sync; the clean record will sync fine
-          console.warn(`[sync] Duplicate player detected: "${player.rsn}" (id ${player.id}) conflicts with existing "${rm.name}" (id ${conflict.id}). Removing duplicate.`);
+          // Duplicate record in same group — delete this stale copy and abort sync; the clean record will sync fine
+          console.warn(`[sync] Duplicate player detected: "${player.rsn}" (id ${player.id}) conflicts with existing "${rm.name}" (id ${conflict.id}) in group ${player.group_id}. Removing duplicate.`);
           db.prepare('DELETE FROM players WHERE id = ?').run(player.id);
           return res.json({ success: true, warning: 'Duplicate player removed — re-sync the group.' });
         }

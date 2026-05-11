@@ -79,6 +79,9 @@ router.get('/search', (req, res) => {
   const { name, limit = 25 } = req.query;
   const cap = Math.min(Number(limit) || 25, 100);
 
+  // In production, hide dev-only groups (custom non-GIM groups) from public browse
+  const devFilter = process.env.NODE_ENV === 'production' ? 'AND (g.is_dev_only = 0 OR g.is_dev_only IS NULL)' : '';
+
   if (!name?.trim()) {
     const groups = db.prepare(`
       SELECT g.id, g.name, g.group_rsn, g.gim_type, g.gim_size,
@@ -87,6 +90,7 @@ router.get('/search', (req, res) => {
              COUNT(p.id) as member_count
       FROM groups g
       LEFT JOIN players p ON p.group_id = g.id
+      WHERE 1=1 ${devFilter}
       GROUP BY g.id
       ORDER BY g.last_activity DESC, member_count DESC, g.created_at DESC
       LIMIT ?
@@ -101,7 +105,7 @@ router.get('/search', (req, res) => {
            COUNT(p.id) as member_count
     FROM groups g
     LEFT JOIN players p ON p.group_id = g.id
-    WHERE g.name LIKE ? OR g.group_rsn LIKE ?
+    WHERE (g.name LIKE ? OR g.group_rsn LIKE ?) ${devFilter}
     GROUP BY g.id
     ORDER BY member_count DESC, g.last_activity DESC, g.created_at DESC
     LIMIT ?
@@ -154,6 +158,8 @@ function extractMembers(obj) {
 router.get('/lookup', async (req, res) => {
   const { name, type = 'regular', size = '5' } = req.query;
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
+  // Custom groups have no hiscores entry — members are added manually
+  if (type === 'custom') return res.status(400).json({ error: 'Custom groups cannot be looked up on hiscores. Use manual member entry.' });
 
   const encoded = encodeURIComponent(name.trim());
   const url = `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encoded}`;
@@ -328,10 +334,13 @@ router.post('/setup', async (req, res) => {
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
   if (!member_rsns.length) return res.status(400).json({ error: 'At least one member RSN required' });
 
+  // Custom groups are dev-only until the feature is promoted to production
+  const isDevOnly = type === 'custom' ? 1 : 0;
+
   const groupResult = db.prepare(
-    'INSERT INTO groups (name, group_rsn, gim_type, gim_size, password_hash, last_activity) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)'
+    'INSERT INTO groups (name, group_rsn, gim_type, gim_size, password_hash, last_activity, is_dev_only) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)'
   ).run(name.trim(), name.trim(), type, size || member_rsns.length,
-    password?.trim() ? hashPassword(password.trim()) : null);
+    password?.trim() ? hashPassword(password.trim()) : null, isDevOnly);
 
   const groupId = groupResult.lastInsertRowid;
 

@@ -324,6 +324,54 @@ try {
   `);
 } catch {}
 
+// ── Custom Groups feature migrations ─────────────────────────────────────────
+
+// Migration tracking table — idempotent
+db.exec(`CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, ran_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+
+// groups.is_dev_only — gates custom (non-GIM) groups from production browse
+try { db.exec('ALTER TABLE groups ADD COLUMN is_dev_only INTEGER DEFAULT 0'); } catch {}
+
+// Migration: relax players.rsn UNIQUE → UNIQUE(rsn, group_id)
+// This lets the same RSN exist in multiple groups (e.g. GIM group + a custom group)
+try {
+  const migrated = db.prepare("SELECT name FROM _migrations WHERE name = 'players_rsn_group_unique'").get();
+  if (!migrated) {
+    db.exec('PRAGMA foreign_keys = OFF');
+    db.exec(`
+      CREATE TABLE players_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rsn TEXT NOT NULL,
+        quest_points INTEGER DEFAULT 0,
+        combat_level INTEGER DEFAULT 3,
+        group_id INTEGER,
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_synced DATETIME,
+        stats_json TEXT,
+        activities_json TEXT,
+        sync_error TEXT,
+        sync_error_at DATETIME,
+        UNIQUE(rsn, group_id),
+        FOREIGN KEY (group_id) REFERENCES groups(id)
+      )
+    `);
+    db.exec(`
+      INSERT INTO players_v2
+        SELECT id, rsn, quest_points, combat_level, group_id, joined_at,
+               last_synced, stats_json, activities_json, sync_error, sync_error_at
+        FROM players
+    `);
+    db.exec(`DROP TABLE players`);
+    db.exec(`ALTER TABLE players_v2 RENAME TO players`);
+    db.exec('PRAGMA foreign_keys = ON');
+    db.prepare("INSERT INTO _migrations (name) VALUES (?)").run('players_rsn_group_unique');
+    console.log('[db] Migration applied: players.rsn UNIQUE → UNIQUE(rsn, group_id)');
+  }
+} catch (e) {
+  console.warn('[db] Migration players_rsn_group_unique failed:', e.message);
+  try { db.exec('PRAGMA foreign_keys = ON'); } catch {}
+}
+
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {
   db.exec('BEGIN');
