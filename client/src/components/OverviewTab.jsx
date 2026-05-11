@@ -708,7 +708,7 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                   <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(200,168,75,0.07)' }}>
                     <td style={{ padding: '6px 8px 6px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <img src="https://runescape.wiki/images/Skills_icon.png" alt="Total Level" width={18} height={18} style={{ imageRendering: 'crisp-edges', verticalAlign: 'middle' }} />
+                        <img src="https://runescape.wiki/images/Statistics.png" alt="Total Level" width={18} height={18} style={{ imageRendering: 'crisp-edges', verticalAlign: 'middle' }} />
                         <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2px' }}>Total Level</span>
                       </span>
                     </td>
@@ -872,7 +872,7 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                         <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(200,168,75,0.07)' }}>
                           <td style={{ padding: '6px 8px 6px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <img src="https://runescape.wiki/images/Skills_icon.png" alt="Total Level" width={18} height={18} style={{ imageRendering: 'crisp-edges', verticalAlign: 'middle' }} />
+                        <img src="https://runescape.wiki/images/Statistics.png" alt="Total Level" width={18} height={18} style={{ imageRendering: 'crisp-edges', verticalAlign: 'middle' }} />
                         <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2px' }}>Total Level</span>
                       </span>
                           </td>
