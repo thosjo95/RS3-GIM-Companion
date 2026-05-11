@@ -332,15 +332,10 @@ router.post('/:id/verify', (req, res) => {
 // POST /api/groups/setup - create group + add all members + sync hiscores
 router.post('/setup', async (req, res) => {
   const { name, type = 'regular', size, member_rsns = [], password } = req.body;
-  // Custom groups are a dev-preview feature — block creation in production
-  if (type === 'custom' && process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ error: 'Custom groups are not available in production yet.' });
-  }
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
   if (!member_rsns.length) return res.status(400).json({ error: 'At least one member RSN required' });
 
-  // Custom groups are dev-only until the feature is promoted to production
-  const isDevOnly = type === 'custom' ? 1 : 0;
+  const isDevOnly = 0;
 
   const groupResult = db.prepare(
     'INSERT INTO groups (name, group_rsn, gim_type, gim_size, password_hash, last_activity, is_dev_only) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)'

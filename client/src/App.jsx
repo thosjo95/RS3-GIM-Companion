@@ -546,7 +546,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                   ['regular',          'Regular'],
                   ['competitive',      'Competitive'],
                   ['regular_unranked', 'Unranked'],
-                  ...(import.meta.env.DEV ? [['custom', 'Custom Group']] : []),
+                  ['custom', 'Custom Group'],
                 ].map(([val, label]) => (
                   <button key={val} type="button"
                     className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
@@ -928,7 +928,7 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
                 ['regular','Regular'],
                 ['competitive','Competitive'],
                 ['regular_unranked','Unranked'],
-                ...(import.meta.env.DEV ? [['custom','Custom Group']] : []),
+                ['custom','Custom Group'],
               ].map(([val,label]) => (
                 <button key={val} type="button"
                   className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
