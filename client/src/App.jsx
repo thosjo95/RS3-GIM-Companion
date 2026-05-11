@@ -651,8 +651,8 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose, onStar 
         type="button"
         onClick={() => setOpen(o => !o)}
         style={{
-          width: '100%', textAlign: 'left',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', textAlign: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '8px 12px',
           background: open ? 'rgba(200,168,75,0.08)' : 'var(--bg-panel-alt)',
           border: `1px solid ${open ? 'var(--gold-dark)' : 'var(--border)'}`,
@@ -660,8 +660,9 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose, onStar 
           color: open ? 'var(--gold)' : 'var(--text-dim)',
           fontSize: 13, fontWeight: 600,
           transition: 'all 0.15s',
+          gap: 6,
         }}>
-        <span>👥 Browse groups tracked in this app</span>
+        <span>Look up group</span>
         <span style={{fontSize:11}}>{open ? '▲' : '▼'}</span>
       </button>
 
