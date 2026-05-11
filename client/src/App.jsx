@@ -536,7 +536,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
           </div>
 
           <div className="modal-footer" style={{flexDirection:'column',gap:8,alignItems:'stretch'}}>
-            <button type="submit" className="btn btn-primary" disabled={searching || !groupName.trim()}>
+            <button type="submit" className="btn btn-primary" disabled={searching || !groupName.trim()} style={{textAlign:'center',justifyContent:'center'}}>
               {searching
                 ? <><span className="spinner" style={{width:12,height:12}}/> Searching…</>
                 : gimType === 'regular_unranked'
