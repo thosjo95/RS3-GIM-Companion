@@ -806,7 +806,7 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
           <div className="form-group" style={{marginBottom:12,marginTop:0}}>
             <input className="form-input" value={query}
               onChange={e => { setQuery(e.target.value); setRs3Result(null); }}
-              placeholder="Search by group name…" autoFocus />
+              placeholder="Enter group name…" autoFocus />
           </div>
 
           {/* ── Your (pinned) groups ── */}
