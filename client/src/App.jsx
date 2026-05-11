@@ -471,11 +471,11 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
       <div className="panel" style={cardStyle}>
         <div className="panel-header"><span className="panel-title">Find Your Group</span></div>
         <form onSubmit={handleSearch}>
-          <div className="panel-body">
+          <div className="panel-body" style={{textAlign:'center'}}>
 
             <div className="form-group">
-              <label className="form-label">Group Type</label>
-              <div className="flex gap-8" style={{flexWrap:'wrap'}}>
+              <label className="form-label" style={{display:'block',textAlign:'center'}}>Group Type</label>
+              <div className="flex gap-8" style={{flexWrap:'wrap',justifyContent:'center'}}>
                 {[
                   ['regular',          'Regular'],
                   ['competitive',      'Competitive'],
@@ -490,15 +490,15 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                 ))}
               </div>
               {gimType === 'regular_unranked' && (
-                <div className="text-xs text-dim mt-8">
+                <div className="text-xs text-dim mt-8" style={{textAlign:'center'}}>
                   For groups not on the RS3 GIM hiscores. Members are added manually by RSN in the next step.
                 </div>
               )}
             </div>
 
             <div className="form-group">
-              <label className="form-label">Group Size</label>
-              <div className="flex gap-8">
+              <label className="form-label" style={{display:'block',textAlign:'center'}}>Group Size</label>
+              <div className="flex gap-8" style={{justifyContent:'center'}}>
                 {[2,3,4,5].map(n => (
                   <button key={n} type="button"
                     className={`btn btn-sm ${gimSize === n ? 'btn-primary' : 'btn-secondary'}`}
@@ -510,15 +510,15 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
             </div>
 
             <div className="form-group">
-              <label className="form-label">Group Name (exact in-game name)</label>
+              <label className="form-label" style={{display:'block',textAlign:'center'}}>Group Name (exact in-game name)</label>
               <input className="form-input" value={groupName} onChange={e => setGroupName(e.target.value)}
-                placeholder="e.g. True Deciples" required autoFocus />
+                placeholder="e.g. True Deciples" required autoFocus style={{textAlign:'center'}} />
               {gimType === 'regular_unranked' ? (
-                <div className="text-xs text-dim mt-8">
+                <div className="text-xs text-dim mt-8" style={{textAlign:'center'}}>
                   Choose any name to identify your group in the app.
                 </div>
               ) : (
-                <div className="text-xs text-dim mt-8">
+                <div className="text-xs text-dim mt-8" style={{textAlign:'center'}}>
                   Must match your group name on the{' '}
                   <a href={`https://rs.runescape.com/hiscores/group-ironman/${gimType}/${gimSize}`}
                     target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>
@@ -536,7 +536,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
                 ? <><span className="spinner" style={{width:12,height:12}}/> Searching…</>
                 : gimType === 'regular_unranked'
                   ? 'Next: Add Members →'
-                  : '🔍 Search & Import Group'}
+                  : 'Search & Import Group'}
             </button>
             {onCancel && <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>}
           </div>
