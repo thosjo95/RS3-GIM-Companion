@@ -10,7 +10,7 @@ function CustomGroupBanner({ groupId }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 10,
-      padding: '10px 14px', marginBottom: 14,
+      padding: '12px 16px', marginTop: 16, marginBottom: 20,
       background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.3)',
       borderRadius: 'var(--radius)', fontSize: 13,
     }}>
