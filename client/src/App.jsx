@@ -278,6 +278,11 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   const [gimType, setGimType] = useState(prefill?.type || 'regular');
   const [gimSize, setGimSize] = useState(prefill?.size || 5);
   const [groupName, setGroupName] = useState(prefill?.name || '');
+  const namePlaceholder = useMemo(() => {
+    const names = (groups || []).map(g => g.name).filter(Boolean);
+    if (names.length === 0) return 'e.g. True Deciples';
+    return `e.g. ${names[Math.floor(Math.random() * names.length)]}`;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [lookupResult, setLookupResult] = useState(
     prefill && prefill.type !== 'regular_unranked'
       ? { found: true, groupName: prefill.name, type: prefill.type, size: prefill.size, members: prefill.members }
@@ -512,7 +517,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
             <div className="form-group">
               <label className="form-label" style={{display:'block',textAlign:'center'}}>Group Name (exact in-game name)</label>
               <input className="form-input" value={groupName} onChange={e => setGroupName(e.target.value)}
-                placeholder="e.g. True Deciples" required autoFocus style={{textAlign:'center'}} />
+                placeholder={namePlaceholder} required autoFocus style={{textAlign:'center'}} />
               {gimType === 'regular_unranked' ? (
                 <div className="text-xs text-dim mt-8" style={{textAlign:'center'}}>
                   Choose any name to identify your group in the app.
