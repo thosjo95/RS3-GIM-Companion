@@ -796,7 +796,7 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
     <div className="modal-backdrop">
       <div className="modal" style={{maxWidth:500}}>
         <div className="modal-header">
-          <span className="modal-title">👥 Find or Manage Groups</span>
+          <span className="modal-title">Find or Manage Groups</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body" style={{paddingTop:8, maxHeight:'85vh', overflowY:'auto'}}>
