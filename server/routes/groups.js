@@ -79,8 +79,9 @@ router.get('/search', (req, res) => {
   const { name, limit = 25 } = req.query;
   const cap = Math.min(Number(limit) || 25, 100);
 
-  // In production, hide dev-only groups (custom non-GIM groups) from public browse
-  const devFilter = process.env.NODE_ENV === 'production' ? 'AND (g.is_dev_only = 0 OR g.is_dev_only IS NULL)' : '';
+  // Always hide dev-only groups (custom non-GIM groups) from public browse
+  // Custom groups are accessible directly by ID (from sidebar/localStorage) but not discoverable
+  const devFilter = 'AND (g.is_dev_only = 0 OR g.is_dev_only IS NULL)';
 
   if (!name?.trim()) {
     const groups = db.prepare(`
@@ -331,6 +332,10 @@ router.post('/:id/verify', (req, res) => {
 // POST /api/groups/setup - create group + add all members + sync hiscores
 router.post('/setup', async (req, res) => {
   const { name, type = 'regular', size, member_rsns = [], password } = req.body;
+  // Custom groups are a dev-preview feature — block creation in production
+  if (type === 'custom' && process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Custom groups are not available in production yet.' });
+  }
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
   if (!member_rsns.length) return res.status(400).json({ error: 'At least one member RSN required' });
 
