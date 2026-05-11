@@ -662,7 +662,7 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose, onStar 
           transition: 'all 0.15s',
           gap: 6,
         }}>
-        <span>Look up group</span>
+        <span>Browse groups tracked in this app</span>
         <span style={{fontSize:11}}>{open ? '▲' : '▼'}</span>
       </button>
 
@@ -886,11 +886,11 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
                   </button>
                 </>
               ) : (
-                <button type="submit" className="btn btn-secondary btn-sm" style={{minWidth:180}}
+                <button type="submit" className="btn btn-secondary btn-sm" style={{minWidth:180, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto'}}
                   disabled={searching || !query.trim()}>
                   {searching
                     ? <><span className="spinner" style={{width:12,height:12}} /> Searching RS3…</>
-                    : '🔍 Search RS3 Hiscores'}
+                    : 'Look up group'}
                 </button>
               )}
             </div>
