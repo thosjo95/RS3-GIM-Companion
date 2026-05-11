@@ -282,6 +282,35 @@ function ClaimModal({ group, onConfirm, onCancel }) {
 }
 
 
+// ── Custom group name generator ───────────────────────────────────────────────
+const CUSTOM_NAME_ADJECTIVES = [
+  'Iron', 'Steel', 'Bronze', 'Dragon', 'Ancient', 'Chaos', 'Holy', 'Shadow',
+  'Crystal', 'Arcane', 'Gilded', 'Blessed', 'Swift', 'Bold', 'Grim', 'Lunar',
+  'Sacred', 'Dark', 'Frozen', 'Infernal', 'Runic', 'Silent', 'Eternal', 'Lost',
+  'Cursed', 'Golden', 'Primal', 'Storm', 'Silver', 'Crimson', 'Verdant', 'Ashen',
+];
+const CUSTOM_NAME_NOUNS = [
+  'Squad', 'Clan', 'Order', 'Alliance', 'Legion', 'Vanguard', 'Rangers',
+  'Slayers', 'Hunters', 'Warriors', 'Champions', 'Brotherhood', 'Guild',
+  'Band', 'Crew', 'Sentinels', 'Wanderers', 'Outlaws', 'Pioneers', 'Keepers',
+  'Guardians', 'Raiders', 'Seekers', 'Disciples', 'Reapers', 'Companions',
+];
+
+function generateCustomGroupName(existingGroups = []) {
+  const taken = new Set((existingGroups).map(g => g.name?.toLowerCase()));
+  // Shuffle both lists and try every combination until we find a free name
+  const adjs  = [...CUSTOM_NAME_ADJECTIVES].sort(() => Math.random() - 0.5);
+  const nouns = [...CUSTOM_NAME_NOUNS].sort(() => Math.random() - 0.5);
+  for (const adj of adjs) {
+    for (const noun of nouns) {
+      const candidate = `${adj} ${noun}`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
+  }
+  // Extremely unlikely to exhaust all combos — fallback with a number suffix
+  return `Iron Squad ${Math.floor(Math.random() * 900) + 100}`;
+}
+
 // Setup screen — shown when no group exists
 function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup, onStar }) {
   const [step, setStep] = useState(() => {
@@ -293,11 +322,26 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
   const [gimType, setGimType] = useState(prefill?.type || 'regular');
   const [gimSize, setGimSize] = useState(prefill?.size || 5);
   const [groupName, setGroupName] = useState(prefill?.name || '');
+
+  // For GIM types: random existing group name as hint
   const namePlaceholder = useMemo(() => {
     const names = (groups || []).map(g => g.name).filter(Boolean);
     if (names.length === 0) return 'e.g. True Deciples';
     return `e.g. ${names[Math.floor(Math.random() * names.length)]}`;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // For custom type: pre-generate a guaranteed-free name suggestion
+  const customNameSuggestion = useMemo(() => generateCustomGroupName(groups), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-fill the name input when the user picks custom type (and hasn't typed anything yet)
+  useEffect(() => {
+    if (gimType === 'custom' && !groupName) {
+      setGroupName(customNameSuggestion);
+    }
+    if (gimType !== 'custom' && groupName === customNameSuggestion) {
+      setGroupName(''); // clear the auto-fill if they switch away
+    }
+  }, [gimType]); // eslint-disable-line react-hooks/exhaustive-deps
   const [lookupResult, setLookupResult] = useState(
     prefill && prefill.type !== 'regular_unranked'
       ? { found: true, groupName: prefill.name, type: prefill.type, size: prefill.size, members: prefill.members }
