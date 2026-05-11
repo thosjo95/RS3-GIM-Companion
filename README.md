@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.1-4caf50?style=flat-square" alt="v1.9.1"/>
+    <img src="https://img.shields.io/badge/version-1.9.2-4caf50?style=flat-square" alt="v1.9.2"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -25,7 +25,7 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 ### 📊 Overview
 - Member cards with RS3 avatars, **YOU** badge, click-to-focus on any player
 - Stat summary: Members · Total XP · Total Levels · Active This Week
-- **Group Stats** — XP progress bars, full Skills matrix (all 29 RS3 skills × all players, gold-highlight for group best), Combat breakdown with RS3 icons (includes Necromancy & Summoning)
+- **Group Stats** — XP progress bars, full Skills matrix (all 29 RS3 skills × all players, gold-highlight for group best), Combat breakdown with RS3 icons (includes Necromancy & Summoning); **Total Level** pinned row at the top of both Skills and Gains tabs with the RS3 Statistics icon
 - **Goals panel** — level / item / quest / custom goals with live XP-to-go tracking
 - **Activity feed** — RuneMetrics feed showing recent drops, quests, milestones; entries are persisted permanently in the database and auto-refreshed every 2 hours in the background
 
@@ -89,12 +89,21 @@ Once unlocked, set your character name (👤 button in the header) so the app kn
 
 ## Group Management
 
-Click **👥 Find or Manage Groups** in the sidebar to:
-- Search by exact group name and import from RS3 hiscores
+Click **Find or Manage Groups** in the sidebar to:
+- **Look up group** — search by exact group name and import from RS3 hiscores (Regular / Competitive GIM)
+- **Browse groups already tracked** — collapsible panel showing recently active groups; click any row to open it as a guest
 - ★ Favourite groups (pins to top of sidebar)
 - ✕ Remove groups you no longer want in your sidebar
 
-Groups are found exclusively via the **RS3 GIM hiscores** — the app validates that the group name, type (Regular / Competitive), and member count all match before importing. If a group can't be found, the search shows a styled "Group not found" message with a hint to check the exact name and settings.
+Each group row shows the correct RS Wiki GIM badge icon (Regular, Competitive, or Unranked), and the sidebar entry shows the badge for the active group too.
+
+### Custom Groups *(dev preview)*
+
+A **Custom Group** is a non-GIM group for regular RS3 players who want a shared dashboard without a formal Group Ironman setup. Everything works the same as a GIM group — hiscores sync, XP gains, goals, vault, Discord notifications — but members are added manually by RSN and there's no RS3 hiscores entry to look up.
+
+- Select **Custom Group** in the type picker when adding a new group
+- The app auto-suggests a unique RS-themed name (e.g. *Shadow Vanguard*, *Gilded Champions*) — guaranteed not to conflict with any existing group
+- Displayed with a teal **C** badge throughout the UI instead of a GIM badge image
 
 ---
 
@@ -278,8 +287,9 @@ node server/scripts/createAdmin.js <username> <password>
 
 | Table | Purpose |
 |---|---|
-| `groups` | Name, type, size, password hash, last activity, Discord webhook URL + event config |
-| `players` | RSN, combat level, hiscores JSON, RuneMetrics JSON |
+| `groups` | Name, type (`regular`/`competitive`/`regular_unranked`/`custom`), size, password hash, last activity, Discord webhook URL + event config, `is_dev_only` flag |
+| `players` | RSN, combat level, hiscores JSON, RuneMetrics JSON; `UNIQUE(rsn, group_id)` allows same player in multiple groups |
+| `_migrations` | Schema migration tracking — idempotent migration history |
 | `skills` | Per-player skill levels, XP, hiscores rank |
 | `snapshots` | Daily XP snapshots for weekly gain calculation |
 | `goals` | Goal type, status, current/target values, details JSON |
@@ -480,6 +490,12 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.2 — May 2026
+- 🏷️ **GIM type badges** — replaced all ⚔️/🏆/👥 emoji with RS Wiki badge images (Group Ironman badge / Competitive Group Ironman badge) throughout the UI: group browser rows, sidebar entries, type selector buttons, group header subtext
+- 📊 **Total Level row** — pinned top row in both the Skills matrix and the Gains table showing each player's current total level (with the RS3 Statistics icon); the highest total is highlighted gold in the Skills tab; the Gains tab also shows the total levels gained in the selected period
+- 👥 **Custom Groups (dev preview)** — new group type for regular RS3 players tracking shared progress without being in a formal GIM: members added manually by RSN, all dashboard features work the same (hiscores sync, XP gains, goals, vault, Discord), teal **C** badge used throughout; auto-generates a unique RS-themed group name on creation (e.g. *Shadow Vanguard*, *Gilded Champions*); gated from production browse until the feature is fully released
+- 🎨 **Setup screen polish** — all form content (type/size buttons, group name input, submit button) centred; placeholder dynamically shows a random tracked group name; "Enter group name…" hint text; "Look up group" / "Browse groups already tracked" button labels
 
 ### v1.9.1 — May 2026
 - 🖱️ **Active Goals drag-and-drop** — goal cards can be dragged between Not Started, In Progress, and Blocked columns; target column highlights gold during drag; empty columns show a "Drop here" hint

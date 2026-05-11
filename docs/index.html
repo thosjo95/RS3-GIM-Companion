@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.1</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.2</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -41,7 +41,7 @@
       "@type": "Person",
       "name": "thosjo95"
     },
-    "softwareVersion": "1.9.1",
+    "softwareVersion": "1.9.2",
     "keywords": "RuneScape 3, RS3, Group Ironman, GIM, tracker, hiscores, goals, gear loadouts"
   }
   </script>
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9.1 documentation</div>
+        <div class="sidebar-version">v1.9.2 documentation</div>
       </div>
     </div>
 
@@ -276,7 +276,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.1</span>
+          <span class="badge badge-green">v1.9.2</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -326,13 +326,22 @@
 
     <!-- Group Management -->
     <h2 id="group-management">Group Management</h2>
-    <p>Click <strong>👥 Find or Manage Groups</strong> in the sidebar to open the group manager.</p>
+    <p>Click <strong>Find or Manage Groups</strong> in the sidebar to open the group manager. Each group row displays the correct RS Wiki GIM badge icon (Regular, Competitive, or Unranked), and the active group's badge also appears in the sidebar and the page subheader.</p>
 
-    <h3>Search &amp; Import</h3>
-    <p>Search by exact group name — the app validates the name, type (Regular / Competitive), and member count against the RS3 GIM hiscores before importing. If not found, a styled error message appears with a hint to check exact spelling.</p>
+    <h3>Look Up Group</h3>
+    <p>Enter the exact group name and select the type (Regular / Competitive / Unranked) and member count — the app validates against the RS3 GIM hiscores before importing. The name input placeholder shows a random name from groups already tracked in the app for reference.</p>
 
-    <h3>Browse Tracked Groups</h3>
-    <p>Expand the <strong>Browse tracked groups</strong> panel to scroll or search groups that have already been tracked by the app — sorted by most recently active. Click a group row to open it in read-only mode without saving it to your sidebar.</p>
+    <h3>Browse Groups Already Tracked</h3>
+    <p>Expand the <strong>Browse groups already tracked</strong> panel to scroll or search groups already in the app — sorted by most recently active. Click any row to open it in read-only mode without saving it to your sidebar.</p>
+
+    <h3>Custom Groups <span style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:11px;padding:2px 7px;border-radius:4px;display:inline-block;line-height:1.4;">Dev Preview</span></h3>
+    <p>A <strong>Custom Group</strong> is a non-GIM group for regular RS3 players who want a shared dashboard without a formal Group Ironman setup. Select <strong>Custom Group</strong> in the type picker when creating a new group. Members are added manually by RSN, and all features work identically — hiscores sync, XP gains, goals, vault, Discord notifications, achievement diaries.</p>
+    <ul>
+      <li>Shown with a teal <strong>C</strong> badge throughout the UI instead of a GIM badge image</li>
+      <li>The app auto-suggests a unique RS-themed name (e.g. <em>Shadow Vanguard</em>, <em>Gilded Champions</em>) that is guaranteed not to conflict with any existing group — editable before confirming</li>
+      <li>A dismissable info banner appears on the dashboard for custom groups</li>
+      <li>Activity feed and drops require a public RuneMetrics profile (same as GIM groups)</li>
+    </ul>
 
     <h3>Starring / Favouriting Groups</h3>
     <p>Groups are only pinned to your sidebar when you <strong>explicitly save</strong> them — browsing a group does not auto-pin it. Three ways to save a group:</p>
@@ -937,7 +946,15 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.1 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.2 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>GIM type badges</strong> — replaced all ⚔️/🏆/👥 emoji with RS Wiki badge images (Group Ironman badge / Competitive Group Ironman badge) throughout the UI: group browser rows, sidebar entries, type selector buttons, and the group header subtext</li>
+      <li><strong>Total Level row</strong> — pinned top row in both the Skills matrix and the Gains table; shows each player's current total level with the RS3 Statistics icon; highest total is highlighted gold in the Skills tab; the Gains tab also shows total levels gained in the selected period</li>
+      <li><strong>Custom Groups (dev preview)</strong> — new group type for regular RS3 players: members added manually by RSN, full dashboard (hiscores sync, XP gains, goals, vault, Discord, diaries), teal <strong>C</strong> badge throughout; auto-generates a unique RS-themed name on creation (e.g. <em>Shadow Vanguard</em>, <em>Gilded Champions</em>); gated from production browse until the feature is fully released</li>
+      <li><strong>Setup screen polish</strong> — form content centred on the setup screen; placeholder shows a random existing tracked group name; "Enter group name…" hint; "Look up group" submit button; "Browse groups already tracked" toggle label</li>
+    </ul>
+
+    <h3>v1.9.1 — May 2026 &nbsp;<span class="tag-dim">Previous</span></h3>
     <ul>
       <li><strong>Active Goals board — drag-and-drop</strong> — goal cards can be grabbed and dropped between the Not Started, In Progress, and Blocked columns; the target column highlights with a gold border during drag; empty columns show a "Drop here" hint</li>
       <li><strong>Goal card actions redesigned</strong> — each card now has four buttons: ✏️ Edit (opens pre-filled modal), 🚫 Blocked (moves to blocked column; hidden once blocked/complete), ▶ Advance (steps status forward), ✕ Delete (removes with confirmation); the old pause icon is gone</li>
@@ -1058,7 +1075,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.1 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.2 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
