@@ -25,6 +25,21 @@ function fmtXp(n) {
   return String(n);
 }
 
+function GimTypeLabel({ type, size = 14, iconOnly = false }) {
+  const isCompetitive = type === 'competitive';
+  const isUnranked    = type === 'regular_unranked';
+  const src = isCompetitive
+    ? 'https://runescape.wiki/images/Competitive_Group_Ironman_badge.png'
+    : 'https://runescape.wiki/images/Group_Ironman_badge.png';
+  const label = isCompetitive ? 'Competitive' : isUnranked ? 'Unranked' : 'Regular';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: iconOnly ? 0 : 4 }}>
+      <img src={src} alt={label} width={size} height={size} style={{ imageRendering: 'crisp-edges', verticalAlign: 'middle', flexShrink: 0 }} />
+      {!iconOnly && label}
+    </span>
+  );
+}
+
 // Set RSN modal — just pick who you are (no password needed when already unlocked)
 function SetRsnModal({ group, myRsn, onConfirm, onCancel }) {
   const [rsn, setRsn] = useState(myRsn || '');
@@ -366,7 +381,7 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
         <div className="panel" style={cardStyle}>
           <div className="panel-header">
             <span className="panel-title">✓ Group Found</span>
-            <span className="tag">{lookupResult.type === 'competitive' ? '🏆 Competitive' : '⚔️ Regular'} · {lookupResult.size} members</span>
+            <span className="tag" style={{display:'inline-flex',alignItems:'center',gap:5}}><GimTypeLabel type={lookupResult.type} size={12} /> · {lookupResult.size} members</span>
           </div>
           <div className="panel-body">
             <div style={{fontWeight:700,fontSize:15,color:'var(--gold)',marginBottom:12}}>{lookupResult.groupName}</div>
@@ -462,14 +477,15 @@ function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchTo
               <label className="form-label">Group Type</label>
               <div className="flex gap-8" style={{flexWrap:'wrap'}}>
                 {[
-                  ['regular',          '⚔️ Regular'],
-                  ['competitive',      '🏆 Competitive'],
-                  ['regular_unranked', '👥 Unranked'],
+                  ['regular',          'Regular'],
+                  ['competitive',      'Competitive'],
+                  ['regular_unranked', 'Unranked'],
                 ].map(([val, label]) => (
                   <button key={val} type="button"
                     className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setGimType(val)}>
-                    {label}
+                    onClick={() => setGimType(val)}
+                    style={{display:'inline-flex',alignItems:'center',gap:5}}>
+                    <GimTypeLabel type={val} size={12} iconOnly /> {label}
                   </button>
                 ))}
               </div>
@@ -553,14 +569,14 @@ function GroupBrowseRow({ g, isPinned, isFav, onSelect, onFavorite, onRemove, on
       onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}
       onClick={() => { onSelect(g.id); onClose?.(); }}
     >
-      <span style={{fontSize:16,flexShrink:0}}>👥</span>
+      <span style={{flexShrink:0}}><GimTypeLabel type={g.gim_type} size={16} iconOnly /></span>
       <div style={{flex:1, minWidth:0}}>
         <div style={{fontWeight:600,color:'var(--text-bright)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
           {g.name}
         </div>
-        <div style={{fontSize:11,color:'var(--text-dim)'}}>
+        <div style={{fontSize:11,color:'var(--text-dim)',display:'inline-flex',alignItems:'center',gap:3,flexWrap:'wrap'}}>
           {g.member_count ?? 0} member{(g.member_count ?? 0) !== 1 ? 's' : ''}
-          {g.gim_type && g.gim_type !== 'regular' ? ` · ${g.gim_type === 'regular_unranked' ? 'Unranked' : g.gim_type === 'competitive' ? 'Competitive' : g.gim_type}` : ''}
+          {' · '}<GimTypeLabel type={g.gim_type} size={11} />
           {g.is_claimed ? ' · 🔒' : ''}
         </div>
       </div>
@@ -626,11 +642,7 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose, onStar 
     return () => clearTimeout(debRef.current);
   }, [open, query]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const typeLabel = t => {
-    if (t === 'competitive')      return '🏆 Competitive';
-    if (t === 'regular_unranked') return '👥 Unranked';
-    return '⚔️ Regular';
-  };
+  const typeLabel = t => <GimTypeLabel type={t} size={12} />;
 
   return (
     <div style={{marginBottom: open ? 12 : 4}}>
@@ -837,10 +849,13 @@ function SearchGroupModal({ groups, allDbGroups, onSelect, onAddNew, onClose, on
           <form onSubmit={handleRs3Search}>
             {/* Type buttons */}
             <div style={{display:'flex',gap:6,marginBottom:6,justifyContent:'center',flexWrap:'wrap'}}>
-              {[['regular','⚔️ Regular'],['competitive','🏆 Competitive'],['regular_unranked','👥 Unranked']].map(([val,label]) => (
+              {[['regular','Regular'],['competitive','Competitive'],['regular_unranked','Unranked']].map(([val,label]) => (
                 <button key={val} type="button"
                   className={`btn btn-sm ${gimType === val ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => { setGimType(val); setRs3Result(null); }}>{label}</button>
+                  onClick={() => { setGimType(val); setRs3Result(null); }}
+                  style={{display:'inline-flex',alignItems:'center',gap:5}}>
+                  <GimTypeLabel type={val} size={12} iconOnly /> {label}
+                </button>
               ))}
             </div>
 
