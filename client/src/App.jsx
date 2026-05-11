@@ -662,7 +662,7 @@ function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, onClose, onStar 
           transition: 'all 0.15s',
           gap: 6,
         }}>
-        <span>Browse groups tracked in this app</span>
+        <span>Browse groups already tracked</span>
         <span style={{fontSize:11}}>{open ? '▲' : '▼'}</span>
       </button>
 
