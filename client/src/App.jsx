@@ -984,7 +984,7 @@ function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, favori
               key={g.id}
               className={`nav-item${g.id === activeGroupId ? ' active' : ''}`}
               onClick={() => onSelect(g.id)}>
-              <span className="icon">👥</span>
+              <span className="icon" style={{display:'inline-flex',alignItems:'center'}}><GimTypeLabel type={g.gim_type} size={15} iconOnly /></span>
               <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{g.name}</span>
               {isFav && <span style={{color:'var(--gold)',fontSize:11,flexShrink:0,marginLeft:2}}>★</span>}
               {g.member_count != null && (
