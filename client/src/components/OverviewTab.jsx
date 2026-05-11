@@ -699,6 +699,33 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
               </tr>
             </thead>
             <tbody>
+              {/* Total Level row */}
+              {(() => {
+                const totals     = players.map(p => p.skills?.find(s => s.skill_name === 'Overall')?.level ?? null);
+                const maxTotal   = Math.max(...totals.filter(t => t !== null), 0);
+                const stickyBg   = 'color-mix(in srgb, var(--bg-panel) 88%, #c8a84b 12%)';
+                return (
+                  <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(200,168,75,0.07)' }}>
+                    <td style={{ padding: '6px 8px 6px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
+                      <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2px' }}>⭐ Total Level</span>
+                    </td>
+                    {totals.map((total, i) => {
+                      const isSharedMax = total !== null && total === maxTotal && maxTotal > 0;
+                      return (
+                        <td key={players[i].id} align="center" style={{
+                          padding: '6px 6px',
+                          background: isSharedMax ? 'rgba(200,168,75,0.22)' : undefined,
+                          color: 'var(--gold)',
+                          fontWeight: isSharedMax ? 800 : 600,
+                          fontSize: 13,
+                        }}>
+                          {total ?? '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })()}
               {SKILL_ORDER.map((skill, rowIdx) => {
                 const levels = players.map(p => p.skills?.find(s => s.skill_name === skill)?.level ?? null);
                 const maxLevel = Math.max(...levels.filter(l => l !== null), 0);
@@ -835,6 +862,33 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                     </tr>
                   </thead>
                   <tbody>
+                    {/* Total Level row */}
+                    {(() => {
+                      const stickyBg = 'color-mix(in srgb, var(--bg-panel) 88%, #c8a84b 12%)';
+                      return (
+                        <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(200,168,75,0.07)' }}>
+                          <td style={{ padding: '6px 8px 6px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
+                            <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2px' }}>⭐ Total Level</span>
+                          </td>
+                          {skillGains.map(p => {
+                            const curTotal  = p.currentLevels?.['Overall']
+                              ?? SKILL_ORDER.reduce((sum, sk) => sum + (p.currentLevels?.[sk] ?? 0), 0)
+                              ?? null;
+                            const totalGain = Object.values(p.levelGains ?? {}).reduce((sum, v) => sum + v, 0);
+                            return (
+                              <td key={p.playerId} align="center" style={{ padding: '6px 6px', whiteSpace: 'nowrap' }}>
+                                {curTotal
+                                  ? <span style={{ color: 'var(--gold)', fontWeight: 600, fontSize: 13 }}>{curTotal}</span>
+                                  : <span style={{ color: 'var(--text-dim)' }}>—</span>}
+                                {totalGain > 0 && (
+                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700, fontSize: 10, marginLeft: 3 }}>+{totalGain}</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })()}
                     {skillTotals.map(({ skill }, rowIdx) => {
                       const altBg    = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
                       const stickyBg = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
