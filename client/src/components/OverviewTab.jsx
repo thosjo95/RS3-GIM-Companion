@@ -280,12 +280,22 @@ function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, c
         {player.rsn}
       </div>
       {overall
-        ? <>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Cmb {player.combat_level ?? '?'} · Lvl {overall.level}</div>
+        ? <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 1, flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-dim)' }}>
+              <img src="https://runescape.wiki/images/Combat.png" alt="Combat" width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }} />
+              {player.combat_level ?? '?'}
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-dim)' }}>
+              <img src="https://runescape.wiki/images/Statistics.png" alt="Total Level" width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }} />
+              {overall.level}
+            </span>
             {player.quest_points > 0 && (
-              <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>📜 {player.quest_points} QP</div>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-dim)' }}>
+                <img src="https://runescape.wiki/images/Quest_point_icon.png" alt="Quest Points" width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }} />
+                {player.quest_points}
+              </span>
             )}
-          </>
+          </div>
         : <div style={{ fontSize: 11, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)' }}>
             {hasSyncError ? 'Sync failed' : 'Not synced'}
           </div>}
