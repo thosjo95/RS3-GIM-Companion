@@ -822,19 +822,9 @@ function QuestsPanel({ players, colorMap }) {
 
 // ── Group stats (tabbed) ──────────────────────────────────────────────────────
 
-function GroupStats({ players, weeklyMode, goals, groupId }) {
+function GroupStats({ players, goals, groupId }) {
   const [tab, setTab] = useState('skills');
   const colorMap = useMemo(() => Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]])), [players]);
-
-  const playerData = useMemo(() => players.map(p => {
-    const skills = p.skills || [];
-    const overall = skills.find(s => s.skill_name === 'Overall');
-    const count99  = skills.filter(s => s.skill_name !== 'Overall' && s.level >= 99 && s.level < 120).length;
-    const count120 = skills.filter(s => s.skill_name !== 'Overall' && s.level >= 120).length;
-    return { ...p, xp: overall?.xp || 0, totalLevel: overall?.level || 0, count99, count120 };
-  }).sort((a, b) => b.xp - a.xp), [players]);
-
-  const totalXp = playerData.reduce((s, p) => s + p.xp, 0);
 
   const skillLeaders = useMemo(() => {
     const map = {};
@@ -897,7 +887,6 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
   }, [groupId, gainPeriod]);
 
   const TABS = [
-    { id: 'xp',     label: 'XP',     icon: 'https://runescape.wiki/images/XP_lamp.png' },
     { id: 'skills', label: 'Skills', icon: 'https://runescape.wiki/images/Skills.png' },
     { id: 'gains',  label: 'Gains',  icon: 'https://runescape.wiki/images/Chart.png' },
     { id: 'gaps',   label: 'Gaps',   icon: 'https://runescape.wiki/images/Magnifying_glass.png' },
@@ -925,53 +914,6 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
           </button>
         ))}
       </div>
-
-      {/* XP tab */}
-      {tab === 'xp' && (() => {
-        const useWeekly = weeklyMode && players.some(p => p.weekly_xp_gain != null);
-        const values = playerData.map(p => useWeekly ? (p.weekly_xp_gain ?? 0) : p.xp);
-        const maxVal = Math.max(...values, 1);
-        const totalVal = values.reduce((s, v) => s + v, 0);
-
-        return (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-dim)', marginBottom: 12 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {useWeekly
-                  ? <><span style={{ color: 'var(--gold)', fontWeight: 700 }}>📅 This week</span></>
-                  : 'Group Total XP'}
-              </span>
-              <strong style={{ color: 'var(--gold)' }}>{fmtXp(totalVal)}</strong>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {playerData.map((p, i) => {
-                const val = values[i];
-                const pct = totalVal > 0 ? Math.round((val / totalVal) * 100) : 0;
-                const barPct = (val / maxVal) * 100;
-                const noData = useWeekly && p.weekly_xp_gain == null;
-                return (
-                  <div key={p.id}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 3 }}>
-                      <div style={{ width: 88, fontSize: 12, color: colorMap[p.id], fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.rsn}</div>
-                      <div style={{ flex: 1, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ width: `${barPct}%`, height: '100%', background: noData ? 'var(--border)' : colorMap[p.id], borderRadius: 3 }} />
-                      </div>
-                      <div style={{ width: 56, fontSize: 12, color: noData ? 'var(--text-dim)' : 'var(--text-dim)', textAlign: 'right', flexShrink: 0 }}>
-                        {noData ? '—' : fmtXp(val)}
-                      </div>
-                    </div>
-                    <div style={{ paddingLeft: 98, fontSize: 10, color: 'var(--text-dim)' }}>
-                      {useWeekly
-                        ? (noData ? 'No snapshot data yet' : `${val > 0 ? '🟢 Active' : '⬜ No gain'} · ${pct}% of group`)
-                        : `${pct}% · Lvl ${p.totalLevel} · ${p.count99}×99${p.count120 > 0 ? ` · ${p.count120}×120` : ''}`}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Skills tab — skills × players matrix */}
       {tab === 'skills' && (
@@ -1902,7 +1844,6 @@ function RightPanel({ goals, players, filteredPlayerId, groupId, onRefresh, onTo
 
 export default function OverviewTab({ group, goals, players, groupId, onRefresh, onToast, canWrite, myRsn, pendingRequests = [], onGoToRequests, onAddPlayer }) {
   const [selectedId, setSelectedId] = useState(null);
-  const [weeklyMode, setWeeklyMode] = useState(false);
   const [editRsnPlayer, setEditRsnPlayer] = useState(null); // player being RSN-edited
   const [playerView, setPlayerView] = useState('skills'); // 'skills' | 'quests'
 
@@ -2063,7 +2004,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
         <div className="panel">
           <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="panel-title" style={{ flex: 1 }}>
-              {selectedPlayer ? selectedPlayer.rsn : weeklyMode ? '📅 This Week\'s XP' : 'Group Stats'}
+              {selectedPlayer ? selectedPlayer.rsn : 'Group Stats'}
             </span>
             {selectedPlayer ? (
               <div style={{ display: 'flex', gap: 3 }}>
@@ -2087,7 +2028,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
                   ? <SkillTable player={selectedPlayer} />
                   : <div className="empty-state"><p>No data — sync this player first.</p></div>
               : players.length > 0
-                ? <GroupStats players={players} weeklyMode={weeklyMode} goals={goals} groupId={groupId} />
+                ? <GroupStats players={players} goals={goals} groupId={groupId} />
                 : <div className="empty-state"><p>No players yet.</p></div>}
           </div>
         </div>
