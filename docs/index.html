@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.2</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.3</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9.2 documentation</div>
+        <div class="sidebar-version">v1.9.3 documentation</div>
       </div>
     </div>
 
@@ -276,7 +276,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.2</span>
+          <span class="badge badge-green">v1.9.3</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -946,7 +946,15 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.2 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.3 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Quest tracking</strong> — per-player quest completion fetched from the RuneMetrics quests API on every sync (COMPLETED / STARTED / NOT_STARTED per quest). Player cards now show total QP. A new <strong>📜 Quests</strong> tab in Group Stats shows a full quest × player matrix with ✓ / ~ / · status icons, search, difficulty filter pills (Novice → Grandmaster), status filter (Not all done / Group complete), and per-player filter. Quest names are wiki-linked. Requires a public RuneMetrics profile.</li>
+      <li><strong>Player quest detail</strong> — clicking any player card adds <strong>⭐ Skills | 📜 Quests</strong> subtabs in the detail panel. The Quests view shows completion summary (X/Y quests, total QP earned) and a searchable, filterable personal quest list.</li>
+      <li><strong>Skill spotlight</strong> — searchable input above the Skills matrix spotlights any skill: all other skill rows fade to ~20% opacity; the selected row gets a gold tint and a live leaderboard banner with 🥇🥈🥉 rankings in each player's colour.</li>
+      <li><strong>Custom Groups</strong> — promoted to full production; all users can now create a Custom Group for regular RS3 tracking without a GIM account. Visible in the Setup screen and the Find / Manage Groups modal.</li>
+    </ul>
+
+    <h3>v1.9.2 — May 2026</h3>
     <ul>
       <li><strong>GIM type badges</strong> — replaced all ⚔️/🏆/👥 emoji with RS Wiki badge images (Group Ironman badge / Competitive Group Ironman badge) throughout the UI: group browser rows, sidebar entries, type selector buttons, and the group header subtext</li>
       <li><strong>Total Level row</strong> — pinned top row in both the Skills matrix and the Gains table; shows each player's current total level with the RS3 Statistics icon; highest total is highlighted gold in the Skills tab; the Gains tab also shows total levels gained in the selected period</li>
@@ -1075,7 +1083,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.2 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.3 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
