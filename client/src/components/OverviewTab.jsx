@@ -888,7 +888,6 @@ function GroupStats({ players, goals, groupId }) {
 
   const TABS = [
     { id: 'skills', label: 'Skills', icon: 'https://runescape.wiki/images/Skills.png' },
-    { id: 'gains',  label: 'Gains',  icon: 'https://runescape.wiki/images/Chart.png' },
     { id: 'gaps',   label: 'Gaps',   icon: 'https://runescape.wiki/images/Magnifying_glass.png' },
     { id: 'quests', label: 'Quests', icon: 'https://runescape.wiki/images/Quest_points.png' },
   ];
@@ -915,10 +914,10 @@ function GroupStats({ players, goals, groupId }) {
         ))}
       </div>
 
-      {/* Skills tab — skills × players matrix */}
+      {/* Skills tab — levels matrix + gains overlay */}
       {tab === 'skills' && (
         <div>
-          {/* Skill spotlight filter */}
+          {/* Controls: skill spotlight + period pills */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <input
@@ -939,41 +938,61 @@ function GroupStats({ players, goals, groupId }) {
                 onClick={() => setSkillInput('')}
                 style={{ fontSize: 11, padding: '2px 8px' }}>✕ Clear</button>
             )}
-            {/* Leader banner */}
-            {filteredSkill && (() => {
-              const ranked = players
-                .map(p => ({ rsn: p.rsn, id: p.id, level: p.skills?.find(s => s.skill_name === filteredSkill)?.level ?? null }))
-                .filter(p => p.level !== null)
-                .sort((a, b) => b.level - a.level);
-              if (!ranked.length) return null;
-              const best = ranked[0];
-              const is120 = best.level >= 120;
-              const is99  = best.level >= 99;
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, flexWrap: 'wrap' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                    <SkillIcon name={filteredSkill} size={16} />
-                    <strong style={{ color: 'var(--text-bright)' }}>{filteredSkill}</strong>
-                  </span>
-                  <span style={{ color: 'var(--text-dim)' }}>—</span>
-                  <span style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {ranked.map((p, idx) => (
-                      <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        {idx === 0 && <span style={{ fontSize: 10 }}>🥇</span>}
-                        {idx === 1 && <span style={{ fontSize: 10 }}>🥈</span>}
-                        {idx === 2 && <span style={{ fontSize: 10 }}>🥉</span>}
-                        <span style={{ color: colorMap[p.id], fontWeight: idx === 0 ? 700 : 500 }}>{p.rsn}</span>
-                        <span style={{
-                          fontWeight: idx === 0 ? 800 : 600,
-                          color: (idx === 0 && is120) ? 'var(--gold)' : (idx === 0 && is99) ? 'var(--text-bright)' : 'var(--text)',
-                        }}>{p.level}</span>
-                      </span>
-                    ))}
-                  </span>
-                </div>
-              );
-            })()}
+            {/* Period pills — right-aligned */}
+            <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', alignItems: 'center', flexWrap: 'wrap' }}>
+              {GAIN_PERIODS.map(({ label, days }) => (
+                <button
+                  key={days}
+                  onClick={() => setGainPeriod(days)}
+                  style={{
+                    padding: '3px 10px', fontSize: 11, fontWeight: gainPeriod === days ? 700 : 400,
+                    borderRadius: 12, cursor: 'pointer',
+                    background: gainPeriod === days ? 'var(--gold)' : 'transparent',
+                    border: `1px solid ${gainPeriod === days ? 'var(--gold)' : 'var(--border)'}`,
+                    color: gainPeriod === days ? '#1a1508' : 'var(--text-dim)',
+                    transition: 'all 0.15s',
+                  }}>
+                  {label}
+                </button>
+              ))}
+              {gainsLoading && <span className="spinner" style={{ width: 12, height: 12, alignSelf: 'center' }} />}
+            </div>
           </div>
+
+          {/* Leader banner when a skill is spotlit */}
+          {filteredSkill && (() => {
+            const ranked = players
+              .map(p => ({ rsn: p.rsn, id: p.id, level: p.skills?.find(s => s.skill_name === filteredSkill)?.level ?? null }))
+              .filter(p => p.level !== null)
+              .sort((a, b) => b.level - a.level);
+            if (!ranked.length) return null;
+            const best = ranked[0];
+            const is120 = best.level >= 120;
+            const is99  = best.level >= 99;
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <SkillIcon name={filteredSkill} size={16} />
+                  <strong style={{ color: 'var(--text-bright)' }}>{filteredSkill}</strong>
+                </span>
+                <span style={{ color: 'var(--text-dim)' }}>—</span>
+                <span style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {ranked.map((p, idx) => (
+                    <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {idx === 0 && <span style={{ fontSize: 10 }}>🥇</span>}
+                      {idx === 1 && <span style={{ fontSize: 10 }}>🥈</span>}
+                      {idx === 2 && <span style={{ fontSize: 10 }}>🥉</span>}
+                      <span style={{ color: colorMap[p.id], fontWeight: idx === 0 ? 700 : 500 }}>{p.rsn}</span>
+                      <span style={{
+                        fontWeight: idx === 0 ? 800 : 600,
+                        color: (idx === 0 && is120) ? 'var(--gold)' : (idx === 0 && is99) ? 'var(--text-bright)' : 'var(--text)',
+                      }}>{p.level}</span>
+                    </span>
+                  ))}
+                </span>
+              </div>
+            );
+          })()}
 
           <div style={{ overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
@@ -1012,17 +1031,24 @@ function GroupStats({ players, goals, groupId }) {
                         <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2px' }}>Total Level</span>
                       </span>
                     </td>
-                    {totals.map((total, i) => {
+                    {players.map((p, i) => {
+                      const total = totals[i];
                       const isSharedMax = total !== null && total === maxTotal && maxTotal > 0;
+                      const sg = skillGains.find(s => s.playerId === p.id);
+                      const totalLvlGain = Object.values(sg?.levelGains ?? {}).reduce((sum, v) => sum + v, 0);
                       return (
-                        <td key={players[i].id} align="center" style={{
+                        <td key={p.id} align="center" style={{
                           padding: '6px 6px',
                           background: isSharedMax ? 'rgba(200,168,75,0.22)' : undefined,
                           color: 'var(--gold)',
                           fontWeight: isSharedMax ? 800 : 600,
                           fontSize: 13,
+                          whiteSpace: 'nowrap',
                         }}>
                           {total ?? '—'}
+                          {totalLvlGain > 0 && (
+                            <span style={{ color: 'var(--green-bright)', fontWeight: 700, fontSize: 10, marginLeft: 3 }}>+{totalLvlGain}</span>
+                          )}
                         </td>
                       );
                     })}
@@ -1038,6 +1064,11 @@ function GroupStats({ players, goals, groupId }) {
                 const stickyBg  = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
                 const rowBg     = isSpotlit ? 'rgba(200,168,75,0.1)' : altBg;
                 const rowStickyBg = isSpotlit ? 'color-mix(in srgb, var(--bg-panel) 85%, #c8a84b 15%)' : stickyBg;
+                // Highest level gain in this row → winner highlight
+                const maxLvlGain = Math.max(...players.map(p => {
+                  const sg = skillGains.find(s => s.playerId === p.id);
+                  return sg?.levelGains?.[skill] ?? 0;
+                }));
                 return (
                   <tr key={skill} style={{
                     borderTop: isSpotlit ? '1px solid rgba(200,168,75,0.4)' : '1px solid var(--border)',
@@ -1053,19 +1084,30 @@ function GroupStats({ players, goals, groupId }) {
                       <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={18} /></span>
                       <span style={{ color: isSpotlit ? 'var(--gold)' : 'var(--text-dim)', fontSize: 11, fontWeight: isSpotlit ? 700 : 400 }}>{skill}</span>
                     </td>
-                    {levels.map((level, i) => {
+                    {players.map((p, i) => {
+                      const level = levels[i];
+                      const sg = skillGains.find(s => s.playerId === p.id);
+                      const lvlGain = sg?.levelGains?.[skill] ?? 0;
+                      const xpGain  = sg?.gains?.[skill] ?? 0;
                       const isSharedMax = level !== null && level === maxLevel && maxLevel > 0;
+                      const isTop = maxLvlGain > 0 && lvlGain === maxLvlGain;
                       const is120 = level >= 120;
                       const is99  = level >= 99;
                       return (
-                        <td key={players[i].id} align="center" style={{
-                          padding: '5px 6px',
-                          background: isSharedMax ? 'rgba(200,168,75,0.18)' : undefined,
-                          color: is120 ? 'var(--gold)' : is99 ? 'var(--text-bright)' : level ? 'var(--text)' : 'var(--text-dim)',
-                          fontWeight: isSharedMax ? 700 : 400,
-                          fontSize: isSpotlit ? 13 : 12,
-                        }}>
+                        <td key={p.id} align="center"
+                          title={xpGain > 0 ? `+${xpGain.toLocaleString()} XP` : undefined}
+                          style={{
+                            padding: '5px 6px',
+                            background: (isTop || isSharedMax) ? 'rgba(200,168,75,0.18)' : undefined,
+                            color: is120 ? 'var(--gold)' : is99 ? 'var(--text-bright)' : level ? 'var(--text)' : 'var(--text-dim)',
+                            fontWeight: (isSharedMax || isTop) ? 700 : 400,
+                            fontSize: isSpotlit ? 13 : 12,
+                            whiteSpace: 'nowrap',
+                          }}>
                           {level ?? '—'}
+                          {lvlGain > 0 && (
+                            <span style={{ color: 'var(--green-bright)', fontWeight: 700, fontSize: 10, marginLeft: 3 }}>+{lvlGain}</span>
+                          )}
                         </td>
                       );
                     })}
@@ -1075,138 +1117,6 @@ function GroupStats({ players, goals, groupId }) {
             </tbody>
           </table>
           </div>
-        </div>
-      )}
-
-      {/* Gains tab — per-skill XP breakdown with period filter */}
-      {tab === 'gains' && (
-        <div>
-          {/* Period filter pills */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-            {GAIN_PERIODS.map(({ label, days }) => (
-              <button
-                key={days}
-                onClick={() => setGainPeriod(days)}
-                style={{
-                  padding: '3px 12px', fontSize: 11, fontWeight: gainPeriod === days ? 700 : 400,
-                  borderRadius: 12, cursor: 'pointer',
-                  background: gainPeriod === days ? 'var(--gold)' : 'transparent',
-                  border: `1px solid ${gainPeriod === days ? 'var(--gold)' : 'var(--border)'}`,
-                  color: gainPeriod === days ? '#1a1508' : 'var(--text-dim)',
-                  transition: 'all 0.15s',
-                }}>
-                {label}
-              </button>
-            ))}
-            {gainsLoading && <span className="spinner" style={{ width: 12, height: 12, alignSelf: 'center' }} />}
-          </div>
-
-          {skillGains.length === 0 ? (
-            <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-              No snapshot data yet — sync the group first to begin tracking.
-            </div>
-          ) : (() => {
-            const periodLabel = GAIN_PERIODS.find(p => p.days === gainPeriod)?.label.toLowerCase() ?? 'period';
-            const noHistory   = skillGains.every(p => !p.hasHistory);
-
-            // Collect all skills any player gained XP in, ordered by SKILL_ORDER (same as Skills tab)
-            const gainedSkills = new Set();
-            for (const p of skillGains) Object.keys(p.gains).forEach(s => gainedSkills.add(s));
-            const skillTotals = SKILL_ORDER
-              .filter(skill => gainedSkills.has(skill))
-              .map(skill => ({ skill }));
-
-            if (skillTotals.length === 0) return (
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-                {noHistory
-                  ? 'Snapshot history is building — gains will appear once a second daily sync has run. Current levels are tracked.'
-                  : `No XP gains recorded in the past ${periodLabel}.`}
-              </div>
-            );
-
-            return (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th align="left" style={{ padding: '4px 8px 8px 4px', fontWeight: 600, color: 'var(--text-dim)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4px', position: 'sticky', left: 0, background: 'var(--bg-panel)', zIndex: 2, whiteSpace: 'nowrap', minWidth: 110 }}>Skill</th>
-                      {skillGains.map(p => (
-                        <th key={p.playerId} align="center" style={{ padding: '4px 8px 8px', fontWeight: 700, color: colorMap[p.playerId] ?? 'var(--text)', fontSize: 11, whiteSpace: 'nowrap' }}>{p.rsn}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Total Level row */}
-                    {(() => {
-                      const stickyBg = 'color-mix(in srgb, var(--bg-panel) 88%, #c8a84b 12%)';
-                      return (
-                        <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(200,168,75,0.07)' }}>
-                          <td style={{ padding: '6px 8px 6px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <img src="https://runescape.wiki/images/Statistics.png" alt="Total Level" width={18} height={18} style={{ imageRendering: 'crisp-edges', verticalAlign: 'middle' }} />
-                        <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2px' }}>Total Level</span>
-                      </span>
-                          </td>
-                          {skillGains.map(p => {
-                            const curTotal  = p.currentLevels?.['Overall']
-                              ?? SKILL_ORDER.reduce((sum, sk) => sum + (p.currentLevels?.[sk] ?? 0), 0)
-                              ?? null;
-                            const totalGain = Object.values(p.levelGains ?? {}).reduce((sum, v) => sum + v, 0);
-                            return (
-                              <td key={p.playerId} align="center" style={{ padding: '6px 6px', whiteSpace: 'nowrap' }}>
-                                {curTotal
-                                  ? <span style={{ color: 'var(--gold)', fontWeight: 600, fontSize: 13 }}>{curTotal}</span>
-                                  : <span style={{ color: 'var(--text-dim)' }}>—</span>}
-                                {totalGain > 0 && (
-                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700, fontSize: 10, marginLeft: 3 }}>+{totalGain}</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })()}
-                    {skillTotals.map(({ skill }, rowIdx) => {
-                      const altBg    = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
-                      const stickyBg = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
-                      // Find the highest level gain in this row so we can highlight only the winner
-                      const maxLvlGain = Math.max(...skillGains.map(p => p.levelGains?.[skill] ?? 0));
-                      return (
-                        <tr key={skill} style={{ borderTop: '1px solid var(--border)', background: altBg }}>
-                          <td style={{ padding: '5px 8px 5px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
-                            <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={18} /></span>
-                            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{skill}</span>
-                          </td>
-                          {skillGains.map(p => {
-                            const hasXp   = (p.gains[skill] ?? 0) > 0;
-                            const curLvl  = p.currentLevels?.[skill] ?? null;
-                            const lvlGain = p.levelGains?.[skill] ?? 0;
-                            const isTop   = maxLvlGain > 0 && lvlGain === maxLvlGain;
-                            const is120   = curLvl >= 120;
-                            const is99    = curLvl >= 99;
-                            const lvlColor = is120 ? 'var(--gold)' : is99 ? 'var(--text-bright)' : curLvl ? 'var(--text)' : 'var(--text-dim)';
-                            return (
-                              <td key={p.playerId} align="center"
-                                title={hasXp ? `+${(p.gains[skill] ?? 0).toLocaleString()} XP` : undefined}
-                                style={{ padding: '5px 6px', whiteSpace: 'nowrap', cursor: hasXp ? 'default' : undefined,
-                                  background: isTop ? 'rgba(200,168,75,0.18)' : undefined }}>
-                                {curLvl !== null
-                                  ? <span style={{ color: isTop ? 'var(--gold)' : lvlColor, fontWeight: isTop ? 700 : 400 }}>{curLvl}</span>
-                                  : <span style={{ color: 'var(--text-dim)' }}>—</span>}
-                                {lvlGain > 0 && (
-                                  <span style={{ color: 'var(--green-bright)', fontWeight: 700, fontSize: 10, marginLeft: 3 }}>+{lvlGain}</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })()}
         </div>
       )}
 

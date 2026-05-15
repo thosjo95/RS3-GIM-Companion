@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.3-4caf50?style=flat-square" alt="v1.9.3"/>
+    <img src="https://img.shields.io/badge/version-1.9.4-4caf50?style=flat-square" alt="v1.9.4"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -490,6 +490,9 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.4 — May 2026
+- 🔀 **Skills + Gains merged** — the separate "Gains" tab has been folded into the Skills tab. Day / Week / Month / Year period pills now sit in the top-right of the Skills view; level-up gains (green **+N**) appear inline on each skill row and the Total Level row for the selected period. Spotlight filter and leaderboard banner work alongside gains as before.
 
 ### v1.9.3 — May 2026
 - 📜 **Quest tracking** — per-player quest completion list fetched from the RuneMetrics quests API on every sync; data includes COMPLETED / STARTED / NOT_STARTED status per quest. Player cards now show total QP. A new **📜 Quests** tab in Group Stats shows a full quest × player matrix (✓ / ~ / ·) with search, difficulty filter pills (Novice → Grandmaster), status filter (Not all done / Group complete), and per-player filter. Clicking any player card adds a **⭐ Skills | 📜 Quests** subtab row in the detail panel — the Quests view shows personal completion stats (X/Y quests, total QP earned) plus a searchable, filterable quest list. Quest names link directly to the RS wiki. Requires a public RuneMetrics profile.
