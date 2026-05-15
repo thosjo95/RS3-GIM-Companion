@@ -847,6 +847,13 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
     Dungeoneering: { Attack: 1, Strength: 1, Defence: 1, Magic: 1, Ranged: 1 }, // no hard reqs, placeholder
   };
 
+  // Skills tab — skill filter/spotlight
+  const [skillInput, setSkillInput] = useState('');
+  const filteredSkill = useMemo(
+    () => SKILL_ORDER.find(s => s.toLowerCase() === skillInput.toLowerCase().trim()) ?? '',
+    [skillInput],
+  );
+
   // Gaps tab filter state
   const [gapsSkill, setGapsSkill] = useState('');       // '' = all skills
   const [gapsLevel, setGapsLevel] = useState('');       // '' = use GOAL_SUGGESTIONS threshold
@@ -946,7 +953,65 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
 
       {/* Skills tab — skills × players matrix */}
       {tab === 'skills' && (
-        <div style={{ overflowX: 'auto' }}>
+        <div>
+          {/* Skill spotlight filter */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <input
+                list="skill-spotlight-list"
+                className="form-input"
+                value={skillInput}
+                onChange={e => setSkillInput(e.target.value)}
+                onFocus={e => e.target.select()}
+                placeholder="🔍 Spotlight a skill…"
+                style={{ fontSize: 12, padding: '4px 10px', height: 30, width: 190 }}
+              />
+              <datalist id="skill-spotlight-list">
+                {SKILL_ORDER.map(s => <option key={s} value={s} />)}
+              </datalist>
+            </div>
+            {filteredSkill && (
+              <button type="button" className="btn btn-ghost btn-sm"
+                onClick={() => setSkillInput('')}
+                style={{ fontSize: 11, padding: '2px 8px' }}>✕ Clear</button>
+            )}
+            {/* Leader banner */}
+            {filteredSkill && (() => {
+              const ranked = players
+                .map(p => ({ rsn: p.rsn, id: p.id, level: p.skills?.find(s => s.skill_name === filteredSkill)?.level ?? null }))
+                .filter(p => p.level !== null)
+                .sort((a, b) => b.level - a.level);
+              if (!ranked.length) return null;
+              const best = ranked[0];
+              const is120 = best.level >= 120;
+              const is99  = best.level >= 99;
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, flexWrap: 'wrap' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <SkillIcon name={filteredSkill} size={16} />
+                    <strong style={{ color: 'var(--text-bright)' }}>{filteredSkill}</strong>
+                  </span>
+                  <span style={{ color: 'var(--text-dim)' }}>—</span>
+                  <span style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {ranked.map((p, idx) => (
+                      <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {idx === 0 && <span style={{ fontSize: 10 }}>🥇</span>}
+                        {idx === 1 && <span style={{ fontSize: 10 }}>🥈</span>}
+                        {idx === 2 && <span style={{ fontSize: 10 }}>🥉</span>}
+                        <span style={{ color: colorMap[p.id], fontWeight: idx === 0 ? 700 : 500 }}>{p.rsn}</span>
+                        <span style={{
+                          fontWeight: idx === 0 ? 800 : 600,
+                          color: (idx === 0 && is120) ? 'var(--gold)' : (idx === 0 && is99) ? 'var(--text-bright)' : 'var(--text)',
+                        }}>{p.level}</span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
             <thead>
               <tr>
@@ -967,11 +1032,16 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
             <tbody>
               {/* Total Level row */}
               {(() => {
-                const totals     = players.map(p => p.skills?.find(s => s.skill_name === 'Overall')?.level ?? null);
-                const maxTotal   = Math.max(...totals.filter(t => t !== null), 0);
-                const stickyBg   = 'color-mix(in srgb, var(--bg-panel) 88%, #c8a84b 12%)';
+                const totals   = players.map(p => p.skills?.find(s => s.skill_name === 'Overall')?.level ?? null);
+                const maxTotal = Math.max(...totals.filter(t => t !== null), 0);
+                const stickyBg = 'color-mix(in srgb, var(--bg-panel) 88%, #c8a84b 12%)';
                 return (
-                  <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(200,168,75,0.07)' }}>
+                  <tr style={{
+                    borderTop: '1px solid var(--border)',
+                    background: 'rgba(200,168,75,0.07)',
+                    opacity: filteredSkill ? 0.25 : 1,
+                    transition: 'opacity 0.2s',
+                  }}>
                     <td style={{ padding: '6px 8px 6px 4px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg, zIndex: 1 }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         <img src="https://runescape.wiki/images/Statistics.png" alt="Total Level" width={18} height={18} style={{ imageRendering: 'crisp-edges', verticalAlign: 'middle' }} />
@@ -996,30 +1066,40 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
                 );
               })()}
               {SKILL_ORDER.map((skill, rowIdx) => {
-                const levels = players.map(p => p.skills?.find(s => s.skill_name === skill)?.level ?? null);
-                const maxLevel = Math.max(...levels.filter(l => l !== null), 0);
-                const altBg = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
-                const stickyBg = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
+                const isSpotlit = filteredSkill === skill;
+                const isFaded   = !!filteredSkill && !isSpotlit;
+                const levels    = players.map(p => p.skills?.find(s => s.skill_name === skill)?.level ?? null);
+                const maxLevel  = Math.max(...levels.filter(l => l !== null), 0);
+                const altBg     = rowIdx % 2 ? 'rgba(255,255,255,0.018)' : 'transparent';
+                const stickyBg  = rowIdx % 2 ? 'color-mix(in srgb, var(--bg-panel) 92%, white 8%)' : 'var(--bg-panel)';
+                const rowBg     = isSpotlit ? 'rgba(200,168,75,0.1)' : altBg;
+                const rowStickyBg = isSpotlit ? 'color-mix(in srgb, var(--bg-panel) 85%, #c8a84b 15%)' : stickyBg;
                 return (
-                  <tr key={skill} style={{ borderTop: '1px solid var(--border)', background: altBg }}>
+                  <tr key={skill} style={{
+                    borderTop: isSpotlit ? '1px solid rgba(200,168,75,0.4)' : '1px solid var(--border)',
+                    background: rowBg,
+                    opacity: isFaded ? 0.22 : 1,
+                    transition: 'opacity 0.2s, background 0.2s',
+                    outline: isSpotlit ? '1px solid rgba(200,168,75,0.3)' : undefined,
+                  }}>
                     <td style={{
                       padding: '5px 8px 5px 4px', whiteSpace: 'nowrap',
-                      position: 'sticky', left: 0, background: stickyBg, zIndex: 1,
+                      position: 'sticky', left: 0, background: rowStickyBg, zIndex: 1,
                     }}>
                       <span style={{ marginRight: 5 }}><SkillIcon name={skill} size={18} /></span>
-                      <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{skill}</span>
+                      <span style={{ color: isSpotlit ? 'var(--gold)' : 'var(--text-dim)', fontSize: 11, fontWeight: isSpotlit ? 700 : 400 }}>{skill}</span>
                     </td>
                     {levels.map((level, i) => {
-                      const isMax = level !== null && level === maxLevel && maxLevel > 0 && levels.filter(l => l === maxLevel).length === 1;
                       const isSharedMax = level !== null && level === maxLevel && maxLevel > 0;
                       const is120 = level >= 120;
-                      const is99 = level >= 99;
+                      const is99  = level >= 99;
                       return (
                         <td key={players[i].id} align="center" style={{
                           padding: '5px 6px',
                           background: isSharedMax ? 'rgba(200,168,75,0.18)' : undefined,
                           color: is120 ? 'var(--gold)' : is99 ? 'var(--text-bright)' : level ? 'var(--text)' : 'var(--text-dim)',
                           fontWeight: isSharedMax ? 700 : 400,
+                          fontSize: isSpotlit ? 13 : 12,
                         }}>
                           {level ?? '—'}
                         </td>
@@ -1030,6 +1110,7 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
