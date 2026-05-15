@@ -282,16 +282,22 @@ function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, c
       {overall
         ? <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 1, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-dim)' }}>
-              <img src="https://runescape.wiki/images/Combat.png" alt="Combat" width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }} />
+              <img src="https://runescape.wiki/images/Multicombat.png" alt="Combat"
+                width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }}
+                onError={e => { e.target.style.display = 'none'; }} />
               {player.combat_level ?? '?'}
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-dim)' }}>
-              <img src="https://runescape.wiki/images/Statistics.png" alt="Total Level" width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }} />
+              <img src="https://runescape.wiki/images/Statistics.png" alt="Total Level"
+                width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }}
+                onError={e => { e.target.style.display = 'none'; }} />
               {overall.level}
             </span>
             {player.quest_points > 0 && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-dim)' }}>
-                <img src="https://runescape.wiki/images/Quest_point_icon.png" alt="Quest Points" width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }} />
+                <img src="https://runescape.wiki/images/Quest_points.png" alt="Quest Points"
+                  width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }}
+                  onError={e => { e.target.style.display = 'none'; }} />
                 {player.quest_points}
               </span>
             )}
