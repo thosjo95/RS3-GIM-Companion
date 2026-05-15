@@ -215,8 +215,11 @@ router.post('/:id/sync', async (req, res) => {
     // Fetch quest completion list from RuneMetrics (fire-and-forget — doesn't block sync)
     try {
       const quests = await fetchPlayerQuests(player.rsn);
-      db.prepare('UPDATE players SET quests_json = ? WHERE id = ?')
-        .run(JSON.stringify(quests), player.id);
+      const totalQP = quests
+        .filter(q => q.status === 'COMPLETED')
+        .reduce((sum, q) => sum + (q.questPoints || 0), 0);
+      db.prepare('UPDATE players SET quests_json = ?, quest_points = ? WHERE id = ?')
+        .run(JSON.stringify(quests), totalQP, player.id);
     } catch (e) {
       console.log(`[sync] Quest fetch skipped for ${player.rsn}: ${e.message}`);
     }
@@ -308,8 +311,11 @@ router.post('/sync-all/:groupId', async (req, res) => {
       // Fetch quest completion list from RuneMetrics
       try {
         const quests = await fetchPlayerQuests(player.rsn);
-        db.prepare('UPDATE players SET quests_json = ? WHERE id = ?')
-          .run(JSON.stringify(quests), player.id);
+        const totalQP = quests
+          .filter(q => q.status === 'COMPLETED')
+          .reduce((sum, q) => sum + (q.questPoints || 0), 0);
+        db.prepare('UPDATE players SET quests_json = ?, quest_points = ? WHERE id = ?')
+          .run(JSON.stringify(quests), totalQP, player.id);
       } catch (e) {
         console.log(`[sync-all] Quest fetch skipped for ${player.rsn}: ${e.message}`);
       }
