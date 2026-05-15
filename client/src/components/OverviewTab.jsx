@@ -897,12 +897,11 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
   }, [groupId, gainPeriod]);
 
   const TABS = [
-    { id: 'xp',      label: '📊 XP' },
-    { id: 'combat',  label: '⚔️ Combat' },
-    { id: 'skills',  label: '⭐ Skills' },
-    { id: 'gains',   label: '📅 Gains' },
-    { id: 'gaps',    label: '🎯 Gaps' },
-    { id: 'quests',  label: '📜 Quests' },
+    { id: 'xp',     label: 'XP',     icon: 'https://runescape.wiki/images/XP_lamp.png' },
+    { id: 'skills', label: 'Skills', icon: 'https://runescape.wiki/images/Skills.png' },
+    { id: 'gains',  label: 'Gains',  icon: 'https://runescape.wiki/images/Chart.png' },
+    { id: 'gaps',   label: 'Gaps',   icon: 'https://runescape.wiki/images/Magnifying_glass.png' },
+    { id: 'quests', label: 'Quests', icon: 'https://runescape.wiki/images/Quest_points.png' },
   ];
 
   function pillStyle(active) {
@@ -917,7 +916,14 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
   return (
     <div>
       <div style={{ display: 'flex', gap: 3, marginBottom: 14, background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
-        {TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} style={pillStyle(tab === t.id)}>{t.label}</button>)}
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ ...pillStyle(tab === t.id), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            <img src={t.icon} alt="" width={13} height={13}
+              style={{ imageRendering: 'crisp-edges', opacity: tab === t.id ? 0.9 : 0.65, flexShrink: 0 }}
+              onError={e => { e.target.style.display = 'none'; }} />
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* XP tab */}
@@ -1127,46 +1133,6 @@ function GroupStats({ players, weeklyMode, goals, groupId }) {
             </tbody>
           </table>
           </div>
-        </div>
-      )}
-
-      {/* Combat tab */}
-      {tab === 'combat' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {[...playerData].sort((a, b) => (b.combat_level ?? 0) - (a.combat_level ?? 0)).map(p => {
-            const cb = p.combat_level ?? 0;
-            const lvl = (n) => p.skills?.find(s => s.skill_name === n)?.level ?? '?';
-            const COMBAT_SKILLS = [
-              ['Attack'], ['Strength'], ['Defence'], ['Constitution'],
-              ['Ranged'], ['Magic'], ['Necromancy'],
-              ['Prayer'], ['Summoning'],
-            ];
-            return (
-              <div key={p.id}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <div style={{ width: 96, fontSize: 13, color: colorMap[p.id], fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.rsn}</div>
-                  <div style={{ flex: 1, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ width: `${(cb / 138) * 100}%`, height: '100%', background: colorMap[p.id], borderRadius: 3 }} />
-                  </div>
-                  <div style={{ width: 56, fontSize: 13, fontWeight: 700, color: 'var(--text-bright)', textAlign: 'right', flexShrink: 0 }}>Cb {cb}</div>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingLeft: 4 }}>
-                  {COMBAT_SKILLS.map(([s]) => {
-                    const v = lvl(s);
-                    const is99 = typeof v === 'number' && v >= 99;
-                    return (
-                      <span key={s} title={s} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <SkillIcon name={s} size={20} />
-                        <span style={{ fontSize: 14, fontWeight: 600, color: is99 ? 'var(--gold)' : v === '?' ? 'var(--text-dim)' : 'var(--text)' }}>
-                          {v}
-                        </span>
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
 
