@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
-const { fetchHiscores, fetchRuneMetrics, calcCombatLevel, sanitizeRSN } = require('../services/runescape');
+const { fetchHiscores, fetchRuneMetrics, fetchPlayerQuests, calcCombatLevel, sanitizeRSN } = require('../services/runescape');
 const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 const { notifyGoalCompleted } = require('../services/discord');
@@ -211,6 +211,16 @@ router.post('/:id/sync', async (req, res) => {
     } catch {
       // RuneMetrics unavailable or private — no problem, hiscores data is still valid
     }
+
+    // Fetch quest completion list from RuneMetrics (fire-and-forget — doesn't block sync)
+    try {
+      const quests = await fetchPlayerQuests(player.rsn);
+      db.prepare('UPDATE players SET quests_json = ? WHERE id = ?')
+        .run(JSON.stringify(quests), player.id);
+    } catch (e) {
+      console.log(`[sync] Quest fetch skipped for ${player.rsn}: ${e.message}`);
+    }
+
     // Defensive parse: corrupted stats_json from before the sanitize fix must not crash the sync.
     try { existing = player.stats_json ? JSON.parse(player.stats_json) : {}; } catch {}
     const statsJson = JSON.stringify({
@@ -294,6 +304,16 @@ router.post('/sync-all/:groupId', async (req, res) => {
       } catch {
         // RuneMetrics unavailable or private — no problem
       }
+
+      // Fetch quest completion list from RuneMetrics
+      try {
+        const quests = await fetchPlayerQuests(player.rsn);
+        db.prepare('UPDATE players SET quests_json = ? WHERE id = ?')
+          .run(JSON.stringify(quests), player.id);
+      } catch (e) {
+        console.log(`[sync-all] Quest fetch skipped for ${player.rsn}: ${e.message}`);
+      }
+
       // Defensive parse: corrupted stats_json must not crash the sync.
       try { existing = player.stats_json ? JSON.parse(player.stats_json) : {}; } catch {}
       const statsJson = JSON.stringify({

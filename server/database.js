@@ -324,6 +324,9 @@ try {
   `);
 } catch {}
 
+// Quest completion data fetched from RuneMetrics quests API
+try { db.exec('ALTER TABLE players ADD COLUMN quests_json TEXT DEFAULT NULL'); } catch {}
+
 // ── Custom Groups feature migrations ─────────────────────────────────────────
 
 // Migration tracking table — idempotent

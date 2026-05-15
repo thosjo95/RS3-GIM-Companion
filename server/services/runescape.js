@@ -325,4 +325,23 @@ function generateSuggestedGoals(players) {
   return suggestions;
 }
 
-module.exports = { fetchHiscores, fetchRuneMetrics, calcCombatLevel, generateSuggestedGoals, sanitizeRSN, SKILLS, BOSS_KILLS };
+/**
+ * Fetch a player's quest completion list from the RuneMetrics quests API.
+ * Returns an array of { title, status, difficulty, members, questPoints } objects.
+ * status is one of: 'COMPLETED', 'STARTED', 'NOT_STARTED'
+ * Requires a public RuneMetrics profile — throws on private or unavailable.
+ */
+async function fetchPlayerQuests(rsn) {
+  const cleanRSN = sanitizeRSN(rsn);
+  const url = `https://apps.runescape.com/runemetrics/quests?user=${encodeURIComponent(cleanRSN)}`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error(`RuneMetrics quests ${response.status}`);
+  const data = await response.json();
+  if (data.error) throw new Error(data.error); // e.g. "PROFILE_PRIVATE"
+  return data.quests ?? [];
+}
+
+module.exports = { fetchHiscores, fetchRuneMetrics, fetchPlayerQuests, calcCombatLevel, generateSuggestedGoals, sanitizeRSN, SKILLS, BOSS_KILLS };
