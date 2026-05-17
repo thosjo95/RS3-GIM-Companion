@@ -234,9 +234,10 @@ router.post('/:id/sync', async (req, res) => {
 
     // activities_json (RuneMetrics feed) is NOT touched here — cron keeps it fresh
     // Clear any previous sync_error on success
+    const runeScore = data.activities?.['RuneScore'] ?? null;
     db.prepare(
-      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, sync_error = NULL, sync_error_at = NULL WHERE id = ?'
-    ).run(combat, statsJson, player.id);
+      'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, rune_score = ?, sync_error = NULL, sync_error_at = NULL WHERE id = ?'
+    ).run(combat, statsJson, runeScore, player.id);
 
     const upsertSkill = db.prepare(`
       INSERT INTO skills (player_id, skill_name, level, xp, rank)
@@ -330,9 +331,10 @@ router.post('/sync-all/:groupId', async (req, res) => {
 
       // activities_json (RuneMetrics feed) NOT touched — cron keeps it fresh
       // Clear any previous sync_error on success
+      const runeScore = data.activities?.['RuneScore'] ?? null;
       db.prepare(
-        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, sync_error = NULL, sync_error_at = NULL WHERE id = ?'
-      ).run(combat, statsJson, player.id);
+        'UPDATE players SET last_synced = CURRENT_TIMESTAMP, combat_level = ?, stats_json = ?, rune_score = ?, sync_error = NULL, sync_error_at = NULL WHERE id = ?'
+      ).run(combat, statsJson, runeScore, player.id);
 
       const upsertSkill = db.prepare(`
         INSERT INTO skills (player_id, skill_name, level, xp, rank)

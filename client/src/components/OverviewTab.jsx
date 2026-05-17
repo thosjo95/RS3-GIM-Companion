@@ -301,6 +301,14 @@ function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, c
                 {player.quest_points}
               </span>
             )}
+            {player.rune_score > 0 && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-dim)' }}>
+                <img src="https://runescape.wiki/images/RuneScore.png" alt="RuneScore"
+                  width={12} height={12} style={{ imageRendering: 'crisp-edges', opacity: 0.85 }}
+                  onError={e => { e.target.style.display = 'none'; }} />
+                {player.rune_score.toLocaleString()}
+              </span>
+            )}
           </div>
         : <div style={{ fontSize: 11, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)' }}>
             {hasSyncError ? 'Sync failed' : 'Not synced'}
