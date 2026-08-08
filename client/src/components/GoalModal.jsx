@@ -721,7 +721,7 @@ const GOAL_TYPES = [
   { id: 'skill_unlock',   label: 'Skill Unlock',       desc: 'Target a skill level for a player' },
   { id: 'important_item', label: 'Key Item',            desc: 'Boss drop, rare reward or key gear piece' },
   { id: 'item_request',   label: 'Item Request',        desc: 'Dungeoneering, Archaeology, special rewards' },
-  { id: 'diary',          label: 'Achievement Diary',   desc: 'Diary completion or task set milestone' },
+  { id: 'diary',          label: 'Area Tasks',          desc: 'Area task set tier completion' },
   { id: 'boss_kill',      label: 'Boss Kill',           desc: 'Combat milestone or boss completion goal' },
 ];
 

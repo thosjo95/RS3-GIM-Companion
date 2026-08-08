@@ -83,7 +83,7 @@ const TAB_TOURS = {
   achievements: [
     {
       target: null,
-      title: '📋 Achievement Diaries',
+      title: '📋 Area Tasks',
       body: 'Track diary completion across all 14 RS3 regions × 4 tiers (Easy → Elite). Auto-detected from RuneMetrics, or toggle manually.',
     },
     {
@@ -139,7 +139,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
     { id: 'overview',      label: '📊 Overview' },
     { id: 'goals',         label: '🎯 Goals',               tour: 'tab-goals' },
     { id: 'vault',         label: '🏆 Group Vault',         tour: 'tab-vault' },
-    { id: 'achievements',  label: '📋 Achievement Diaries', tour: 'tab-achievements' },
+    { id: 'achievements',  label: '📋 Area Tasks', tour: 'tab-achievements' },
     { id: 'leaderboards',  label: '🏅 Leaderboards',        tour: 'tab-leaderboards' },
   ];
 

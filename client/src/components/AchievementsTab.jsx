@@ -1,11 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 
-// ── RS3 Achievement Diary definitions ─────────────────────────────────────────
+// ── RS3 area task definitions ─────────────────────────────────────────────────
+
+const TIERS = [
+  { key: 'easy',   label: 'Easy',   color: 'var(--green-bright)',  bg: 'rgba(90,154,80,0.15)',    border: 'var(--green)' },
+  { key: 'medium', label: 'Medium', color: '#7eb8f7',              bg: 'rgba(74,136,184,0.15)',   border: 'var(--blue)' },
+  { key: 'hard',   label: 'Hard',   color: 'var(--orange)',        bg: 'rgba(200,120,48,0.15)',   border: 'var(--orange)' },
+  { key: 'elite',  label: 'Elite',  color: '#d07ef7',              bg: 'rgba(160,80,220,0.15)',   border: '#a855d4' },
+];
+
+// Lumbridge is the only set that uses Beginner/Easy/Medium/Hard instead of
+// Easy/Medium/Hard/Elite, so its four columns hold different keys.
+const LUMBRIDGE_TIERS = [
+  { ...TIERS[0], key: 'beginner', label: 'Beginner' },
+  { ...TIERS[1], key: 'easy',     label: 'Easy'     },
+  { ...TIERS[2], key: 'medium',   label: 'Medium'   },
+  { ...TIERS[3], key: 'hard',     label: 'Hard'     },
+];
 
 // Base key must match the server-side diaryRegionKey() in activitySync.js
 const DIARY_REGIONS = [
-  { base: 'diary_lumbridge_draynor',   label: 'Lumbridge & Draynor'  },
+  { base: 'diary_lumbridge_draynor',   label: 'Lumbridge & Draynor', tiers: LUMBRIDGE_TIERS },
   { base: 'diary_varrock',             label: 'Varrock'              },
   { base: 'diary_falador',             label: 'Falador'              },
   { base: 'diary_karamja',             label: 'Karamja'              },
@@ -14,19 +30,13 @@ const DIARY_REGIONS = [
   { base: 'diary_fremennik',           label: 'Fremennik'            },
   { base: 'diary_morytania',           label: 'Morytania'            },
   { base: 'diary_desert',              label: 'Desert'               },
-  { base: 'diary_western_provinces',   label: 'Western Provinces'    },
   { base: 'diary_daemonheim',          label: 'Daemonheim'           },
   { base: 'diary_tirannwn',            label: 'Tirannwn'             },
   { base: 'diary_wilderness',          label: 'Wilderness'           },
   { base: 'diary_underworld',          label: 'Underworld'           },
 ];
 
-const TIERS = [
-  { key: 'easy',   label: 'Easy',   color: 'var(--green-bright)',  bg: 'rgba(90,154,80,0.15)',    border: 'var(--green)' },
-  { key: 'medium', label: 'Medium', color: '#7eb8f7',              bg: 'rgba(74,136,184,0.15)',   border: 'var(--blue)' },
-  { key: 'hard',   label: 'Hard',   color: 'var(--orange)',        bg: 'rgba(200,120,48,0.15)',   border: 'var(--orange)' },
-  { key: 'elite',  label: 'Elite',  color: '#d07ef7',              bg: 'rgba(160,80,220,0.15)',   border: '#a855d4' },
-];
+const regionTiers = region => region.tiers ?? TIERS;
 
 const MEMBER_COLORS = ['#c8a84b', '#7eb8f7', '#7ef7a8', '#f77e7e', '#d07ef7', '#f7c97e'];
 
@@ -103,7 +113,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
     const total = DIARY_REGIONS.length * TIERS.length;
     return players.map(p => {
       const done = DIARY_REGIONS.reduce((n, r) =>
-        n + TIERS.filter(t => getAchievement(p.id, r.base, t.key)?.achieved).length, 0);
+        n + regionTiers(r).filter(t => getAchievement(p.id, r.base, t.key)?.achieved).length, 0);
       return { ...p, done, pct: Math.round((done / total) * 100) };
     }).sort((a, b) => b.done - a.done);
   }, [achievements, players]);
@@ -112,7 +122,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
     return (
       <div className="empty-state">
         <div className="icon">📋</div>
-        <p>Add and sync players to track Achievement Diaries.</p>
+        <p>Add and sync players to track area tasks.</p>
       </div>
     );
   }
@@ -128,7 +138,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
       {/* Header */}
       <div className="flex align-center justify-between" style={{ flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div className="section-title" style={{ marginBottom: 4 }}>📋 Achievement Diaries</div>
+          <div className="section-title" style={{ marginBottom: 4 }}>📋 Area Tasks</div>
           <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
             Auto-detected from RuneMetrics activity feed · Click a cell to mark manually
           </div>
@@ -180,7 +190,8 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
 
       <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
         ✅ Auto-detected from RuneMetrics &nbsp;·&nbsp; ✏️ Manually marked &nbsp;·&nbsp;
-        Click any cell (if claimed) to toggle · Diary completions are stored permanently once detected
+        Click any cell (if claimed) to toggle · Completions are stored permanently once detected
+        <div style={{ marginTop: 4 }}>* Lumbridge uses Beginner / Easy / Medium / Hard instead of Easy / Medium / Hard / Elite</div>
       </div>
     </div>
   );
@@ -211,8 +222,13 @@ function GridView({ players, colorMap, getAchievement, toggleManual, toggling, c
             <tr key={region.base} style={{ borderTop: '1px solid var(--border)', background: ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent' }}>
               <td style={{ padding: '8px 10px 8px 4px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-bright)' }}>
                 {region.label}
+                {region.tiers && (
+                  <span
+                    title={`Lumbridge uses ${region.tiers.map(t => t.label).join(' / ')} instead of Easy / Medium / Hard / Elite`}
+                    style={{ marginLeft: 5, fontSize: 10, color: 'var(--text-dim)', cursor: 'help' }}>*</span>
+                )}
               </td>
-              {TIERS.map(tier => {
+              {regionTiers(region).map(tier => {
                 // Check if ALL players have completed this
                 const statuses = players.map(p => getAchievement(p.id, region.base, tier.key));
                 const allDone  = statuses.every(a => a?.achieved);
@@ -273,19 +289,20 @@ function PlayerView({ players, colorMap, getAchievement, toggleManual, toggling,
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {players.map(p => {
         const done = DIARY_REGIONS.reduce((n, r) =>
-          n + TIERS.filter(t => getAchievement(p.id, r.base, t.key)?.achieved).length, 0);
+          n + regionTiers(r).filter(t => getAchievement(p.id, r.base, t.key)?.achieved).length, 0);
 
         return (
           <div key={p.id} className="panel">
             <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: colorMap[p.id] }}>{p.rsn}</span>
               <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                {done} / {DIARY_REGIONS.length * TIERS.length} diary tiers completed
+                {done} / {DIARY_REGIONS.length * TIERS.length} area task tiers completed
               </span>
             </div>
             <div style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
               {DIARY_REGIONS.map(region => {
-                const tierStatuses = TIERS.map(t => ({
+                const tiers = regionTiers(region);
+                const tierStatuses = tiers.map(t => ({
                   ...t,
                   ach: getAchievement(p.id, region.base, t.key),
                 }));
@@ -295,7 +312,7 @@ function PlayerView({ players, colorMap, getAchievement, toggleManual, toggling,
                   <div key={region.base} style={{
                     padding: '8px 10px', borderRadius: 'var(--radius)',
                     background: 'var(--bg-panel-alt)',
-                    border: `1px solid ${doneCount === TIERS.length ? colorMap[p.id] + '80' : 'var(--border)'}`,
+                    border: `1px solid ${doneCount === tiers.length ? colorMap[p.id] + '80' : 'var(--border)'}`,
                   }}>
                     <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-bright)', marginBottom: 6 }}>
                       {region.label}

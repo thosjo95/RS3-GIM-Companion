@@ -35,7 +35,7 @@ const TOUR_STEPS = [
   },
   {
     target: '[data-tour="tab-achievements"]',
-    title: '📋 Achievement Diaries',
+    title: '📋 Area Tasks',
     body: 'Track diary completion across all 13 RS3 regions × 4 tiers (Easy → Elite). Auto-detected from the RuneMetrics activity feed, or toggle manually per player.',
   },
   {

@@ -94,26 +94,22 @@ function normRsn(s) {
   return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
 }
 
-// ── Diary suggestion ID → Achievement diary key mapping ───────────────────────
+// ── Area task suggestion ID → achievement key mapping ─────────────────────────
 // Goal suggestion IDs (diary_*) don't always match the achievement keys used in
 // AchievementsTab (diary_lumbridge_draynor_*, diary_seers_village_*, etc.).
 // This map translates the ones that differ so auto-tick and filtering work correctly.
 const DIARY_SUGGESTION_KEY_MAP = {
-  diary_lumbridge_easy:   'diary_lumbridge_draynor_easy',
-  diary_lumbridge_medium: 'diary_lumbridge_draynor_medium',
-  diary_lumbridge_hard:   'diary_lumbridge_draynor_hard',
-  diary_lumbridge_elite:  'diary_lumbridge_draynor_elite',
-  diary_seers_easy:       'diary_seers_village_easy',
-  diary_seers_medium:     'diary_seers_village_medium',
-  diary_seers_hard:       'diary_seers_village_hard',
-  diary_seers_elite:      'diary_seers_village_elite',
-  diary_western_easy:     'diary_western_provinces_easy',
-  diary_western_medium:   'diary_western_provinces_medium',
-  diary_western_hard:     'diary_western_provinces_hard',
-  diary_western_elite:    'diary_western_provinces_elite',
+  diary_lumbridge_beginner: 'diary_lumbridge_draynor_beginner',
+  diary_lumbridge_easy:     'diary_lumbridge_draynor_easy',
+  diary_lumbridge_medium:   'diary_lumbridge_draynor_medium',
+  diary_lumbridge_hard:     'diary_lumbridge_draynor_hard',
+  diary_seers_easy:         'diary_seers_village_easy',
+  diary_seers_medium:       'diary_seers_village_medium',
+  diary_seers_hard:         'diary_seers_village_hard',
+  diary_seers_elite:        'diary_seers_village_elite',
 };
 
-/** Returns the correct achievement diary key for a given suggestion ID. */
+/** Returns the correct achievement key for a given area-task suggestion ID. */
 function diaryAchievementKey(suggestionId) {
   return DIARY_SUGGESTION_KEY_MAP[suggestionId] ?? suggestionId;
 }
@@ -945,8 +941,8 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
                 color: 'var(--green-bright)', textDecoration: 'underline', padding: 0 }}>
               {showCompletedDiaries
-                ? '▾ Hide completed diaries'
-                : `✓ ${completedDiariesHidden} diary${completedDiariesHidden > 1 ? ' entries' : ''} already completed`}
+                ? '▾ Hide completed area tasks'
+                : `✓ ${completedDiariesHidden} area task${completedDiariesHidden > 1 ? ' sets' : ' set'} already completed`}
             </button>
           )}
         </div>

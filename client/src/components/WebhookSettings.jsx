@@ -3,7 +3,7 @@ import { api } from '../api/client';
 
 const ALL_EVENTS = [
   { key: 'level_milestones',  label: '🎉 Level 99s & 120s',         desc: 'When a player reaches level 99 or 120 in any skill' },
-  { key: 'diary_completions', label: '📋 Achievement Diaries',       desc: 'When a diary tier (Easy/Medium/Hard) is completed' },
+  { key: 'diary_completions', label: '📋 Area Tasks',              desc: 'When an area task tier (Easy/Medium/Hard/Elite) is completed' },
   { key: 'boss_first_kills',  label: '⚔️ Boss First Kills',          desc: 'When a player defeats a boss for the first time' },
   { key: 'goal_completions',  label: '🎯 Group Goals',               desc: 'When a group goal is marked as complete' },
   { key: 'drops',             label: '🎁 Drops',                     desc: 'Every drop detected from the activity feed (can be noisy)' },

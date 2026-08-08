@@ -15,8 +15,22 @@ const LEVEL_MILESTONE_PATTERNS = [
   /I(?:'ve)? (?:reached|achieved) level (\d+) in ([\w\s]+)/i,
 ];
 
-// "I completed the Easy Lumbridge & Draynor Achievement Diary."
-const DIARY_PATTERN = /I completed the (Easy|Medium|Hard|Elite) (.+?) Achievement Diary\.?/i;
+// RS3 renamed diaries to area tasks, and the adventurer's log has used several
+// phrasings over the years. Accept tier-first and area-first orderings.
+const DIARY_PATTERNS = [
+  /I (?:have )?completed (?:all of )?the (Beginner|Easy|Medium|Hard|Elite) (.+?) (?:Achievement Diary|achievements|area tasks|tasks)\b/i,
+  /I (?:have )?completed (?:all of )?the (.+?) (Beginner|Easy|Medium|Hard|Elite) (?:achievements|area tasks|tasks)\b/i,
+];
+
+/** Returns { tier, region } for an activity line, or null if it isn't an area task completion. */
+function matchAreaTask(text) {
+  if (!text) return null;
+  let m = text.match(DIARY_PATTERNS[0]);
+  if (m) return { tier: m[1], region: m[2] };
+  m = text.match(DIARY_PATTERNS[1]);
+  if (m) return { tier: m[2], region: m[1] };
+  return null;
+}
 
 // "I completed the quest 'While Guthix Sleeps'." or "I completed the quest While Guthix Sleeps."
 const QUEST_COMPLETE_PATTERN = /I completed the quest[:\s]+['"]?([^'".\n]+?)['"]?\s*\.?\s*$/i;
@@ -70,11 +84,11 @@ const BOSS_KILL_PATTERNS = [
   { key: 'barrows',             label: 'Barrows',                        pattern: /\bbarrows\b/i },
 ];
 
-// Texts that mention a boss name but are NOT kill events (drops, diary, level-ups, etc.)
+// Texts that mention a boss name but are NOT kill events (drops, area tasks, level-ups, etc.)
 const SKIP_PATTERNS = [
   /^I found (?:a |an )/i,
   /^I received (?:a |an )/i,
-  /I completed the .+ Achievement Diary/i,
+  /I completed the .+ (?:Achievement Diary|achievements|area tasks)/i,
   /I (?:levelled|achieved|reached) (?:my )?/i,
   /I completed the quest/i,
 ];
@@ -143,21 +157,21 @@ function autoLogDrops(playerId, activities) {
   }
 }
 
-/** Detect achievement diary completions and persist them to the achievements table */
+/** Detect area task completions and persist them to the achievements table */
 function autoDetectDiaries(playerId, activities) {
   if (!activities?.length) return;
   for (const act of activities) {
-    const match = act.text?.match(DIARY_PATTERN);
+    const match = matchAreaTask(act.text);
     if (!match) continue;
-    const tier   = match[1].toLowerCase();
-    const region = match[2];
+    const tier   = match.tier.toLowerCase();
+    const region = match.region;
     const key    = `diary_${diaryRegionKey(region)}_${tier}`;
     const achievedAt = parseActivityDate(act.date);
     // INSERT OR IGNORE — once marked, never overwrite the date
     const result = db.prepare(
       'INSERT OR IGNORE INTO achievements (player_id, type, key, achieved, achieved_at, manual) VALUES (?, ?, ?, 1, ?, 0)'
     ).run(playerId, 'diary', key, achievedAt);
-    if (result.changes > 0) discord.notifyDiary(playerId, match[1], region);
+    if (result.changes > 0) discord.notifyDiary(playerId, match.tier, region);
   }
 }
 

@@ -91,8 +91,8 @@ function notifyDiary(playerId, tier, region) {
   const emoji = { easy: '🟢', medium: '🟡', hard: '🟠', elite: '🔴' }[tier.toLowerCase()] ?? '📋';
   const tierCap = tier.charAt(0).toUpperCase() + tier.slice(1);
   sendEmbed(config.url, {
-    title: `${emoji} Achievement Diary Complete!`,
-    description: `**${player.rsn}** completed the **${tierCap} ${region} Achievement Diary**!`,
+    title: `${emoji} Area Tasks Complete!`,
+    description: `**${player.rsn}** completed the **${tierCap} ${region} area tasks**!`,
     color: COLORS.blue,
     footer: groupFooter(player.group_id),
     timestamp: new Date().toISOString(),
@@ -134,7 +134,7 @@ async function sendTestWebhook(webhookUrl, groupName) {
     description: `**${groupName}** is now linked to RS3 GIM Companion.\nNotifications will appear here for the events you've enabled.`,
     color: COLORS.green,
     fields: [
-      { name: 'Supported events', value: '🎉 Level 99/120 · 📋 Achievement Diaries · ⚔️ Boss first kills · 🎯 Goals completed · 🎁 Drops', inline: false },
+      { name: 'Supported events', value: '🎉 Level 99/120 · 📋 Area tasks · ⚔️ Boss first kills · 🎯 Goals completed · 🎁 Drops', inline: false },
     ],
     footer: { text: 'RS3 GIM Companion · groupiron.com' },
     timestamp: new Date().toISOString(),
