@@ -246,13 +246,12 @@ function calcCombatLevel(skills) {
   const sum = s['Summoning']?.level ?? 1;
   const nec = s['Necromancy']?.level ?? 1;
 
-  const base = 0.25 * (def + con + Math.floor(pray / 2) + Math.floor(sum / 2));
-  const melee = 0.325 * (atk + str);
-  const range = 0.325 * (Math.floor(ran * 1.5));
-  const mage = 0.325 * (Math.floor(mag * 1.5));
-  const necro = 0.325 * (Math.floor(nec * 2));
+  // Formula per runescape.wiki/w/Combat_level (current, post-Necromancy):
+  // floor( (1.3 * max(Att+Str, 2*Mag, 2*Ranged, 2*Necro) + Def + Con + floor(Pray/2) + floor(Summ/2)) / 4 )
+  const base = def + con + Math.floor(pray / 2) + Math.floor(sum / 2);
+  const styleMax = Math.max(atk + str, 2 * mag, 2 * ran, 2 * nec);
 
-  return Math.floor(base + Math.max(melee, range, mage, necro));
+  return Math.floor((1.3 * styleMax + base) / 4);
 }
 
 function generateSuggestedGoals(players) {
