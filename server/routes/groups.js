@@ -154,103 +154,134 @@ function extractMembers(obj) {
   return null;
 }
 
+// Shared helper: scrape current member list from RS3 GIM hiscores page.
+// Returns array of { rsn, totalXp, totalLevel } or null if extraction failed.
+async function scrapeGroupMembers(name, type, size) {
+  const encoded = encodeURIComponent(name.trim());
+  const url = `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encoded}`;
+  const resp = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-GB,en;q=0.9',
+      'Cache-Control': 'no-cache',
+    },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!resp.ok) throw new Error(`RS3 hiscores returned HTTP ${resp.status}`);
+  const html = await resp.text();
+
+  // Strategy 1: Legacy __NEXT_DATA__ (Pages Router)
+  const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (nextDataMatch) {
+    try {
+      const members = extractMembers(JSON.parse(nextDataMatch[1]));
+      if (members?.length) return members;
+    } catch {}
+  }
+
+  // Strategy 2: Next.js App Router RSC flight data
+  for (const match of html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)) {
+    try {
+      const payload = JSON.parse('"' + match[1] + '"');
+      for (const chunk of payload.split('\n')) {
+        const jsonStart = chunk.indexOf('{');
+        if (jsonStart === -1) continue;
+        try {
+          const members = extractMembers(JSON.parse(chunk.slice(jsonStart)));
+          if (members?.length) return members;
+        } catch {}
+      }
+    } catch {}
+  }
+
+  // Strategy 3: Any JSON fragment with "members" or "players" key
+  for (const match of html.matchAll(/"(?:members|players|groupMembers)"\s*:\s*(\[[\s\S]*?\](?:\s*[,}]))/g)) {
+    try {
+      const arr = JSON.parse(match[1].replace(/[,}]\s*$/, ']').replace(/,$/, ''));
+      const members = extractMembers(arr);
+      if (members?.length) return members;
+    } catch {}
+  }
+
+  // Strategy 4: Escaped JSON inside RSC strings
+  for (const match of html.matchAll(/\\"(?:members|players)\\"\s*:\s*(\[(?:[^[\]]|\[(?:[^[\]]|\[[^\]]*\])*\])*\])/g)) {
+    try {
+      const unescaped = match[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      const members = extractMembers(JSON.parse(unescaped));
+      if (members?.length) return members;
+    } catch {}
+  }
+
+  // Strategy 5: RS avatar URLs
+  const avatarMatches = [...html.matchAll(/m=avatar-rs\/([^\/]+)\/chat\.png/g)];
+  if (avatarMatches.length) {
+    const rsns = [...new Set(avatarMatches.map(m => decodeURIComponent(m[1].replace(/\+/g, ' '))))];
+    if (rsns.length) return rsns.map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
+  }
+
+  // Strategy 6: Player profile links
+  const profileMatches = [
+    ...html.matchAll(/href="[^"]*\/players\/([^"/?#]+)/g),
+    ...html.matchAll(/[?&]user\d*=([^"&\s<>]+)/g),
+  ];
+  if (profileMatches.length) {
+    return [...new Set(profileMatches.map(m => decodeURIComponent(m[1])))].map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
+  }
+
+  return null;
+}
+
 // GET /api/groups/lookup?name=X&type=regular&size=5
 // Fetches RS3 GIM hiscores page and extracts group members
 router.get('/lookup', async (req, res) => {
   const { name, type = 'regular', size = '5' } = req.query;
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
-  // Custom groups have no hiscores entry — members are added manually
   if (type === 'custom') return res.status(400).json({ error: 'Custom groups cannot be looked up on hiscores. Use manual member entry.' });
 
-  const encoded = encodeURIComponent(name.trim());
-  const url = `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encoded}`;
-
   try {
-    const resp = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-GB,en;q=0.9',
-        'Cache-Control': 'no-cache',
-      },
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!resp.ok) {
-      return res.json({ found: false, error: `RS3 hiscores returned HTTP ${resp.status}` });
-    }
-
-    const html = await resp.text();
-
-    // Strategy 1: Legacy __NEXT_DATA__ (Pages Router)
-    const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (nextDataMatch) {
-      try {
-        const members = extractMembers(JSON.parse(nextDataMatch[1]));
-        if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-      } catch {}
-    }
-
-    // Strategy 2: Next.js App Router RSC flight data (self.__next_f.push([1,"..."]))
-    // Each push([1, STRING]) contains a JSON-encoded RSC payload with embedded page data
-    for (const match of html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)) {
-      try {
-        const payload = JSON.parse('"' + match[1] + '"'); // decode the JSON string
-        // The RSC payload has lines like: T1234,{...json...}
-        for (const chunk of payload.split('\n')) {
-          const jsonStart = chunk.indexOf('{');
-          if (jsonStart === -1) continue;
-          try {
-            const members = extractMembers(JSON.parse(chunk.slice(jsonStart)));
-            if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-          } catch {}
-        }
-      } catch {}
-    }
-
-    // Strategy 3: Any JSON fragment with "members" or "players" key in raw HTML
-    for (const match of html.matchAll(/"(?:members|players|groupMembers)"\s*:\s*(\[[\s\S]*?\](?:\s*[,}]))/g)) {
-      try {
-        const arr = JSON.parse(match[1].replace(/[,}]\s*$/, ']').replace(/,$/, ''));
-        const members = extractMembers(arr);
-        if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-      } catch {}
-    }
-
-    // Strategy 4: Same but searching escaped JSON inside RSC strings (\"members\":...)
-    for (const match of html.matchAll(/\\"(?:members|players)\\"\s*:\s*(\[(?:[^[\]]|\[(?:[^[\]]|\[[^\]]*\])*\])*\])/g)) {
-      try {
-        const unescaped = match[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-        const members = extractMembers(JSON.parse(unescaped));
-        if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-      } catch {}
-    }
-
-    // Strategy 5: RS avatar URLs — most reliable, always present in rendered group pages
-    // Pattern: https://secure.runescape.com/m=avatar-rs/PLAYER NAME/chat.png
-    const avatarMatches = [...html.matchAll(/m=avatar-rs\/([^\/]+)\/chat\.png/g)];
-    if (avatarMatches.length) {
-      const rsns = [...new Set(avatarMatches.map(m => decodeURIComponent(m[1].replace(/\+/g, ' '))))];
-      const members = rsns.map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
-      if (members.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-    }
-
-    // Strategy 6: Player profile links (/players/NAME or personal-hiscores?user=NAME)
-    const profileMatches = [
-      ...html.matchAll(/href="[^"]*\/players\/([^"/?#]+)/g),
-      ...html.matchAll(/[?&]user\d*=([^"&\s<>]+)/g),
-    ];
-    if (profileMatches.length) {
-      const members = [...new Set(profileMatches.map(m => decodeURIComponent(m[1])))].map(rsn => ({ rsn, totalXp: 0, totalLevel: 0 }));
-      if (members.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
-    }
-
-    return res.json({
-      found: false,
-      error: `No group data found in the RS3 hiscores page for "${name.trim()}" (${type}, ${size} members).`,
-    });
+    const members = await scrapeGroupMembers(name.trim(), type, size);
+    if (members?.length) return res.json({ found: true, groupName: name.trim(), type, size: Number(size), members });
+    return res.json({ found: false, error: `No group data found in the RS3 hiscores page for "${name.trim()}" (${type}, ${size} members).` });
   } catch (err) {
     res.json({ found: false, error: `Lookup failed: ${err.message}` });
+  }
+});
+
+// POST /api/groups/:id/refresh-roster — re-fetch member list from Jagex and apply changes (auth required)
+router.post('/:id/refresh-roster', async (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.id)) return;
+
+  const group = db.prepare('SELECT id, name, group_rsn, gim_type, gim_size FROM groups WHERE id = ?').get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (!group.group_rsn) return res.status(400).json({ error: 'No group RSN stored — cannot look up on hiscores.' });
+
+  const type = group.gim_type ?? 'regular';
+  const size = group.gim_size ?? 5;
+
+  try {
+    const freshMembers = await scrapeGroupMembers(group.group_rsn, type, size);
+    if (!freshMembers?.length) {
+      return res.status(502).json({ error: 'Could not extract member list from RS3 hiscores. Try again in a moment.' });
+    }
+
+    const currentPlayers = db.prepare('SELECT id, rsn FROM players WHERE group_id = ?').all(group.id);
+    const currentMap = new Map(currentPlayers.map(p => [p.rsn.toLowerCase().trim(), p]));
+    const freshMap   = new Map(freshMembers.map(m => [m.rsn.toLowerCase().trim(), m]));
+
+    const added   = freshMembers.filter(m => !currentMap.has(m.rsn.toLowerCase().trim()));
+    const removed = currentPlayers.filter(p => !freshMap.has(p.rsn.toLowerCase().trim()));
+
+    for (const player of removed) {
+      db.prepare('DELETE FROM players WHERE id = ?').run(player.id);
+    }
+    for (const member of added) {
+      db.prepare('INSERT OR IGNORE INTO players (rsn, group_id) VALUES (?, ?)').run(member.rsn, group.id);
+    }
+
+    res.json({ added: added.map(m => m.rsn), removed: removed.map(p => p.rsn) });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
   }
 });
 

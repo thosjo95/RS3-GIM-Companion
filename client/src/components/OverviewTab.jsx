@@ -1766,6 +1766,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
   const [playerView, setPlayerView] = useState('skills'); // 'skills' | 'quests'
 
   const isUnranked = group?.gim_type === 'regular_unranked';
+  const [rosterLoading, setRosterLoading] = useState(false);
 
   async function handleRemovePlayer(player) {
     if (!window.confirm(`Remove ${player.rsn} from this group?\n\nThis will permanently delete their skills, goals, gear and activity data.`)) return;
@@ -1775,6 +1776,22 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
       onToast?.(`${player.rsn} removed`, 'success');
     } catch (err) {
       onToast?.(err.message, 'error');
+    }
+  }
+
+  async function handleRefreshRoster() {
+    setRosterLoading(true);
+    try {
+      const result = await api.refreshRoster(groupId);
+      await onRefresh();
+      const parts = [];
+      if (result.added?.length)   parts.push(`+${result.added.join(', +')}`);
+      if (result.removed?.length) parts.push(`−${result.removed.join(', −')}`);
+      onToast?.(parts.length ? `Roster updated: ${parts.join(' ')}` : 'Roster is up to date', 'success');
+    } catch (err) {
+      onToast?.(err.message || 'Roster refresh failed', 'error');
+    } finally {
+      setRosterLoading(false);
     }
   }
   const selectedPlayer = players.find(p => p.id === selectedId) ?? null;
@@ -1836,21 +1853,30 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Member cards — centered, with space below the tab bar */}
-      {(players.length > 0 || (isUnranked && canWrite)) && (
+      {(players.length > 0 || canWrite) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {/* Unranked group controls */}
-          {isUnranked && canWrite && (
+          {/* Manage members controls — shown when logged in (canWrite) */}
+          {canWrite && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                👥 Unranked group — manage members freely
-              </span>
+              {!isUnranked && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleRefreshRoster}
+                  disabled={rosterLoading}
+                  title="Re-fetch member list from RS3 hiscores and apply changes"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  {rosterLoading
+                    ? <><span className="spinner" style={{ width: 10, height: 10 }} /> Refreshing…</>
+                    : '↻ Refresh Roster'}
+                </button>
+              )}
               <button className="btn btn-primary btn-sm" onClick={onAddPlayer}>
                 ➕ Add Player
               </button>
             </div>
           )}
 
-          {players.length === 0 && isUnranked && canWrite ? (
+          {players.length === 0 && canWrite ? (
             <div className="empty-state" style={{ marginTop: 8 }}>
               <div className="icon">👤</div>
               <p>No members yet. Add your first player to get started.</p>
@@ -1868,7 +1894,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
                   canWrite={canWrite}
                   onEditRsn={setEditRsnPlayer}
                   onSync={syncOnePlayer}
-                  onRemove={isUnranked && canWrite ? handleRemovePlayer : undefined}
+                  onRemove={canWrite ? handleRemovePlayer : undefined}
                 />
               ))}
             </div>
