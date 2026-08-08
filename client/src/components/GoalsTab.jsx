@@ -114,6 +114,11 @@ function diaryAchievementKey(suggestionId) {
   return DIARY_SUGGESTION_KEY_MAP[suggestionId] ?? suggestionId;
 }
 
+/** Strips a trailing " (...)" annotation, e.g. "Biohazard (Plague City series)" → "biohazard" */
+function questBaseTitle(title) {
+  return title.replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase();
+}
+
 // ── Pill / tab style helpers ──────────────────────────────────────────────────
 
 function pillStyle(active, accent) {
@@ -714,6 +719,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
   const [showDismissed,        setShowDismissed]        = useState(false);
   const [showCompletedDiaries, setShowCompletedDiaries] = useState(false);
   const [showCompletedGoals,   setShowCompletedGoals]   = useState(false);
+  const [showCompletedQuests,  setShowCompletedQuests]  = useState(false);
 
   // Map: playerId → Set of achieved diary keys
   const achievedByPlayer = useMemo(() => {
@@ -726,6 +732,21 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
     }
     return map;
   }, [achievements]);
+
+  // Map: playerId → Set of completed quest titles (from RuneMetrics quests_json),
+  // normalised by stripping a trailing " (...)" suffix so suggestion titles like
+  // "Biohazard (Plague City series)" still match the real quest title "Biohazard".
+  const completedQuestsByPlayer = useMemo(() => {
+    const map = {};
+    for (const p of players) {
+      let quests = [];
+      try { quests = p.quests_json ? JSON.parse(p.quests_json) : []; } catch { /* ignore */ }
+      map[p.id] = new Set(
+        quests.filter(q => q.status === 'COMPLETED').map(q => q.title.trim().toLowerCase())
+      );
+    }
+    return map;
+  }, [players]);
 
   // DB suggestions (boss_kill + important_item) — loaded once on mount
   const [dbSuggestions, setDbSuggestions] = useState([]);
@@ -793,6 +814,13 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
         const allAchieved = selected.every(pid => achievedByPlayer[pid]?.has(achKey));
         if (allAchieved) return false;
       }
+      // Hide quest suggestions that ALL selected players have already completed in-game
+      // (per their real RuneMetrics quest data), even if no goal was ever added for it
+      if (s.category === 'quest_series' && selected.length > 0 && !showCompletedQuests) {
+        const base = questBaseTitle(s.title);
+        const allCompleted = selected.every(pid => completedQuestsByPlayer[pid]?.has(base));
+        if (allCompleted) return false;
+      }
       if (q) {
         return (
           s.title.toLowerCase().includes(q) ||
@@ -802,7 +830,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
       }
       return true;
     });
-  }, [allSuggestions, stage, category, dismissed, showDismissed, showCompletedGoals, completedTitles, showCompletedDiaries, selected, achievedByPlayer, search]);
+  }, [allSuggestions, stage, category, dismissed, showDismissed, showCompletedGoals, completedTitles, showCompletedDiaries, showCompletedQuests, selected, achievedByPlayer, completedQuestsByPlayer, search]);
 
   const dismissedInView = useMemo(() =>
     allSuggestions.filter(s => s.stage === stage && (category === 'all' || s.category === category) && dismissed.has(s.id)).length,
@@ -830,6 +858,19 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
       selected.every(pid => achievedByPlayer[pid]?.has(diaryAchievementKey(s.id)))
     ).length;
   }, [allSuggestions, stage, category, dismissed, completedTitles, selected, achievedByPlayer]);
+
+  // Count quest suggestions hidden because all selected players already completed them in-game
+  const completedQuestsHidden = useMemo(() => {
+    if (selected.length === 0) return 0;
+    return allSuggestions.filter(s =>
+      s.stage === stage &&
+      (category === 'all' || s.category === category) &&
+      s.category === 'quest_series' &&
+      !dismissed.has(s.id) &&
+      !completedTitles.has(s.title) &&
+      selected.every(pid => completedQuestsByPlayer[pid]?.has(questBaseTitle(s.title)))
+    ).length;
+  }, [allSuggestions, stage, category, dismissed, completedTitles, selected, completedQuestsByPlayer]);
 
   const stageKeys = Object.keys(STAGES);
 
@@ -909,7 +950,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
       </div>
 
       {/* Hidden count + restore */}
-      {(dismissedInView > 0 || completedGoalsHidden > 0 || completedDiariesHidden > 0) && (
+      {(dismissedInView > 0 || completedGoalsHidden > 0 || completedDiariesHidden > 0 || completedQuestsHidden > 0) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: 'var(--text-dim)', flexWrap: 'wrap' }}>
           {dismissedInView > 0 && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -943,6 +984,15 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
               {showCompletedDiaries
                 ? '▾ Hide completed area tasks'
                 : `✓ ${completedDiariesHidden} area task${completedDiariesHidden > 1 ? ' sets' : ' set'} already completed`}
+            </button>
+          )}
+          {completedQuestsHidden > 0 && (
+            <button onClick={() => setShowCompletedQuests(s => !s)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
+                color: 'var(--green-bright)', textDecoration: 'underline', padding: 0 }}>
+              {showCompletedQuests
+                ? '▾ Hide completed quests'
+                : `✓ ${completedQuestsHidden} quest${completedQuestsHidden > 1 ? 's' : ''} already completed`}
             </button>
           )}
         </div>
