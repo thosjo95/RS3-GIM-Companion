@@ -356,7 +356,7 @@ export const GOAL_SUGGESTIONS = [
     wikiUrl: 'https://runescape.wiki/w/Lunar_Diplomacy',
     requirements: {
       skills: { Magic: 65, Crafting: 61, Mining: 60, Woodcutting: 55, Firemaking: 49, Herblore: 5, Defence: 40 },
-      quests: ['The Fremennik Trials', 'Lost City', 'Rune Mysteries', 'Shilo Village'],
+      quests: ['The Fremennik Trials', 'Lost City'],
       qp: 0,
     },
     unlocks: ['Lunar spellbook', 'Vengeance', 'NPC Contact', 'Cure Other', 'Fertile Soil'],
@@ -531,7 +531,7 @@ export const GOAL_SUGGESTIONS = [
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/Regicide',
     requirements: {
-      skills: { Agility: 56, Crafting: 10 },
+      skills: { Agility: 56 },
       quests: ['Underground Pass'],
       qp: 0,
     },
@@ -546,8 +546,8 @@ export const GOAL_SUGGESTIONS = [
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/Mourning%27s_End_Part_I',
     requirements: {
-      skills: { Ranged: 60, Agility: 60 },
-      quests: ['Roving Elves'],
+      skills: { Ranged: 60, Thieving: 50 },
+      quests: ['Roving Elves', 'Sheep Herder', 'Big Chompy Bird Hunting'],
       qp: 0,
     },
     unlocks: ['Elf tracking content', 'Prerequisite for Mourning\'s End Part II', 'Tirannwn Diary (Medium) access'],
@@ -592,7 +592,7 @@ export const GOAL_SUGGESTIONS = [
     wikiUrl: 'https://runescape.wiki/w/The_Slug_Menace',
     requirements: {
       skills: { Runecrafting: 30, Crafting: 30, Thieving: 30, Slayer: 30 },
-      quests: ['Wanted!'],
+      quests: ['Sea Slug', 'Wanted!'],
       qp: 0,
     },
     unlocks: ['While Guthix Sleeps prerequisite', 'Proselyte armour (Prayer bonus tank armour)', 'Temple Knight storyline progress'],
@@ -875,8 +875,8 @@ export const GOAL_SUGGESTIONS = [
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/Plague%27s_End',
     requirements: {
-      skills: { Agility: 75, Construction: 75, Crafting: 75, Dungeoneering: 75, Herblore: 75, Mining: 75, Prayer: 75, Ranged: 75, Smithing: 75, Summoning: 75, Woodcutting: 75 },
-      quests: ['Within the Light', 'Mourning\'s End Part II', 'Underground Pass'],
+      skills: { Agility: 75, Construction: 75, Crafting: 75, Dungeoneering: 75, Herblore: 75, Mining: 75, Prayer: 75, Ranged: 75, Summoning: 75, Woodcutting: 75 },
+      quests: ['Within the Light', "Mourning's End Part II", 'Catapult Construction', 'Making History', 'Underground Pass'],
       qp: 0,
     },
     unlocks: ['Prifddinas', 'Clan district skilling areas', 'Hefin Agility course', 'Crystallise spell', 'Seren content'],
@@ -903,10 +903,10 @@ export const GOAL_SUGGESTIONS = [
     stage: 'end',
     category: 'quest_series',
     priority: 'medium',
-    wikiUrl: 'https://runescape.wiki/w/The_Fate_of_the_Gods',
+    wikiUrl: 'https://runescape.wiki/w/Fate_of_the_Gods',
     requirements: {
-      skills: { Magic: 73, Runecrafting: 73, Divination: 73, Agility: 73, Strength: 73 },
-      quests: ['Ritual of the Mahjarrat', 'The World Wakes'],
+      skills: { Agility: 73, Divination: 75, Magic: 79, Slayer: 76, Summoning: 67 },
+      quests: ['Missing, Presumed Death'],
       qp: 0,
     },
     unlocks: ['Freneskae access', 'Memories of the Mahjarrat', "Prerequisite for Sliske's Endgame"],
