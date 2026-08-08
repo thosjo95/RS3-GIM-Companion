@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.4-4caf50?style=flat-square" alt="v1.9.4"/>
+    <img src="https://img.shields.io/badge/version-1.9.5-4caf50?style=flat-square" alt="v1.9.5"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -28,9 +28,10 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Group Stats** — XP progress bars, full Skills matrix (all 29 RS3 skills × all players, gold-highlight for group best), Combat breakdown with RS3 icons (includes Necromancy & Summoning); **Total Level** pinned row at the top of both Skills and Gains tabs with the RS3 Statistics icon
 - **Goals panel** — level / item / quest / custom goals with live XP-to-go tracking
 - **Activity feed** — RuneMetrics feed showing recent drops, quests, milestones; entries are persisted permanently in the database and auto-refreshed every 2 hours in the background
+- **Roster management** — claimed groups can add/remove members directly from the Overview tab; ranked groups get a **↻ Refresh Roster** button that re-fetches the current member list from RS3 hiscores, diffs it against the database, and auto-applies joins/leaves with a toast summary
 
 ### 🎯 Goals
-- **Goal Browser** — curated suggestion library with 263+ suggestions across seven categories: Quest Series (66 quest chains spanning early/mid/end game), Skill Unlocks, Key Items, Item Requests, Achievement Diaries, Boss Kills, Slayer Drops; completed/vaulted goals are automatically hidden so the list stays focused
+- **Goal Browser** — curated suggestion library with 267+ suggestions across seven categories, every entry wiki-verified against runescape.wiki for RS3 (not OSRS) accuracy: Quest Series (66 quest chains spanning early/mid/end game), Skill Unlocks (37), Key Items (8), Item Requests (45), Area Tasks (52), Boss Kills (41), Slayer Drops (18); completed/vaulted goals are automatically hidden so the list stays focused
 - **Item Requests** — 35+ pre-loaded suggestions covering Dungeoneering cape & rewards (Chaotic weapons, Hex/Farsight, Stalker bow, Balmung), Archaeology artefacts (Pontifex ring, Inquisitor staff, Guildmaster's aura), Shattered Worlds codices (Double Surge, Double Escape, Bladed Dive, Natural Instinct, etc.), ports armour, boss drops and more; item request goals appear in **Active Goals** and the **Overview Goals panel**
 - **Active Goals board** — Kanban-style columns (Not Started / In Progress / Blocked); **drag-and-drop** cards between columns to update status; the target column highlights gold during a drag
 - **Goal card actions** — ✏️ Edit (opens pre-filled modal), 🚫 Blocked, ▶ Advance (step status forward), ✕ Delete
@@ -52,9 +53,9 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - **Player selector chips** — "you" badge highlights your own character; same chip design as vault and goals
 - **Group Notes** — floating slide-in pinboard for strategies, loot rules, and session plans; auto-saves with debounce
 
-### 📋 Achievement Diaries
-- 14 regions × 4 tiers (Easy / Medium / Hard / Elite) — same structure as RS3
-- **Grid view** — coloured player dots per cell showing who has completed each diary
+### 🗺️ Area Tasks
+- 13 RS3 area task sets (Ardougne, Daemonheim, Desert, Falador, Fremennik, Karamja, Lumbridge & Draynor, Morytania, Seers' Village, Tirannwn, Underworld, Varrock, Wilderness) × 4 tiers each — Easy / Medium / Hard / Elite, except Lumbridge & Draynor which uses Beginner / Easy / Medium / Hard
+- **Grid view** — coloured player dots per cell showing who has completed each area's tasks
 - **Player view** — per-player completion with toggle and dates
 - Auto-detected from RuneMetrics activity feed on each sync; manual override available
 
@@ -70,7 +71,7 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 - Fully configurable per group: toggle each event type on or off
 - **Supported events:**
   - 🎉 Level 99s & 120s — detected automatically from the activity feed
-  - 📋 Achievement diary completions
+  - 📋 Area task completions
   - ⚔️ Boss first kills — fires the first time a player defeats a boss
   - 🎯 Group goals completed — when any goal is marked as complete
   - 🎁 Drops — every auto-detected drop (off by default, can be noisy)
@@ -198,15 +199,15 @@ RS3-GIM-Companion/
 │       ├── index.css                # Global styles + CSS variables + mobile media queries
 │       ├── api/client.js            # Typed fetch wrapper with group auth headers
 │       └── components/
-│           ├── Dashboard.jsx        # Tab router (Overview / Goals / Vault / Diaries / Leaderboards)
+│           ├── Dashboard.jsx        # Tab router (Overview / Goals / Vault / Area Tasks / Leaderboards)
 │           ├── Header.jsx           # Logo, Discord link, lock/unlock, sync button
 │           ├── OverviewTab.jsx      # Member cards · Group Stats · Goals panel · Activity feed
 │           ├── GoalsTab.jsx         # Goal Browser (suggestions) · Active Goals · Goal management
 │           ├── VaultTab.jsx         # Unified tile grid (worn + free items) · player filter chips
 │           ├── GearLoadouts.jsx     # Equipment grid, item picker, wiki-verified requirements, player chips
-│           ├── AchievementsTab.jsx  # Achievement Diaries — grid + player view
+│           ├── AchievementsTab.jsx  # Area Tasks — grid + player view
 │           ├── LeaderboardsTab.jsx  # Boss Kills · Firsts · Milestones · Skill Mastery · Clue Scrolls
-│           ├── GoalModal.jsx        # Goal creation / edit modal (Quest / Skill / Key Item / Item Request / Diary / Boss)
+│           ├── GoalModal.jsx        # Goal creation / edit modal (Quest / Skill / Key Item / Item Request / Area Task / Boss)
 │           ├── GroupNotesOverlay.jsx # Floating slide-in pinboard, auto-save
 │           ├── WebhookSettings.jsx  # Discord webhook config modal (URL + event toggles + test)
 │           └── admin/
@@ -223,12 +224,12 @@ RS3-GIM-Companion/
     │   ├── players.js               # Player CRUD · sync · sync-all pipeline
     │   ├── goals.js                 # Goal CRUD + vault promotion
     │   ├── drops.js                 # Drops + item requests CRUD
-    │   ├── achievements.js          # Achievement diary completion tracking
+    │   ├── achievements.js          # Area task completion tracking
     │   ├── equipment.js             # Gear loadout slots (player × style × slot)
     │   └── bossKills.js             # Boss kill counts by group
     ├── services/
     │   ├── runescape.js             # fetchHiscores · fetchRuneMetrics · calcCombatLevel
-    │   ├── activitySync.js          # Auto-detect drops · diaries · boss kills · level milestones from feed
+    │   ├── activitySync.js          # Auto-detect drops · area tasks · boss kills · level milestones from feed
     │   └── discord.js               # Webhook sender + embed builders for all notification types
     └── utils/
         └── auth.js                  # SHA-256 hashing · checkGroupAuth middleware
@@ -296,7 +297,7 @@ node server/scripts/createAdmin.js <username> <password>
 | `goal_contributors` | Many-to-many: goals ↔ players |
 | `drops` | Drop log (auto-detected + manual) |
 | `item_requests` | Item wish-list per player |
-| `achievements` | Diary completion per player (region + tier key, timestamp, manual flag) |
+| `achievements` | Area task completion per player (region + tier key, timestamp, manual flag); category id remains `diary` internally for backwards compatibility |
 | `boss_kills` | Accumulated kill counts per player from activity feed |
 | `boss_kill_log` | Dedup log — one row per processed activity, prevents double-counting |
 | `equipment_loadouts` | Gear slot entries (player × combat style × slot, item name, confirmed flag) |
@@ -490,6 +491,15 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.5 — August 2026
+- 🧭 **Data accuracy pass** — the Goal Browser (`goalSuggestions.js`) was largely written against OSRS conventions and knowledge; every quest, boss, and diary entry has now been re-verified against runescape.wiki for RS3-correctness. Highlights:
+  - **Achievement Diaries → Area Tasks** — RS3 renamed Achievement Diaries to the Task system years ago; the feature is now labelled Area Tasks throughout the UI. The old "Western Provinces" diary set (an OSRS-only region) was removed and replaced with the two real RS3 sets, Daemonheim and Underworld, for 13 total area task sets. Lumbridge & Draynor correctly uses Beginner / Easy / Medium / Hard instead of Easy / Medium / Hard / Elite, with a footnote in the Area Tasks grid explaining the exception
+  - **41 boss entries corrected** — removed fabricated requirements (fake `Combat:` level gates, invented Prayer/Slayer thresholds, wrong quest names) and fixed drop tables/tiers to match current RS3 wiki data (e.g. Zamorak's Steam battlestaff T70→T30, Solak's real unique drops, Glacor boots T80→T85, several drops removed that were patched out of the game)
+  - **Quest requirement corrections** across dozens of quest-series goals (skill levels, quest-point gates removed post-2024 Quest Requirement Cleanup, prerequisite chains)
+- ⚖️ **Combat level formula fixed** — was using the pre-Necromancy formula (1.5× Ranged/Magic multiplier, no Necromancy weighting); now matches the current wiki formula `floor((1.3 × max(Att+Str, 2×Magic, 2×Ranged, 2×Necromancy) + Def + Con + ⌊Prayer/2⌋ + ⌊Summoning/2⌋) / 4)`. Recalculates automatically on every player sync
+- 👥 **Roster management** — claimed groups can now add/remove members directly from Overview regardless of group type; ranked groups get a **↻ Refresh Roster** button that re-fetches the current member list from RS3 hiscores and auto-applies joins/leaves
+- 🖱️ **Remove-player button relocated** — the ✕ remove control on member cards now sits alongside ↻ sync and ✎ edit instead of its own spot
 
 ### v1.9.4 — May 2026
 - 🔀 **Skills + Gains merged** — the separate "Gains" tab has been folded into the Skills tab. Day / Week / Month / Year period pills now sit in the top-right of the Skills view; level-up gains (green **+N**) appear inline on each skill row and the Total Level row for the selected period. Spotlight filter and leaderboard banner work alongside gains as before.
