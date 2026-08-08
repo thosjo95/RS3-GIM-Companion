@@ -192,7 +192,7 @@ export const GOAL_SUGGESTIONS = [
     category: 'quest_series',
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/Cabin_Fever',
-    requirements: { skills: { Agility: 42, Crafting: 45, Smithing: 50, Ranged: 40 }, quests: ['Pirate\'s Treasure', 'Rum Deal', 'Priest in Peril'], qp: 100 },
+    requirements: { skills: { Agility: 42, Crafting: 45, Smithing: 50, Ranged: 40 }, quests: ['Pirate\'s Treasure', 'Rum Deal'], qp: 0 },
     unlocks: ['Mos Le\'Harmless access', 'Cave Horrors (Black mask source)', 'Black mask → Slayer helmet chain'],
   },
   {
@@ -203,7 +203,7 @@ export const GOAL_SUGGESTIONS = [
     category: 'quest_series',
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/Dragon_Slayer',
-    requirements: { skills: {}, quests: [], qp: 32 },
+    requirements: { skills: {}, quests: [], qp: 33 },
     unlocks: ['Rune platebody (best-in-slot F2P chest piece)', 'Antidragon shield', 'Access to Crandor island'],
   },
   {
@@ -341,7 +341,7 @@ export const GOAL_SUGGESTIONS = [
     wikiUrl: 'https://runescape.wiki/w/Desert_Treasure',
     requirements: {
       skills: { Magic: 50, Thieving: 53, Firemaking: 50, Slayer: 10 },
-      quests: ['The Dig Site', 'Temple of Ikov', 'The Tourist Trap', 'Priest in Peril', 'Waterfall Quest', 'Biohazard'],
+      quests: ['The Dig Site', 'Troll Stronghold', 'Death Plateau', 'Priest in Peril'],
       qp: 0,
     },
     unlocks: ['Ancient Magicks spellbook', 'Ice/Blood/Shadow/Smoke Barrage'],
@@ -411,7 +411,7 @@ export const GOAL_SUGGESTIONS = [
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/The_Fremennik_Isles',
     requirements: {
-      skills: { Construction: 20, Woodcutting: 56 },
+      skills: { Agility: 40, Construction: 20, Crafting: 46, Woodcutting: 56 },
       quests: ['The Fremennik Trials'],
       qp: 0,
     },
@@ -456,9 +456,9 @@ export const GOAL_SUGGESTIONS = [
     priority: 'medium',
     wikiUrl: 'https://runescape.wiki/w/Heroes%27_Quest',
     requirements: {
-      skills: { Cooking: 53, Fishing: 53, Herblore: 25, Mining: 50, Smithing: 50 },
-      quests: ['Shield of Arrav', 'Lost City', "Merlin's Crystal", 'Dragon Slayer'],
-      qp: 55,
+      skills: { Cooking: 53, Fishing: 53, Herblore: 25, Mining: 50 },
+      quests: ['Shield of Arrav', 'Dragon Slayer'],
+      qp: 56,
     },
     unlocks: ["Heroes' Guild", 'Dragon battleaxe', 'Brimhaven Dungeon'],
   },
@@ -471,7 +471,7 @@ export const GOAL_SUGGESTIONS = [
     priority: 'medium',
     wikiUrl: 'https://runescape.wiki/w/Legends%27_Quest',
     requirements: {
-      skills: { Agility: 50, Crafting: 50, Herblore: 45, Magic: 56, Mining: 52, Prayer: 42, Smithing: 52, Strength: 50, Thieving: 50, Woodcutting: 50 },
+      skills: { Agility: 50, Crafting: 50, Herblore: 45, Magic: 56, Mining: 52, Prayer: 42, Smithing: 50, Strength: 50, Thieving: 50, Woodcutting: 50 },
       quests: ['Family Crest', "Heroes' Quest", 'Shilo Village', 'Underground Pass', 'Waterfall Quest'],
       qp: 107,
     },
@@ -576,7 +576,7 @@ export const GOAL_SUGGESTIONS = [
     priority: 'medium',
     wikiUrl: 'https://runescape.wiki/w/Enakhra%27s_Lament',
     requirements: {
-      skills: { Crafting: 50, Firemaking: 45, Magic: 39, Prayer: 43 },
+      skills: { Crafting: 50, Firemaking: 45, Magic: 13 },
       quests: [],
       qp: 0,
     },
@@ -622,8 +622,8 @@ export const GOAL_SUGGESTIONS = [
     wikiUrl: 'https://runescape.wiki/w/Swan_Song',
     requirements: {
       skills: { Magic: 66, Cooking: 62, Fishing: 62, Smithing: 45, Firemaking: 42, Crafting: 40 },
-      quests: ['One Small Favour', "Hero's Welcome"],
-      qp: 100,
+      quests: [],
+      qp: 0,
     },
     unlocks: ['Piscatoris Fishing Colony (Monkfish)', 'Western Provinces Diary access', 'Void Knight rewards via Pest Control'],
   },
@@ -636,9 +636,9 @@ export const GOAL_SUGGESTIONS = [
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/Recipe_for_Disaster',
     requirements: {
-      skills: { Cooking: 70, Farming: 53, Fishing: 53, Firemaking: 50, Magic: 59, Crafting: 40, Agility: 48, Smithing: 40, Ranged: 40, Herblore: 25, Thieving: 50, Woodcutting: 36, Mining: 30 },
-      quests: ['Cook\'s Assistant', 'Goblin Diplomacy', 'Fishing Contest', 'Biohazard', 'Gertrude\'s Cat', 'Shadow of the Storm', "Heroes' Quest", "Legends' Quest", 'Big Chompy Bird Hunting', 'Freeing the Lumbridge Guide'],
-      qp: 175,
+      skills: { Cooking: 70, Agility: 48, Firemaking: 20 },
+      quests: ["Cook's Assistant", 'Goblin Diplomacy', 'Fishing Contest', 'Big Chompy Bird Hunting', "Gertrude's Cat", 'Shadow of the Storm', 'Desert Treasure', 'Horror from the Deep', 'Lost City', 'Monkey Madness', "Legends' Quest"],
+      qp: 176,
     },
     unlocks: ['Dragon gloves (BiS mid-game melee gloves)', 'Barrows gloves (all-style BiS, final boss)', 'Culinaromancer\'s Chest (tiered gloves upgrades)'],
   },
@@ -830,9 +830,9 @@ export const GOAL_SUGGESTIONS = [
     priority: 'high',
     wikiUrl: 'https://runescape.wiki/w/While_Guthix_Sleeps',
     requirements: {
-      skills: { Agility: 65, Farming: 65, Herblore: 65, Hunter: 55, Magic: 75, Thieving: 60 },
-      quests: ['The Temple at Senntisten', 'The Slug Menace', "Swan Song", "Summer's End"],
-      qp: 175,
+      skills: { Agility: 25, Defence: 40, Farming: 65, Herblore: 65, Hunter: 55, Magic: 75, Summoning: 23, Thieving: 60 },
+      quests: ['Defender of Varrock', 'Dream Mentor', 'Shilo Village', 'Temple of Ikov', "Legends' Quest", 'The Path of Glouphrie', 'Tears of Guthix', 'Wanted!'],
+      qp: 0,
     },
     unlocks: ['Tormented Demons (Dragon Claws, Dragon Limbs, Dragon Platebody parts)', 'Elite Black Armour set', "Dagon'hai Robes (T60 Magic)", '400,000 XP (4×100k lamps, any skill 65+)', 'Black Knights\' Catacombs access'],
   },
