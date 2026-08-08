@@ -242,22 +242,6 @@ function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, c
           }}>⚠</div>
       )}
 
-      {/* Remove player button — unranked groups only */}
-      {onRemove && (
-        <button
-          title={`Remove ${player.rsn} from group`}
-          onClick={e => { e.stopPropagation(); onRemove(player); }}
-          style={{
-            position: 'absolute', top: 4, left: 4,
-            background: 'rgba(192,64,64,0.18)',
-            border: '1px solid rgba(192,64,64,0.4)',
-            borderRadius: 4, cursor: 'pointer',
-            fontSize: 10, fontWeight: 700,
-            color: 'var(--red-bright)',
-            padding: '1px 5px', lineHeight: 1,
-          }}>✕</button>
-      )}
-
       <div style={{
         width: 40, height: 40, borderRadius: '50%', background: color,
         overflow: 'hidden', marginBottom: 10, flexShrink: 0,
@@ -348,6 +332,16 @@ function MemberCard({ player, active, color, onClick, isMe, onEditRsn, onSync, c
                 fontSize: 13, color: hasSyncError ? 'var(--red-bright)' : 'var(--text-dim)',
                 padding: '2px 4px', borderRadius: 4, lineHeight: 1,
               }}>✎</button>
+          )}
+          {onRemove && (
+            <button
+              title={`Remove ${player.rsn} from group`}
+              onClick={e => { e.stopPropagation(); onRemove(player); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 13, color: 'var(--red-bright)',
+                padding: '2px 4px', borderRadius: 4, lineHeight: 1,
+              }}>✕</button>
           )}
         </div>
       )}
