@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.5-4caf50?style=flat-square" alt="v1.9.5"/>
+    <img src="https://img.shields.io/badge/version-1.9.6-4caf50?style=flat-square" alt="v1.9.6"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -491,6 +491,19 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.6 — August 2026
+- 🔒 **Security hardening pass** — full audit of the auth model, SQL construction, and request handling:
+  - Fixed an SSRF vector: the Discord webhook URL was accepted from any group-authenticated client with no validation, and the server fetched it directly (save/test/notify), echoing back the response on failure. Now validated against Discord's real webhook URL pattern at save time and every send site
+  - Sync endpoints (`POST /players/:id/sync`, `/players/sync-all/:groupId`, `/players/sync-activities/:groupId`) are intentionally open to any viewer (so guests can refresh a public group) but had no rate limiting — a script could hammer Jagex's hiscores/RuneMetrics APIs through the server on demand. Added per-IP rate limits there, on group lookup/search/refresh-roster, and on the wiki item-search proxy, plus a generous global `/api` limit
+  - Express never set `trust proxy`, so behind Nginx every request's IP resolved to the proxy hop — silently breaking all existing per-IP rate limiting, including the admin login lockout. Fixed
+  - Removed `GET /api/groups/lookup-debug`, an unauthenticated leftover diagnostic route unused by the app
+  - Group secrets now generated with a real CSPRNG (`crypto.randomInt`) instead of `Math.random()`; group password hashing upgraded from unsalted single-round SHA-256 to salted PBKDF2, with existing claimed groups transparently upgraded in place on next login — no one loses access
+  - Admin submission-approval SQL now allowlists column names per table (table names already were)
+  - Fixed an unrelated bug found in the process: `POST /groups/:id/share-snapshot` always 404'd due to a middleware argument mixup
+- ⚡ **LCP fix from Cloudflare Web Vitals report** — the setup-screen logo (`logo-banner.png`) was a 1.18MB, 1807×870 PNG displayed at 480px wide, and was the site's Largest Contentful Paint element at ~3.5s average (35% of page loads landing in "Needs Improvement"/"Poor"). Recompressed to 960px/110KB (~90% smaller, same visual quality) with explicit width/height and `fetchPriority="high"` on the above-the-fold instances
+- ⚖️ **Combat level formula fixed** — was using the pre-Necromancy formula (1.5× Ranged/Magic multiplier, no Necromancy weighting); now matches the current wiki formula and recalculates automatically on every player sync
+- 📜 **Goal Browser hides completed quests** — quest suggestions now also disappear once a player's real RuneMetrics quest data shows them as completed in-game, not just when a matching Goal was explicitly added and marked done; a "✓ N quests already completed" toggle reveals them again
 
 ### v1.9.5 — August 2026
 - 🧭 **Data accuracy pass** — the Goal Browser (`goalSuggestions.js`) was largely written against OSRS conventions and knowledge; every quest, boss, and diary entry has now been re-verified against runescape.wiki for RS3-correctness. Highlights:
