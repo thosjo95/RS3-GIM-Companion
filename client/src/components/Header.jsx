@@ -59,7 +59,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         </button>
       )}
       <div className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" style={{ height: 34, width: 'auto', flexShrink: 0 }} />
+        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" width={960} height={462} loading="eager" style={{ height: 34, width: 'auto', flexShrink: 0 }} />
         {group && <span style={{ fontWeight: 400, opacity: 0.6, fontSize: 13 }}>— {group.name}</span>}
       </div>
       <div className="header-right">
