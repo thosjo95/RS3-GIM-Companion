@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.4</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.6</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9.4 documentation</div>
+        <div class="sidebar-version">v1.9.6 documentation</div>
       </div>
     </div>
 
@@ -276,7 +276,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.4</span>
+          <span class="badge badge-green">v1.9.6</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -946,7 +946,38 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.4 — May 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.6 — August 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Security hardening pass</strong> — full audit of the auth model, SQL construction, and request handling:
+        <ul>
+          <li>Fixed an SSRF vector: the Discord webhook URL was accepted from any group-authenticated client with no validation, and the server fetched it directly (save/test/notify), echoing back the response on failure. Now validated against Discord's real webhook URL pattern at save time and every send site</li>
+          <li>Sync endpoints (<code>POST /players/:id/sync</code>, <code>/players/sync-all/:groupId</code>, <code>/players/sync-activities/:groupId</code>) are intentionally open to any viewer (so guests can refresh a public group) but had no rate limiting — a script could hammer Jagex's hiscores/RuneMetrics APIs through the server on demand. Added per-IP rate limits there, on group lookup/search/refresh-roster, and on the wiki item-search proxy, plus a generous global <code>/api</code> limit</li>
+          <li>Express never set <code>trust proxy</code>, so behind Nginx every request's IP resolved to the proxy hop — silently breaking all existing per-IP rate limiting, including the admin login lockout. Fixed</li>
+          <li>Removed <code>GET /api/groups/lookup-debug</code>, an unauthenticated leftover diagnostic route unused by the app</li>
+          <li>Group secrets now generated with a real CSPRNG (<code>crypto.randomInt</code>) instead of <code>Math.random()</code>; group password hashing upgraded from unsalted single-round SHA-256 to salted PBKDF2, with existing claimed groups transparently upgraded in place on next login — no one loses access</li>
+          <li>Admin submission-approval SQL now allowlists column names per table (table names already were)</li>
+          <li>Fixed an unrelated bug found in the process: <code>POST /groups/:id/share-snapshot</code> always 404'd due to a middleware argument mixup</li>
+        </ul>
+      </li>
+      <li><strong>LCP fix from a Cloudflare Web Vitals report</strong> — the setup-screen logo (<code>logo-banner.png</code>) was a 1.18MB, 1807×870 PNG displayed at 480px wide, and was the site's Largest Contentful Paint element at ~3.5s average (35% of page loads landing in "Needs Improvement"/"Poor"). Recompressed to 960px/110KB (~90% smaller, same visual quality) with explicit width/height and <code>fetchPriority="high"</code> on the above-the-fold instances</li>
+      <li><strong>Combat level formula fixed</strong> — was using the pre-Necromancy formula (1.5× Ranged/Magic multiplier, no Necromancy weighting); now matches the current wiki formula and recalculates automatically on every player sync</li>
+      <li><strong>Goal Browser hides completed quests</strong> — quest suggestions now also disappear once a player's real RuneMetrics quest data shows them as completed in-game, not just when a matching Goal was explicitly added and marked done; a "✓ N quests already completed" toggle reveals them again</li>
+    </ul>
+
+    <h3>v1.9.5 — August 2026</h3>
+    <ul>
+      <li><strong>Data accuracy pass</strong> — the Goal Browser was largely written against OSRS conventions and knowledge; every quest, boss, and diary entry re-verified against runescape.wiki for RS3-correctness:
+        <ul>
+          <li><strong>Achievement Diaries → Area Tasks</strong> — RS3 renamed Achievement Diaries to the Task system years ago; the feature is now labelled Area Tasks throughout. The old "Western Provinces" diary set (an OSRS-only region) was removed and replaced with the two real RS3 sets, Daemonheim and Underworld, for 13 total area task sets. Lumbridge & Draynor correctly uses Beginner / Easy / Medium / Hard instead of Easy / Medium / Hard / Elite</li>
+          <li><strong>41 boss entries corrected</strong> — removed fabricated requirements (fake <code>Combat:</code> level gates, invented Prayer/Slayer thresholds, wrong quest names) and fixed drop tables/tiers to match current RS3 wiki data</li>
+          <li><strong>Quest requirement corrections</strong> across dozens of quest-series goals (skill levels, quest-point gates removed post-2024 Quest Requirement Cleanup, prerequisite chains)</li>
+        </ul>
+      </li>
+      <li><strong>Roster management</strong> — claimed groups can now add/remove members directly from Overview regardless of group type; ranked groups get a <strong>↻ Refresh Roster</strong> button that re-fetches the current member list from RS3 hiscores and auto-applies joins/leaves</li>
+      <li><strong>Remove-player button relocated</strong> — the ✕ remove control on member cards now sits alongside ↻ sync and ✎ edit instead of its own spot</li>
+    </ul>
+
+    <h3>v1.9.4 — May 2026</h3>
     <ul>
       <li><strong>Skills + Gains merged</strong> — the separate Gains tab has been folded into the Skills tab. Day / Week / Month / Year period pills now sit in the top-right of the Skills view; level-up gains (green <strong>+N</strong>) appear inline on each skill row and the Total Level row for the selected period. The skill spotlight filter and leaderboard banner work alongside gains as before.</li>
     </ul>
@@ -1088,7 +1119,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.4 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.6 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
