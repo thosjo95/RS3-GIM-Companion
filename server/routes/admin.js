@@ -9,6 +9,21 @@ const {
 } = require('../utils/adminAuth');
 const { sanitizeRSN } = require('../services/runescape');
 
+// Column allowlist per RS3 reference table — the table name is already checked
+// against ALLOWED_TABLES before being interpolated into SQL, but the column
+// list for INSERT/UPDATE in the approve-submission flow below comes straight
+// from admin-submitted JSON keys, so it needs its own allowlist too (identifiers
+// can't be parameterised with `?`, unlike values).
+const TABLE_COLUMNS = {
+  rs3_bosses:            ['id', 'name', 'difficulty', 'min_combat_level', 'requirements', 'drops', 'wiki_url', 'last_verified_at', 'icon_url'],
+  rs3_quests:            ['id', 'name', 'series', 'members_only', 'quest_points', 'requirements', 'rewards', 'wiki_url', 'last_verified_at'],
+  rs3_gear_items:        ['id', 'name', 'tier', 'style', 'slot', 'is_power_armour', 'stats', 'acquisition_source', 'source_id', 'wiki_url', 'last_verified_at', 'icon_url', 'requirements_json', 'quest', 'untradeable'],
+  rs3_gear_paths:        ['id', 'style', 'slot', 'progression', 'last_updated_at'],
+  rs3_milestone_items:   ['id', 'name', 'category', 'tier_impact', 'why_important', 'how_to_obtain', 'gim_notes', 'wiki_url', 'last_verified_at', 'icon_url'],
+  rs3_slayer_creatures:  ['id', 'name', 'slayer_level_req', 'combat_level', 'location', 'notable_drops', 'is_boss', 'wiki_url', 'icon_url'],
+  rs3_skill_milestones:  ['id', 'skill', 'level', 'description', 'unlock_type', 'wiki_url'],
+};
+
 // Helpers for wiki scan
 function normalizeForDiff(s) {
   return (s ?? '').toLowerCase()
@@ -128,6 +143,11 @@ router.post('/submissions/:id/approve', requireAdmin, (req, res) => {
 
   const ALLOWED_TABLES = ['rs3_bosses','rs3_quests','rs3_gear_items','rs3_gear_paths','rs3_milestone_items','rs3_slayer_creatures','rs3_skill_milestones'];
   if (!ALLOWED_TABLES.includes(sub.table_name)) return res.status(400).json({ error: 'Unknown table' });
+
+  const allowedCols = TABLE_COLUMNS[sub.table_name];
+  const requestedCols = Object.keys(data).filter(k => sub.action !== 'update' || k !== 'id');
+  const badCols = requestedCols.filter(c => !allowedCols.includes(c));
+  if (badCols.length) return res.status(400).json({ error: `Unknown column(s) for ${sub.table_name}: ${badCols.join(', ')}` });
 
   try {
     db.runTransaction(() => {
@@ -288,7 +308,7 @@ router.post('/maintenance/reset-secret', requireAdmin, (req, res) => {
   const gid = Number(group_id);
   const group = db.prepare('SELECT id, name FROM groups WHERE id = ?').get(gid);
   if (!group) return res.status(404).json({ error: `Group ${gid} not found` });
-  db.prepare('UPDATE groups SET password_hash = NULL WHERE id = ?').run(gid);
+  db.prepare('UPDATE groups SET password_hash = NULL, password_salt = NULL WHERE id = ?').run(gid);
   res.json({ success: true, message: `Secret cleared for "${group.name}" (id ${gid}). They can now re-claim.` });
 });
 

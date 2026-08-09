@@ -35,7 +35,22 @@ function groupFooter(groupId) {
   return { text: `${g?.name ?? 'Group'} · RS3 GIM Companion` };
 }
 
+// Only real Discord webhook URLs are ever allowed to be fetched server-side.
+// Without this, a group's webhook URL (settable by anyone with that group's
+// write access) could be pointed at an internal/private address and used as
+// an SSRF probe — the save/test endpoints echo response status/body back to
+// the caller on failure, which would otherwise leak whatever comes back.
+const DISCORD_WEBHOOK_RE = /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[\w-]+$/;
+
+function isValidDiscordWebhookUrl(url) {
+  return typeof url === 'string' && DISCORD_WEBHOOK_RE.test(url);
+}
+
 async function sendEmbed(webhookUrl, embed) {
+  if (!isValidDiscordWebhookUrl(webhookUrl)) {
+    console.error(`[webhook] Refused to send — not a valid Discord webhook URL`);
+    return;
+  }
   try {
     const res = await fetch(webhookUrl, {
       method: 'POST',
@@ -129,6 +144,9 @@ function notifyGoalCompleted(groupId, goalTitle, contributorRsns = []) {
 }
 
 async function sendTestWebhook(webhookUrl, groupName) {
+  if (!isValidDiscordWebhookUrl(webhookUrl)) {
+    throw new Error('That doesn\'t look like a Discord webhook URL. It should look like https://discord.com/api/webhooks/…');
+  }
   await sendEmbed(webhookUrl, {
     title: '✅ Webhook Connected!',
     description: `**${groupName}** is now linked to RS3 GIM Companion.\nNotifications will appear here for the events you've enabled.`,
@@ -149,5 +167,6 @@ module.exports = {
   notifyGoalCompleted,
   sendTestWebhook,
   getWebhookConfig,
+  isValidDiscordWebhookUrl,
   DEFAULT_EVENTS,
 };

@@ -294,6 +294,10 @@ try { db.exec('ALTER TABLE rs3_gear_items ADD COLUMN quest TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_type TEXT DEFAULT \'regular\''); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN gim_size INTEGER DEFAULT 5'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN password_hash TEXT'); } catch {}
+// PBKDF2 salt for the group secret. NULL means the row still has a legacy
+// unsalted-SHA256 hash — checkGroupAuth transparently upgrades it to PBKDF2
+// (and fills this in) the next time that group's password is verified.
+try { db.exec('ALTER TABLE groups ADD COLUMN password_salt TEXT'); } catch {}
 try { db.exec('ALTER TABLE groups ADD COLUMN last_activity DATETIME'); } catch {}
 try { db.exec('ALTER TABLE players ADD COLUMN stats_json TEXT'); } catch {}
 try { db.exec('ALTER TABLE players ADD COLUMN activities_json TEXT'); } catch {}

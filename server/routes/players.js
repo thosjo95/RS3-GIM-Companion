@@ -5,6 +5,16 @@ const { fetchHiscores, fetchRuneMetrics, fetchPlayerQuests, calcCombatLevel, san
 const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 const { notifyGoalCompleted } = require('../services/discord');
+const { createRateLimiter } = require('../utils/rateLimit');
+
+// Sync endpoints fan out to Jagex's hiscores/RuneMetrics APIs and are intentionally
+// open to any viewer (not just canWrite) so guests can refresh a public group.
+// That openness plus no throttling would let a script hammer Jagex through this
+// server on demand — tight per-IP limits keep it usable without enabling abuse.
+const syncOneLimiter = createRateLimiter({ windowMs: 60_000, max: 20,
+  message: 'Too many sync requests. Try again in a moment.' });
+const syncAllLimiter = createRateLimiter({ windowMs: 60_000, max: 5,
+  message: 'Too many group sync requests. Try again in a moment.' });
 
 // Auto-complete any skill-type goals whose target level has been reached.
 // skillsMap = { SkillName: { level, xp, rank }, ... } (from fetchHiscores)
@@ -171,7 +181,7 @@ router.delete('/:id', (req, res) => {
 // POST /api/players/:id/sync - pull hiscores only (no auth — RS3 data is public)
 // RuneMetrics (activity feed) is fetched separately by the 6-hour background cron
 // to avoid Jagex rate-limits when many groups sync simultaneously.
-router.post('/:id/sync', async (req, res) => {
+router.post('/:id/sync', syncOneLimiter, async (req, res) => {
   const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
   if (!player) return res.status(404).json({ error: 'Player not found' });
 
@@ -279,7 +289,7 @@ router.post('/:id/sync', async (req, res) => {
 
 // POST /api/players/sync-all - hiscores only (no auth — RS3 data is public)
 // RuneMetrics (activity feed) is fetched separately by the 6-hour background cron.
-router.post('/sync-all/:groupId', async (req, res) => {
+router.post('/sync-all/:groupId', syncAllLimiter, async (req, res) => {
   const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(req.params.groupId);
   const results = [];
 
@@ -388,7 +398,7 @@ const BATCH_SIZE       = 10;
 const WITHIN_BATCH_MS  = 1000;
 const BETWEEN_BATCH_MS = 60000;
 
-router.post('/sync-activities/:groupId', async (req, res) => {
+router.post('/sync-activities/:groupId', syncAllLimiter, async (req, res) => {
   const players = db.prepare('SELECT * FROM players WHERE group_id = ?').all(req.params.groupId);
   const results = [];
 

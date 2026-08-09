@@ -6,8 +6,19 @@ const db      = require('./database');
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
+// Server sits behind Nginx (and Cloudflare in front of that) — without this,
+// req.ip resolves to the Nginx hop for every request, which silently breaks
+// all per-IP rate limiting (including the existing admin login lockout).
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
+
+const { createRateLimiter } = require('./utils/rateLimit');
+
+// Global safety net — generous, just to blunt a runaway script.
+// Individual routes below add tighter limits on expensive/external-fanout endpoints.
+app.use('/api', createRateLimiter({ windowMs: 60_000, max: 300 }));
 
 app.use('/api/groups',       require('./routes/groups'));
 app.use('/api/players',      require('./routes/players'));

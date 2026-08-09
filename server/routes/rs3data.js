@@ -1,6 +1,9 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
+const { createRateLimiter } = require('../utils/rateLimit');
+
+const wikiSearchLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
 
 // Helper: parse JSON fields from DB rows
 function parseRow(row, jsonFields) {
@@ -213,7 +216,7 @@ router.get('/suggestions', (req, res) => {
 });
 
 // GET /api/rs3/item-search?q=QUERY — proxy to RS3 wiki opensearch (items only)
-router.get('/item-search', async (req, res) => {
+router.get('/item-search', wikiSearchLimiter, async (req, res) => {
   const q = (req.query.q || '').trim();
   if (!q || q.length < 2) return res.json([]);
   try {

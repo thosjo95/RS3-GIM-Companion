@@ -1,9 +1,14 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const db = require('../database');
 const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
-const { hashPassword, checkGroupAuth } = require('../utils/auth');
-const { sendTestWebhook, DEFAULT_EVENTS } = require('../services/discord');
+const { hashPassword, verifyGroupPassword, checkGroupAuth } = require('../utils/auth');
+const { sendTestWebhook, isValidDiscordWebhookUrl, DEFAULT_EVENTS } = require('../services/discord');
+const { createRateLimiter } = require('../utils/rateLimit');
+
+// Lookup/refresh fan out to RS3 hiscores; keep them usable but not hammer-able.
+const lookupLimiter = createRateLimiter({ windowMs: 60_000, max: 15 });
 
 function fmtXp(n) {
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -11,67 +16,6 @@ function fmtXp(n) {
   if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
   return String(n ?? 0);
 }
-
-// GET /api/groups/lookup-debug — fetches the GIM hiscores JS bundle to find the real data API
-router.get('/lookup-debug', async (req, res) => {
-  const { name = 'plink', type = 'competitive', size = '2' } = req.query;
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Accept': '*/*',
-    'Cache-Control': 'no-cache',
-  };
-
-  try {
-    // 1. Get the hiscores page to find the route-specific JS chunk URL
-    const pageResp = await fetch(
-      `https://rs.runescape.com/hiscores/group-ironman/${type}/${size}/${encodeURIComponent(name)}`,
-      { headers, signal: AbortSignal.timeout(15000) }
-    );
-    const html = await pageResp.text();
-
-    // Extract chunk URLs from the RSC payload (the route-specific chunk is most likely to have the fetch call)
-    const chunkUrls = [...new Set([...html.matchAll(/["']\/community-app\/_next\/static\/chunks\/([^"']+\.js)["']/g)].map(m => `/community-app/_next/static/chunks/${m[1]}`))];
-
-    // 2. Try candidate direct API endpoints first
-    const candidates = [
-      `https://rs.runescape.com/community-app/api/hiscores/gim/${type}/${size}/${encodeURIComponent(name)}`,
-      `https://rs.runescape.com/api/hiscores/gim/${type}/${size}/${encodeURIComponent(name)}`,
-      `https://secure.runescape.com/m=hiscore/gimhiscores.json?group=${encodeURIComponent(name)}&type=${type}&size=${size}`,
-      `https://apps.runescape.com/runemetrics/gim/group?name=${encodeURIComponent(name)}&type=${type}&size=${size}`,
-    ];
-
-    const apiResults = {};
-    for (const url of candidates) {
-      try {
-        const r = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
-        apiResults[url] = { status: r.status, body: (await r.text()).slice(0, 300) };
-      } catch (e) {
-        apiResults[url] = { error: e.message };
-      }
-    }
-
-    // 3. Fetch the first two chunk JS files and search them for fetch calls and API URL patterns
-    const chunkFindings = [];
-    for (const chunkPath of chunkUrls.slice(0, 5)) {
-      try {
-        const cr = await fetch(`https://rs.runescape.com${chunkPath}`, { headers, signal: AbortSignal.timeout(8000) });
-        if (!cr.ok) continue;
-        const js = await cr.text();
-        // Look for fetch calls and interesting URL strings
-        const fetchUrls = [...js.matchAll(/fetch\(["'`]([^"'`]+)["'`]/g)].map(m => m[1]);
-        const apiStrings = [...js.matchAll(/["'`](https?:\/\/[^"'`]*(?:gim|hiscore|group)[^"'`]*)["'`]/gi)].map(m => m[1]);
-        const pathStrings = [...js.matchAll(/["'`](\/(?:api|community-app|hiscores)[^"'`]{5,80})["'`]/g)].map(m => m[1]);
-        if (fetchUrls.length || apiStrings.length || pathStrings.length) {
-          chunkFindings.push({ chunk: chunkPath, fetchUrls: fetchUrls.slice(0, 10), apiStrings: apiStrings.slice(0, 10), pathStrings: pathStrings.slice(0, 20) });
-        }
-      } catch {}
-    }
-
-    res.json({ htmlStatus: pageResp.status, chunkUrlCount: chunkUrls.length, chunkUrls: chunkUrls.slice(0, 8), apiResults, chunkFindings });
-  } catch (err) {
-    res.json({ error: err.message });
-  }
-});
 
 // GET /api/groups/search?name=X — search existing DB groups by name
 // When name is empty, returns the most recently active groups (for browse/discover)
@@ -234,7 +178,7 @@ async function scrapeGroupMembers(name, type, size) {
 
 // GET /api/groups/lookup?name=X&type=regular&size=5
 // Fetches RS3 GIM hiscores page and extracts group members
-router.get('/lookup', async (req, res) => {
+router.get('/lookup', lookupLimiter, async (req, res) => {
   const { name, type = 'regular', size = '5' } = req.query;
   if (!name?.trim()) return res.status(400).json({ error: 'Group name required' });
   if (type === 'custom') return res.status(400).json({ error: 'Custom groups cannot be looked up on hiscores. Use manual member entry.' });
@@ -249,7 +193,7 @@ router.get('/lookup', async (req, res) => {
 });
 
 // POST /api/groups/:id/refresh-roster — re-fetch member list from Jagex and apply changes (auth required)
-router.post('/:id/refresh-roster', async (req, res) => {
+router.post('/:id/refresh-roster', lookupLimiter, async (req, res) => {
   if (!checkGroupAuth(req, res, req.params.id)) return;
 
   const group = db.prepare('SELECT id, name, group_rsn, gim_type, gim_size FROM groups WHERE id = ?').get(req.params.id);
@@ -351,12 +295,12 @@ router.get('/:id', (req, res) => {
 
 // POST /api/groups/:id/verify - check password without performing a write
 router.post('/:id/verify', (req, res) => {
-  const group = db.prepare('SELECT id, password_hash FROM groups WHERE id = ?').get(req.params.id);
+  const group = db.prepare('SELECT id, password_hash, password_salt FROM groups WHERE id = ?').get(req.params.id);
   if (!group) return res.status(404).json({ error: 'Group not found' });
   if (!group.password_hash) return res.json({ ok: true });
   const password = req.headers['x-group-password'];
   if (!password) return res.status(401).json({ error: 'Password required' });
-  if (hashPassword(password) !== group.password_hash) return res.status(401).json({ error: 'Incorrect password' });
+  if (!verifyGroupPassword(password, group)) return res.status(401).json({ error: 'Incorrect password' });
   res.json({ ok: true });
 });
 
@@ -367,11 +311,12 @@ router.post('/setup', async (req, res) => {
   if (!member_rsns.length) return res.status(400).json({ error: 'At least one member RSN required' });
 
   const isDevOnly = 0;
+  const pw = password?.trim() ? hashPassword(password.trim()) : null;
 
   const groupResult = db.prepare(
-    'INSERT INTO groups (name, group_rsn, gim_type, gim_size, password_hash, last_activity, is_dev_only) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)'
+    'INSERT INTO groups (name, group_rsn, gim_type, gim_size, password_hash, password_salt, last_activity, is_dev_only) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)'
   ).run(name.trim(), name.trim(), type, size || member_rsns.length,
-    password?.trim() ? hashPassword(password.trim()) : null, isDevOnly);
+    pw?.hash ?? null, pw?.salt ?? null, isDevOnly);
 
   const groupId = groupResult.lastInsertRowid;
 
@@ -439,12 +384,15 @@ router.post('/:id/claim', (req, res) => {
   if (!group) return res.status(404).json({ error: 'Group not found' });
   if (group.password_hash) return res.status(409).json({ error: 'Group is already claimed' });
 
+  // crypto.randomInt (CSPRNG) rather than Math.random() — this secret is the
+  // sole gate on write access to the group, so it needs to be unpredictable.
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const seg = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const seg = () => Array.from({ length: 4 }, () => chars[crypto.randomInt(chars.length)]).join('');
   const secret = `${seg()}-${seg()}-${seg()}`;
 
-  db.prepare('UPDATE groups SET password_hash = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?')
-    .run(hashPassword(secret), group.id);
+  const pw = hashPassword(secret);
+  db.prepare('UPDATE groups SET password_hash = ?, password_salt = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(pw.hash, pw.salt, group.id);
 
   res.json({ ok: true, secret });
 });
@@ -487,16 +435,22 @@ router.get('/:id/webhook', (req, res) => {
 router.put('/:id/webhook', (req, res) => {
   if (!checkGroupAuth(req, res, req.params.id)) return;
   const { webhook_url, events } = req.body;
+  const url = webhook_url?.trim() || null;
+  if (url && !isValidDiscordWebhookUrl(url)) {
+    return res.status(400).json({ error: 'That doesn\'t look like a Discord webhook URL. It should look like https://discord.com/api/webhooks/…' });
+  }
   db.prepare('UPDATE groups SET discord_webhook_url = ?, webhook_events = ? WHERE id = ?')
-    .run(webhook_url?.trim() || null, JSON.stringify(events ?? DEFAULT_EVENTS), req.params.id);
+    .run(url, JSON.stringify(events ?? DEFAULT_EVENTS), req.params.id);
   res.json({ success: true });
 });
 
 // POST /api/groups/:id/share-snapshot
 // Accepts a base64 PNG and posts it as a file to the group's Discord webhook
-router.post('/:id/share-snapshot', checkGroupAuth, async (req, res) => {
+router.post('/:id/share-snapshot', async (req, res) => {
+  if (!checkGroupAuth(req, res, req.params.id)) return;
   const group = db.prepare('SELECT discord_webhook_url AS webhook_url, name FROM groups WHERE id = ?').get(req.params.id);
   if (!group?.webhook_url) return res.status(400).json({ error: 'No Discord webhook configured for this group. Set one in the notification settings.' });
+  if (!isValidDiscordWebhookUrl(group.webhook_url)) return res.status(400).json({ error: 'Stored webhook URL is invalid — please re-save it in notification settings.' });
 
   const { imageData } = req.body;
   if (!imageData) return res.status(400).json({ error: 'No image data provided' });
