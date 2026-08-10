@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.6-4caf50?style=flat-square" alt="v1.9.6"/>
+    <img src="https://img.shields.io/badge/version-1.9.7-4caf50?style=flat-square" alt="v1.9.7"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -61,9 +61,9 @@ Live at **[groupiron.com](https://groupiron.com)** — or self-host it in minute
 
 ### 🏅 Leaderboards
 - **Boss Kills** — accumulated from activity feed; boss × player matrix with filter; auto-updates on every sync
-- **Firsts** — ~40 milestone cards showing who in the group achieved each one first (quests, bosses, skill 99s, rare drops)
+- **Firsts** — milestone cards showing who in the group achieved each one first (quests, bosses, all 28 skills' 99s + all 13 true-120 skills, rare drops), each with its RS3 wiki icon; auto-detected from the activity feed, and **manually correctable** — a ✎ button (unlocked groups only) lets you set or fix who got it first and when, in case the feed missed it or a player joined after already achieving it
 - **Milestones** — full chronological feed of 99s, 120s, quest completions, boss kills
-- **Skill Mastery** — 99 and 120 breakdown per player with RS3 wiki skill icons
+- **Skill Mastery** — 99 and 120 breakdown per player with RS3 wiki skill icons; hover any skill chip to see the date it was achieved (auto-detected going forward, backfillable by hand for history predating tracking)
 - **Clue Scrolls** — hiscores leaderboard across all 5 tiers
 
 ### 🔔 Discord Notifications
@@ -491,6 +491,11 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.7 — August 2026
+- 🥇 **Manual "Firsts" overrides** — any claimed/unlocked group can now set or correct who achieved a Firsts milestone (and when), via a ✎ button on each card. Backed by a new `manual_firsts` table (`group_id` + milestone `key`); always takes precedence over the auto-detected winner, so it doubles as a correction tool if the activity-feed regex ever mismatches
+- ⭐ **Dated Skill Mastery** — hovering a 99/120 skill chip now shows the date it was achieved; new `player_skill_milestones` table is populated automatically going forward (`autoDetectLevelMilestones` previously only fired a Discord ping and persisted nothing) and is hand-correctable per skill for history that predates a group's tracking
+- 🎯 **Full skill coverage in Firsts** — the "First 99/120 X" cards were hand-authored and only covered 12/28 skills for 99 and 7/13 valid skills for 120 (missing Attack, Ranged, Magic, Thieving, Construction, and others). Now generated to cover all 28 skills for 99 and all 13 skills with a true 120 cap (verified against runescape.wiki/w/Skills), each with its RS3 wiki icon
 
 ### v1.9.6 — August 2026
 - 🔒 **Security hardening pass** — full audit of the auth model, SQL construction, and request handling:
