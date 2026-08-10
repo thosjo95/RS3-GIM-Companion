@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.7-4caf50?style=flat-square" alt="v1.9.7"/>
+    <img src="https://img.shields.io/badge/version-1.9.8-4caf50?style=flat-square" alt="v1.9.8"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -491,6 +491,9 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.8 — August 2026
+- 🧹 **Removed the Gaps tab** — the automatic skill-gap analysis tab in Group Stats has been removed entirely, along with its filter/sort controls and the setup-screen tagline mentioning it
 
 ### v1.9.7 — August 2026
 - 🥇 **Manual "Firsts" overrides** — any claimed/unlocked group can now set or correct who achieved a Firsts milestone (and when), via a ✎ button on each card. Backed by a new `manual_firsts` table (`group_id` + milestone `key`); always takes precedence over the auto-detected winner, so it doubles as a correction tool if the activity-feed regex ever mismatches

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.7</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.8</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9.7 documentation</div>
+        <div class="sidebar-version">v1.9.8 documentation</div>
       </div>
     </div>
 
@@ -276,7 +276,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.7</span>
+          <span class="badge badge-green">v1.9.8</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -946,7 +946,12 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.7 — August 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.8 — August 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Removed the Gaps tab</strong> — the automatic skill-gap analysis tab in Group Stats has been removed entirely, along with its filter/sort controls and the setup-screen tagline mentioning it</li>
+    </ul>
+
+    <h3>v1.9.7 — August 2026</h3>
     <ul>
       <li><strong>Manual "Firsts" overrides</strong> — any claimed/unlocked group can now set or correct who achieved a Firsts milestone (and when), via a ✎ button on each card. Backed by a new <code>manual_firsts</code> table (<code>group_id</code> + milestone <code>key</code>); always takes precedence over the auto-detected winner, so it doubles as a correction tool if the activity-feed regex ever mismatches</li>
       <li><strong>Dated Skill Mastery</strong> — hovering a 99/120 skill chip now shows the date it was achieved; a new <code>player_skill_milestones</code> table is populated automatically going forward (the level-milestone detector previously only fired a Discord ping and persisted nothing) and is hand-correctable per skill for history that predates a group's tracking</li>
@@ -1126,7 +1131,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.7 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.8 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
