@@ -28,6 +28,8 @@ app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/boss-kills',   require('./routes/bossKills'));
 app.use('/api/group-notes',  require('./routes/groupNotes'));
 app.use('/api/equipment',    require('./routes/equipment'));
+app.use('/api/firsts',            require('./routes/firsts'));
+app.use('/api/skill-milestones',  require('./routes/skillMilestones'));
 app.use('/api/rs3',          require('./routes/rs3data'));
 app.use('/api/admin',        require('./routes/admin'));
 

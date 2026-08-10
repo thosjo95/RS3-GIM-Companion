@@ -24,6 +24,14 @@ const ALL_SKILLS = [
   'Dungeoneering','Divination','Invention','Archaeology',
 ];
 
+// Skills with a true level-120 cap, per runescape.wiki/w/Skills. Everything else caps
+// at 99 (Defence, Constitution, Prayer, Summoning, Cooking, Agility, Hunter, Divination)
+// or 110 (Mining, Smithing, Woodcutting, Fletching, Firemaking, Runecrafting, Crafting).
+const TRUE_120_SKILLS = [
+  'Attack','Strength','Ranged','Magic','Necromancy','Herblore','Farming',
+  'Archaeology','Thieving','Slayer','Dungeoneering','Invention','Construction',
+];
+
 // ── Predefined milestone definitions ──────────────────────────────────────────
 // actMatch  : fn(combinedText) – match RuneMetrics activity text
 // dropMatch : fn(combinedText) – match drop-style activity ("I found/received a X")
@@ -299,108 +307,18 @@ const PREDEFINED_FIRSTS = [
     actMatch: t => /max cape/i.test(t),
     skillCheck: p => (p.skills?.filter(s => s.skill_name !== 'Overall' && s.level >= 99).length ?? 0) >= 29,
   },
-  // ── 99s
-  {
-    key: 'first99_attack', label: 'First 99 Attack', sub: '', cat: 'Skill', skillIcon: 'Attack',
-    actMatch: t => /maximum level in attack/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Attack')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_strength', label: 'First 99 Strength', sub: '', cat: 'Skill', skillIcon: 'Strength',
-    actMatch: t => /maximum level in strength/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Strength')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_defence', label: 'First 99 Defence', sub: '', cat: 'Skill', skillIcon: 'Defence',
-    actMatch: t => /maximum level in defence/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Defence')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_ranged', label: 'First 99 Ranged', sub: '', cat: 'Skill', skillIcon: 'Ranged',
-    actMatch: t => /maximum level in ranged/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Ranged')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_magic', label: 'First 99 Magic', sub: '', cat: 'Skill', skillIcon: 'Magic',
-    actMatch: t => /maximum level in magic/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Magic')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_prayer', label: 'First 99 Prayer', sub: '', cat: 'Skill', skillIcon: 'Prayer',
-    actMatch: t => /maximum level in prayer/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Prayer')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_slayer', label: 'First 99 Slayer', sub: '', cat: 'Skill', skillIcon: 'Slayer',
-    actMatch: t => /maximum level in slayer/i.test(t) || /level 99.*slayer/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Slayer')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_herblore', label: 'First 99 Herblore', sub: '', cat: 'Skill', skillIcon: 'Herblore',
-    actMatch: t => /maximum level in herblore/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Herblore')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_farming', label: 'First 99 Farming', sub: '', cat: 'Skill', skillIcon: 'Farming',
-    actMatch: t => /maximum level in farming/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Farming')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_summoning', label: 'First 99 Summoning', sub: '', cat: 'Skill', skillIcon: 'Summoning',
-    actMatch: t => /maximum level in summoning/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Summoning')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_archaeology', label: 'First 99 Archaeology', sub: '', cat: 'Skill', skillIcon: 'Archaeology',
-    actMatch: t => /maximum level in archaeology/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Archaeology')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_dungeoneering', label: 'First 99 Dungeoneering', sub: '', cat: 'Skill', skillIcon: 'Dungeoneering',
-    actMatch: t => /maximum level in dungeoneering/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Dungeoneering')?.level ?? 0) >= 99,
-  },
-  {
-    key: 'first99_invention', label: 'First 99 Invention', sub: '', cat: 'Skill', skillIcon: 'Invention',
-    actMatch: t => /maximum level in invention/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Invention')?.level ?? 0) >= 99,
-  },
-  // ── 120s
-  {
-    key: 'first120_slayer', label: 'First 120 Slayer', sub: 'True 120', cat: 'Skill', skillIcon: 'Slayer',
-    actMatch: t => /maximum level in slayer/i.test(t) && /120/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Slayer')?.level ?? 0) >= 120,
-  },
-  {
-    key: 'first120_dung', label: 'First 120 Dungeoneering', sub: 'True 120', cat: 'Skill', skillIcon: 'Dungeoneering',
-    actMatch: t => /maximum level in dungeoneering/i.test(t) && /120/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Dungeoneering')?.level ?? 0) >= 120,
-  },
-  {
-    key: 'first120_herblore', label: 'First 120 Herblore', sub: 'True 120', cat: 'Skill', skillIcon: 'Herblore',
-    actMatch: t => /maximum level in herblore/i.test(t) && /120/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Herblore')?.level ?? 0) >= 120,
-  },
-  {
-    key: 'first120_farming', label: 'First 120 Farming', sub: 'True 120', cat: 'Skill', skillIcon: 'Farming',
-    actMatch: t => /maximum level in farming/i.test(t) && /120/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Farming')?.level ?? 0) >= 120,
-  },
-  {
-    key: 'first120_archaeology', label: 'First 120 Archaeology', sub: 'True 120', cat: 'Skill', skillIcon: 'Archaeology',
-    actMatch: t => /maximum level in archaeology/i.test(t) && /120/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Archaeology')?.level ?? 0) >= 120,
-  },
-  {
-    key: 'first120_nec', label: 'First 120 Necromancy', sub: 'True 120', cat: 'Skill', skillIcon: 'Necromancy',
-    actMatch: t => /maximum level in necromancy/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Necromancy')?.level ?? 0) >= 120,
-  },
-  {
-    key: 'first120_invention', label: 'First 120 Invention', sub: 'True 120', cat: 'Skill', skillIcon: 'Invention',
-    actMatch: t => /maximum level in invention/i.test(t) && /120/i.test(t),
-    skillCheck: p => (p.skills?.find(s => s.skill_name === 'Invention')?.level ?? 0) >= 120,
-  },
+  // ── 99s — every skill, generated so none get left out
+  ...ALL_SKILLS.map(skill => ({
+    key: `first99_${skill.toLowerCase()}`, label: `First 99 ${skill}`, sub: '', cat: 'Skill', skillIcon: skill,
+    actMatch: t => new RegExp(`maximum level in ${skill}`, 'i').test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === skill)?.level ?? 0) >= 99,
+  })),
+  // ── 120s — only the 13 skills with a true 120 cap
+  ...TRUE_120_SKILLS.map(skill => ({
+    key: `first120_${skill.toLowerCase()}`, label: `First 120 ${skill}`, sub: 'True 120', cat: 'Skill', skillIcon: skill,
+    actMatch: t => new RegExp(`maximum level in ${skill}`, 'i').test(t) && /120/.test(t),
+    skillCheck: p => (p.skills?.find(s => s.skill_name === skill)?.level ?? 0) >= 120,
+  })),
 
   // ── Clue Scrolls — count milestones (from hiscores, date unknown) ─────────
   {
@@ -460,21 +378,54 @@ function parseRMDate(str) {
   try { return new Date(str.replace(/(\d+)-(\w+)-(\d+)/, '$2 $1 $3')).getTime(); } catch { return 0; }
 }
 
+// Manual/server-set dates come through as plain ISO ("2026-06-12" or a full
+// timestamp) rather than RuneMetrics' "12-Jun-2026" format — detect which shape
+// it is rather than guessing, since Date.parse is unreliable on the RM format.
+function anyDateToTs(str) {
+  if (!str) return 0;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const iso = Date.parse(str);
+    if (!isNaN(iso)) return iso;
+  }
+  return parseRMDate(str);
+}
+
 function fmtDate(str) {
-  if (!str) return null;
-  const t = parseRMDate(str);
+  const t = anyDateToTs(str);
   if (!t) return null;
   return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: '2-digit' });
 }
 
 // ── Firsts board ──────────────────────────────────────────────────────────────
 
-function FirstsBoard({ players, colorMap }) {
+function FirstsBoard({ players, colorMap, groupId, canWrite, onToast }) {
   const [catFilter, setCatFilter] = useState('All');
   const [showAll, setShowAll] = useState(false);
+  const [manualFirsts, setManualFirsts] = useState([]);
+  const [editingKey, setEditingKey] = useState(null); // milestone def being edited, or null
+
+  const loadManualFirsts = () => {
+    if (!groupId) return;
+    api.getManualFirsts(groupId).then(setManualFirsts).catch(() => {});
+  };
+  useEffect(loadManualFirsts, [groupId]);
+
+  const manualByKey = useMemo(() => Object.fromEntries(manualFirsts.map(m => [m.key, m])), [manualFirsts]);
+  const playersById  = useMemo(() => Object.fromEntries(players.map(p => [p.id, p])), [players]);
 
   const results = useMemo(() => {
     return PREDEFINED_FIRSTS.map(def => {
+      // A manual override always wins — it exists specifically to correct or
+      // backfill a milestone the activity-feed scan missed or got wrong.
+      const manual = manualByKey[def.key];
+      if (manual && playersById[manual.player_id]) {
+        return {
+          ...def, status: 'manual',
+          winner: { rsn: playersById[manual.player_id].rsn, playerId: manual.player_id, date: manual.achieved_at },
+          note: manual.note,
+        };
+      }
+
       const candidates = [];
 
       for (const p of players) {
@@ -548,7 +499,7 @@ function FirstsBoard({ players, colorMap }) {
 
       return { ...def, status: 'pending' };
     });
-  }, [players]);
+  }, [players, manualByKey, playersById]);
 
   const cats = ['All', 'PvM', 'Quest', 'Skill', 'Item', 'Clue'];
   const visible = results.filter(r => catFilter === 'All' || r.cat === catFilter);
@@ -580,7 +531,7 @@ function FirstsBoard({ players, colorMap }) {
             🏆 Achieved ({achieved.length})
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 6 }}>
-            {achieved.map(r => <MilestoneCard key={r.key} result={r} colorMap={colorMap} />)}
+            {achieved.map(r => <MilestoneCard key={r.key} result={r} colorMap={colorMap} canWrite={canWrite} onEdit={() => setEditingKey(r.key)} />)}
           </div>
         </div>
       )}
@@ -600,7 +551,7 @@ function FirstsBoard({ players, colorMap }) {
             )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 6 }}>
-            {(showAll ? pending : pending.slice(0, 6)).map(r => <MilestoneCard key={r.key} result={r} colorMap={colorMap} />)}
+            {(showAll ? pending : pending.slice(0, 6)).map(r => <MilestoneCard key={r.key} result={r} colorMap={colorMap} canWrite={canWrite} onEdit={() => setEditingKey(r.key)} />)}
           </div>
           {!showAll && pending.length > 6 && (
             <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
@@ -618,13 +569,25 @@ function FirstsBoard({ players, colorMap }) {
       )}
 
       <div style={{ marginTop: 16, fontSize: 10, color: 'var(--text-dim)', textAlign: 'center' }}>
-        PvM / Quest / Item firsts detected from RuneMetrics activity feed (last 50 entries per player). Skill &amp; Clue milestones use current hiscores data (date shown as unknown). Drop count milestones count across all stored activities.
+        PvM / Quest / Item firsts detected from RuneMetrics activity feed (last 50 entries per player). Skill &amp; Clue milestones use current hiscores data (date shown as unknown). Drop count milestones count across all stored activities. Any entry can be corrected or backfilled by hand — click ✎ (unlocked groups only).
       </div>
+
+      {editingKey && (
+        <ManualFirstModal
+          def={PREDEFINED_FIRSTS.find(d => d.key === editingKey)}
+          players={players}
+          existing={manualByKey[editingKey]}
+          groupId={groupId}
+          onClose={() => setEditingKey(null)}
+          onSaved={() => { loadManualFirsts(); setEditingKey(null); }}
+          onToast={onToast}
+        />
+      )}
     </div>
   );
 }
 
-function MilestoneCard({ result, colorMap }) {
+function MilestoneCard({ result, colorMap, canWrite, onEdit }) {
   const cs = CAT_STYLE[result.cat] ?? CAT_STYLE.Skill;
   const isAchieved = result.status !== 'pending';
   const isFallback = result.status === 'skill_fallback';
@@ -641,13 +604,24 @@ function MilestoneCard({ result, colorMap }) {
     }}>
       {/* Cat badge */}
       <span style={{
-        position: 'absolute', top: 8, right: 8,
+        position: 'absolute', top: 8, right: canWrite ? 26 : 8,
         fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 6,
         background: isAchieved ? cs.bg : 'rgba(255,255,255,0.04)',
         border: `1px solid ${isAchieved ? cs.border : 'var(--border)'}`,
         color: isAchieved ? cs.color : 'var(--text-dim)',
         textTransform: 'uppercase', letterSpacing: '0.4px',
       }}>{cs.badge}</span>
+
+      {/* Manual edit — set/correct who got this first, in case the activity feed missed it */}
+      {canWrite && (
+        <button onClick={onEdit} title="Manually set who got this first"
+          style={{
+            position: 'absolute', top: 6, right: 6, width: 16, height: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 11, color: 'var(--text-dim)', padding: 0, lineHeight: 1,
+          }}>✎</button>
+      )}
 
       {/* Icon + title */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, paddingRight: 40 }}>
@@ -668,10 +642,13 @@ function MilestoneCard({ result, colorMap }) {
 
       {/* Winner / holders / pending */}
       <div style={{ marginTop: 8, paddingTop: 7, borderTop: `1px solid ${isAchieved ? cs.border : 'var(--border)'}` }}>
-        {result.status === 'achieved' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {(result.status === 'achieved' || result.status === 'manual') && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }} title={result.note || undefined}>
             <span style={{ fontSize: 14 }}>🥇</span>
             <span style={{ fontSize: 12, fontWeight: 700, color: colorMap[result.winner.playerId] }}>{result.winner.rsn}</span>
+            {result.status === 'manual' && (
+              <span style={{ fontSize: 9, color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: 6, padding: '0 4px' }}>✎ manual</span>
+            )}
             {result.winner.date && (
               <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 'auto' }}>{fmtDate(result.winner.date)}</span>
             )}
@@ -688,6 +665,85 @@ function MilestoneCard({ result, colorMap }) {
         {result.status === 'pending' && (
           <span style={{ fontSize: 11, color: 'var(--text-dim)', fontStyle: 'italic' }}>Not yet achieved</span>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Manual "first" override modal ──────────────────────────────────────────────
+
+function ManualFirstModal({ def, players, existing, groupId, onClose, onSaved, onToast }) {
+  const [playerId, setPlayerId] = useState(existing?.player_id ?? players[0]?.id ?? '');
+  const [date, setDate]   = useState(existing?.achieved_at ? existing.achieved_at.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const [note, setNote]   = useState(existing?.note ?? '');
+  const [saving, setSaving] = useState(false);
+
+  if (!def) return null;
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!playerId) return onToast?.('Pick a player', 'error');
+    setSaving(true);
+    try {
+      await api.setManualFirst(groupId, def.key, { player_id: Number(playerId), achieved_at: date, note });
+      onSaved();
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function clear() {
+    setSaving(true);
+    try {
+      await api.clearManualFirst(groupId, def.key);
+      onSaved();
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400 }}>
+        <div className="modal-header">
+          <span className="modal-title">✎ Set First — {def.label}</span>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={submit}>
+          <div className="modal-body">
+            <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 0 }}>
+              Use this if the activity feed didn't catch it — e.g. it happened before the group started tracking, or the wording didn't match.
+            </p>
+            <div className="form-group">
+              <label className="form-label">Player</label>
+              <select className="form-select" value={playerId} onChange={e => setPlayerId(e.target.value)}>
+                {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date achieved</label>
+              <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Note (optional)</label>
+              <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. achieved before we started tracking" />
+            </div>
+          </div>
+          <div className="modal-footer">
+            {existing && (
+              <button type="button" className="btn btn-ghost" onClick={clear} disabled={saving}>🗑 Clear override</button>
+            )}
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '✓ Save'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -829,8 +885,27 @@ function MilestonesFeed({ players, colorMap }) {
 
 // ── Skill Mastery ─────────────────────────────────────────────────────────────
 
-function SkillMastery({ players, colorMap }) {
+function SkillMastery({ players, colorMap, groupId, canWrite, onToast }) {
   const [view, setView] = useState('99s');
+  const [milestones, setMilestones] = useState([]);
+  const [editing, setEditing] = useState(null); // { playerId, rsn, skill, level } or null
+
+  const loadMilestones = () => {
+    if (!groupId) return;
+    api.getSkillMilestones(groupId).then(setMilestones).catch(() => {});
+  };
+  useEffect(loadMilestones, [groupId]);
+
+  // dateFor[playerId][skill][level] = achieved_at
+  const dateFor = useMemo(() => {
+    const map = {};
+    for (const m of milestones) {
+      (map[m.player_id] ??= {});
+      (map[m.player_id][m.skill] ??= {});
+      map[m.player_id][m.skill][m.level] = m.achieved_at;
+    }
+    return map;
+  }, [milestones]);
 
   const rows = useMemo(() => players.map(p => {
     const skills = p.skills || [];
@@ -870,16 +945,25 @@ function SkillMastery({ players, colorMap }) {
                   {list.map(skill => {
                     const sk = p.skills?.find(s => s.skill_name === skill);
                     const is120 = sk?.level >= 120;
+                    const level = is120 ? 120 : 99;
+                    const achievedAt = dateFor[p.id]?.[skill]?.[level];
+                    const dateLabel = achievedAt ? fmtDate(achievedAt) : null;
+                    const title = `${skill} ${sk?.level}` + (dateLabel ? ` — achieved ${dateLabel}` : ' — date unknown')
+                      + (canWrite ? ' (click to set/correct date)' : '');
                     return (
-                      <span key={skill} title={`${skill} ${sk?.level}`} style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        padding: '3px 7px', borderRadius: 10, fontSize: 11,
-                        background: is120 ? 'rgba(200,168,75,0.15)' : 'rgba(255,255,255,0.05)',
-                        border: `1px solid ${is120 ? 'var(--gold-dark)' : 'var(--border)'}`,
-                        color: is120 ? 'var(--gold)' : 'var(--text)',
-                      }}>
+                      <span key={skill} title={title}
+                        onClick={canWrite ? () => setEditing({ playerId: p.id, rsn: p.rsn, skill, level, achievedAt }) : undefined}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '3px 7px', borderRadius: 10, fontSize: 11,
+                          background: is120 ? 'rgba(200,168,75,0.15)' : 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${is120 ? 'var(--gold-dark)' : 'var(--border)'}`,
+                          color: is120 ? 'var(--gold)' : 'var(--text)',
+                          cursor: canWrite ? 'pointer' : 'default',
+                        }}>
                         <img src={SKILL_ICON_URL(skill)} alt={skill} style={{ width: 14, height: 14, verticalAlign: 'middle' }} />
                         {is120 ? '★ ' : ''}{skill}
+                        {dateLabel && <span style={{ opacity: 0.65, fontSize: 10 }}>· {dateLabel}</span>}
                       </span>
                     );
                   })}
@@ -888,6 +972,80 @@ function SkillMastery({ players, colorMap }) {
           </div>
         );
       })}
+
+      {editing && (
+        <SetSkillDateModal
+          {...editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { loadMilestones(); setEditing(null); }}
+          onToast={onToast}
+        />
+      )}
+    </div>
+  );
+}
+
+function SetSkillDateModal({ playerId, rsn, skill, level, achievedAt, onClose, onSaved, onToast }) {
+  const [date, setDate] = useState(achievedAt ? achievedAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const [saving, setSaving] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.setSkillMilestone(playerId, skill, level, date);
+      onSaved();
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function clear() {
+    setSaving(true);
+    try {
+      await api.clearSkillMilestone(playerId, skill, level);
+      onSaved();
+    } catch (err) {
+      onToast?.(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 360 }}>
+        <div className="modal-header">
+          <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <img src={SKILL_ICON_URL(skill)} alt={skill} style={{ width: 16, height: 16 }} />
+            {rsn} — Level {level} {skill}
+          </span>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={submit}>
+          <div className="modal-body">
+            <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 0 }}>
+              Auto-detected from the activity feed going forward. Set this by hand to backfill a date the feed missed (e.g. reached before joining the group).
+            </p>
+            <div className="form-group">
+              <label className="form-label">Date achieved</label>
+              <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)} />
+            </div>
+          </div>
+          <div className="modal-footer">
+            {achievedAt && (
+              <button type="button" className="btn btn-ghost" onClick={clear} disabled={saving}>🗑 Clear</button>
+            )}
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '✓ Save'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -1112,7 +1270,7 @@ function ClueScrolls({ players, colorMap }) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function LeaderboardsTab({ players, groupId }) {
+export default function LeaderboardsTab({ players, groupId, canWrite, onToast }) {
   const [section, setSection] = useState('bosses');
   const colorMap = Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]]));
 
@@ -1149,11 +1307,11 @@ export default function LeaderboardsTab({ players, groupId }) {
 
       <div data-tour="leaderboards-panel" className="panel">
         <div className="panel-body">
-          {section === 'firsts'     && <FirstsBoard    players={players} colorMap={colorMap} />}
+          {section === 'firsts'     && <FirstsBoard    players={players} colorMap={colorMap} groupId={groupId} canWrite={canWrite} onToast={onToast} />}
           {section === 'milestones' && <MilestonesFeed players={players} colorMap={colorMap} />}
           {section === 'bosses'     && <BossKills      players={players} colorMap={colorMap} groupId={groupId} />}
           {section === 'clues'      && <ClueScrolls    players={players} colorMap={colorMap} />}
-          {section === 'mastery'    && <SkillMastery   players={players} colorMap={colorMap} />}
+          {section === 'mastery'    && <SkillMastery   players={players} colorMap={colorMap} groupId={groupId} canWrite={canWrite} onToast={onToast} />}
         </div>
       </div>
 

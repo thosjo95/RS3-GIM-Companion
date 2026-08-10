@@ -180,6 +180,42 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_player_activities_ts ON player_activities(player_id, ts DESC);
 `);
 
+// Manual overrides for the "Firsts" leaderboard — lets a claimed group correct
+// or backfill a milestone the RuneMetrics activity-feed scan missed or got wrong.
+// Always takes precedence over the auto-detected winner for that key when present.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS manual_firsts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id    INTEGER NOT NULL,
+    key         TEXT    NOT NULL,
+    player_id   INTEGER NOT NULL,
+    achieved_at DATETIME NOT NULL,
+    note        TEXT,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(group_id, key),
+    FOREIGN KEY (group_id)  REFERENCES groups(id)  ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+`);
+
+// Per-player dated 99/120 skill achievements. Populated automatically from the
+// RuneMetrics activity feed (autoDetectLevelMilestones in activitySync.js) and
+// correctable/backfillable by hand via the Skill Mastery UI when the feed missed it
+// (e.g. the player joined the group after already reaching the level).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS player_skill_milestones (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id   INTEGER NOT NULL,
+    skill       TEXT    NOT NULL,
+    level       INTEGER NOT NULL,
+    achieved_at DATETIME NOT NULL,
+    manual      INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(player_id, skill, level),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_player_skill_milestones_player ON player_skill_milestones(player_id);
+`);
+
 // ── RS3 reference tables ──────────────────────────────────────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS rs3_bosses (

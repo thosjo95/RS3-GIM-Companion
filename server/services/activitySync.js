@@ -10,10 +10,23 @@ const DROP_PATTERNS = [
 // Level milestone detection — only care about 99 and 120
 const LEVEL_MILESTONE_PATTERNS = [
   // "I levelled my Slayer skill, I am now level 99."
-  /I (?:levelled|leveled) my ([\w\s]+?) skill.*?(?:I am|now) (?:at )?level (\d+)/i,
+  { re: /I (?:levelled|leveled) my ([\w\s]+?) skill.*?(?:I am|now) (?:at )?level (\d+)/i,
+    extract: m => ({ skill: m[1], level: parseInt(m[2], 10) }) },
   // "I've reached level 120 in Slayer." / "I achieved level 99 in Cooking."
-  /I(?:'ve)? (?:reached|achieved) level (\d+) in ([\w\s]+)/i,
+  { re: /I(?:'ve)? (?:reached|achieved) level (\d+) in ([\w\s]+)/i,
+    extract: m => ({ skill: m[2], level: parseInt(m[1], 10) }) },
+  // "I achieved the maximum level in Thieving!" — no level in the text itself;
+  // 120 unless the true-cap wording ("120") appears elsewhere in the message, else 99.
+  { re: /I achieved the maximum level in ([\w\s]+?)!?\.?$/i,
+    extract: (m, text) => ({ skill: m[1], level: /120/.test(text) ? 120 : 99 }) },
 ];
+
+// Canonical spelling to guard against loose regex captures ("the Thieving" etc.)
+const { SKILLS } = require('./runescape');
+function canonicalSkillName(raw) {
+  const clean = (raw || '').trim().toLowerCase();
+  return SKILLS.find(s => s.toLowerCase() === clean) ?? null;
+}
 
 // RS3 renamed diaries to area tasks, and the adventurer's log has used several
 // phrasings over the years. Accept tier-first and area-first orderings.
@@ -244,27 +257,30 @@ function autoCountBossKills(playerId, activities) {
   }
 }
 
-/** Detect level 99 and 120 milestones from activity feed and fire Discord notifications */
+/**
+ * Detect level 99 and 120 milestones from the activity feed, fire a Discord
+ * notification, and persist a dated record to player_skill_milestones so the
+ * Skill Mastery UI can show "achieved on <date>" on hover. INSERT OR IGNORE
+ * means a manually-set date (or an earlier auto-detected one) is never
+ * clobbered by a later pass over the same/overlapping activity window.
+ */
 function autoDetectLevelMilestones(playerId, activities) {
   if (!activities?.length) return;
+  const insertMilestone = db.prepare(`
+    INSERT OR IGNORE INTO player_skill_milestones (player_id, skill, level, achieved_at, manual)
+    VALUES (?, ?, ?, ?, 0)
+  `);
+
   for (const act of activities) {
     const text = act.text || '';
-    for (const pattern of LEVEL_MILESTONE_PATTERNS) {
-      const m = text.match(pattern);
+    for (const { re, extract } of LEVEL_MILESTONE_PATTERNS) {
+      const m = text.match(re);
       if (!m) continue;
-      // Depending on pattern group order, skill and level are in different positions
-      let skill, level;
-      if (/reached|achieved/.test(pattern.source)) {
-        // groups: (level)(skill)
-        level = parseInt(m[1], 10);
-        skill = m[2]?.trim();
-      } else {
-        // groups: (skill)(level)
-        skill = m[1]?.trim();
-        level = parseInt(m[2], 10);
-      }
+      const { skill: rawSkill, level } = extract(m, text);
+      const skill = canonicalSkillName(rawSkill);
       if ((level === 99 || level === 120) && skill) {
         discord.notifyLevelMilestone(playerId, skill, level);
+        insertMilestone.run(playerId, skill, level, parseActivityDate(act.date));
       }
       break;
     }

@@ -94,6 +94,18 @@ export const api = {
   // Boss kills (activity-feed based)
   getBossKills: (groupId) => request(`/boss-kills?group_id=${groupId}`),
 
+  // "Firsts" leaderboard — manual overrides
+  getManualFirsts:   (groupId)        => request(`/firsts?group_id=${groupId}`),
+  setManualFirst:    (groupId, key, body) => request(`/firsts/${groupId}/${encodeURIComponent(key)}`, { method: 'PUT', body }),
+  clearManualFirst:  (groupId, key)   => request(`/firsts/${groupId}/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+
+  // Skill Mastery — dated 99/120 achievements
+  getSkillMilestones:   (groupId)                       => request(`/skill-milestones?group_id=${groupId}`),
+  setSkillMilestone:    (playerId, skill, level, achievedAt) =>
+    request(`/skill-milestones/${playerId}/${encodeURIComponent(skill)}/${level}`, { method: 'PUT', body: { achieved_at: achievedAt } }),
+  clearSkillMilestone:  (playerId, skill, level)         =>
+    request(`/skill-milestones/${playerId}/${encodeURIComponent(skill)}/${level}`, { method: 'DELETE' }),
+
   // Group notes / pinboard
   getGroupNotes:  (groupId)          => request(`/group-notes/${groupId}`),
   saveGroupNotes: (groupId, content) => request(`/group-notes/${groupId}`, { method: 'PUT', body: { content } }),
