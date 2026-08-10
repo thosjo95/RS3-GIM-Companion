@@ -849,25 +849,12 @@ function GroupStats({ players, goals, groupId }) {
     return counts;
   }, [skillLeaders, players]);
 
-  // Skills that require other skills to unlock (not unlocked via quests)
-  const SKILL_UNLOCK_REQS = {
-    Invention:     { Crafting: 80, Divination: 80, Smithing: 80 },
-    Dungeoneering: { Attack: 1, Strength: 1, Defence: 1, Magic: 1, Ranged: 1 }, // no hard reqs, placeholder
-  };
-
   // Skills tab — skill filter/spotlight
   const [skillInput, setSkillInput] = useState('');
   const filteredSkill = useMemo(
     () => SKILL_ORDER.find(s => s.toLowerCase() === skillInput.toLowerCase().trim()) ?? '',
     [skillInput],
   );
-
-  // Gaps tab filter state
-  const [gapsSkill, setGapsSkill] = useState('');       // '' = all skills
-  const [gapsLevel, setGapsLevel] = useState('');       // '' = use GOAL_SUGGESTIONS threshold
-  const [gapsSort,  setGapsSort]  = useState('affected-desc'); // 'affected-desc' | 'level-desc' | 'level-asc'
-  const GAPS_SORT_CYCLE = ['affected-desc', 'level-desc', 'level-asc'];
-  const GAPS_SORT_LABEL = { 'affected-desc': '👥 Most affected', 'level-desc': '⬆ Level: high → low', 'level-asc': '⬇ Level: low → high' };
 
   // Fetch per-skill XP gains from snapshots API
   const GAIN_PERIODS = [
@@ -890,7 +877,6 @@ function GroupStats({ players, goals, groupId }) {
 
   const TABS = [
     { id: 'skills', label: 'Skills', icon: 'https://runescape.wiki/images/Skills.png' },
-    { id: 'gaps',   label: 'Gaps',   icon: 'https://runescape.wiki/images/Magnifying_glass.png' },
     { id: 'quests', label: 'Quests', icon: 'https://runescape.wiki/images/Quest_points.png' },
   ];
 
@@ -1121,184 +1107,6 @@ function GroupStats({ players, goals, groupId }) {
           </div>
         </div>
       )}
-
-      {/* Gaps tab — automatic skill gap analysis across all quest suggestions */}
-      {tab === 'gaps' && (() => {
-        const customLevel = gapsLevel !== '' ? parseInt(gapsLevel, 10) : null;
-
-        // ── Build gap map from GOAL_SUGGESTIONS (default mode) ──────────────
-        const questSuggestions = GOAL_SUGGESTIONS.filter(s =>
-          s.requirements?.skills && Object.keys(s.requirements.skills).length > 0
-        );
-        const skillGapMap = {};
-        for (const sugg of questSuggestions) {
-          for (const [skill, need] of Object.entries(sugg.requirements.skills)) {
-            if (gapsSkill && skill !== gapsSkill) continue;
-            for (const player of players) {
-              const have = player.skills?.find(s => s.skill_name === skill)?.level ?? 1;
-              if (have < need) {
-                if (!skillGapMap[skill]) skillGapMap[skill] = { skill, maxNeed: 0, quests: new Set(), players: {} };
-                if (need > skillGapMap[skill].maxNeed) skillGapMap[skill].maxNeed = need;
-                skillGapMap[skill].quests.add(sugg.title);
-                const existing = skillGapMap[skill].players[player.rsn];
-                if (!existing || need > existing.need)
-                  skillGapMap[skill].players[player.rsn] = { rsn: player.rsn, have, need, gap: need - have };
-              }
-            }
-          }
-        }
-
-        // ── If selected skill has unlock prerequisites, inject them ──────────
-        if (gapsSkill && SKILL_UNLOCK_REQS[gapsSkill] && customLevel === null) {
-          // Clear the direct skill gap and instead show the unlock prerequisites
-          delete skillGapMap[gapsSkill];
-          for (const [prereqSkill, prereqLevel] of Object.entries(SKILL_UNLOCK_REQS[gapsSkill])) {
-            const entry = { skill: prereqSkill, maxNeed: prereqLevel, quests: new Set([`Unlock ${gapsSkill}`]), players: {} };
-            for (const player of players) {
-              const have = player.skills?.find(s => s.skill_name === prereqSkill)?.level ?? 1;
-              if (have < prereqLevel)
-                entry.players[player.rsn] = { rsn: player.rsn, have, need: prereqLevel, gap: prereqLevel - have };
-            }
-            if (Object.keys(entry.players).length > 0) skillGapMap[prereqSkill] = entry;
-          }
-        }
-
-        // ── If a custom level is set for a specific skill, override/inject ──
-        if (gapsSkill && customLevel !== null && customLevel >= 1 && customLevel <= 120) {
-          const entry = skillGapMap[gapsSkill] || { skill: gapsSkill, maxNeed: customLevel, quests: new Set(), players: {} };
-          entry.maxNeed = customLevel;
-          entry.players = {};
-          for (const player of players) {
-            const have = player.skills?.find(s => s.skill_name === gapsSkill)?.level ?? 1;
-            if (have < customLevel)
-              entry.players[player.rsn] = { rsn: player.rsn, have, need: customLevel, gap: customLevel - have };
-          }
-          skillGapMap[gapsSkill] = entry;
-        }
-
-        const gapList = Object.values(skillGapMap).sort((a, b) => {
-          if (gapsSort === 'level-desc') return b.maxNeed - a.maxNeed;
-          if (gapsSort === 'level-asc')  return a.maxNeed - b.maxNeed;
-          // default: most players affected, then highest level
-          const diff = Object.keys(b.players).length - Object.keys(a.players).length;
-          return diff !== 0 ? diff : b.maxNeed - a.maxNeed;
-        });
-
-        if (!players.length) return (
-          <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>No players loaded.</div>
-        );
-
-        const isFiltered = !!gapsSkill;
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-            {/* ── Filter bar ── */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-              <select
-                value={gapsSkill}
-                onChange={e => { setGapsSkill(e.target.value); setGapsLevel(''); }}
-                style={{
-                  background: 'var(--bg-input)', border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)', color: gapsSkill ? 'var(--text-bright)' : 'var(--text-dim)',
-                  fontSize: 11, padding: '4px 8px', cursor: 'pointer',
-                }}>
-                <option value="">All skills</option>
-                {SKILL_ORDER.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-
-              {gapsSkill && (
-                <>
-                  <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>level</span>
-                  <input
-                    type="number" min={1} max={120}
-                    value={gapsLevel}
-                    onChange={e => setGapsLevel(e.target.value)}
-                    placeholder={skillGapMap[gapsSkill] ? String(skillGapMap[gapsSkill].maxNeed) : '—'}
-                    style={{
-                      width: 60, background: 'var(--bg-input)', border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius)', color: 'var(--text-bright)',
-                      fontSize: 11, padding: '4px 8px', textAlign: 'center',
-                    }}
-                  />
-                </>
-              )}
-
-              {isFiltered && (
-                <button
-                  onClick={() => { setGapsSkill(''); setGapsLevel(''); }}
-                  style={{
-                    background: 'transparent', border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius)', color: 'var(--text-dim)',
-                    fontSize: 10, padding: '3px 8px', cursor: 'pointer',
-                  }}>
-                  ✕ Clear
-                </button>
-              )}
-
-              {/* Sort toggle — cycles through modes on each click */}
-              <button
-                onClick={() => {
-                  const idx = GAPS_SORT_CYCLE.indexOf(gapsSort);
-                  setGapsSort(GAPS_SORT_CYCLE[(idx + 1) % GAPS_SORT_CYCLE.length]);
-                }}
-                style={{
-                  background: 'transparent', border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)', color: 'var(--text-dim)',
-                  fontSize: 10, padding: '3px 8px', cursor: 'pointer',
-                  marginLeft: 'auto', whiteSpace: 'nowrap',
-                }}>
-                {GAPS_SORT_LABEL[gapsSort]}
-              </button>
-            </div>
-
-            {gapList.length === 0 ? (
-              <div style={{ color: 'var(--green-bright)', fontSize: 12, textAlign: 'center', padding: '20px 0' }}>
-                ✓ {SKILL_UNLOCK_REQS[gapsSkill] && customLevel === null
-                  ? `All players meet every prerequisite to unlock ${gapsSkill}!`
-                  : isFiltered
-                    ? `All players are at or above the required ${gapsSkill} level!`
-                    : 'All players meet every skill requirement across all quest suggestions!'}
-              </div>
-            ) : gapList.map(({ skill, maxNeed, quests, players: affPlayers }) => {
-              const affected = Object.values(affPlayers);
-              const questList = [...quests].slice(0, 4);
-              const extra = quests.size - questList.length;
-              return (
-                <div key={skill} style={{ background: 'var(--bg-panel-alt)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <SkillIcon name={skill} size={18} />
-                    <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)' }}>{skill}</span>
-                    <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 10, background: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.3)', color: 'var(--gold)' }}>
-                      {customLevel && gapsSkill === skill ? `target ${customLevel}` : `up to ${maxNeed}`}
-                    </span>
-                    <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-                      {affected.length} player{affected.length !== 1 ? 's' : ''}{quests.size > 0 ? ` · ${quests.size} quest${quests.size !== 1 ? 's' : ''}` : ''}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: quests.size > 0 ? 6 : 0 }}>
-                    {affected.map(({ rsn, have, need }) => {
-                      const pColor = colorMap[players.find(p => p.rsn === rsn)?.id] ?? 'var(--text)';
-                      return (
-                        <span key={rsn} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(192,64,64,0.10)', border: '1px solid rgba(192,64,64,0.3)', color: 'var(--red-bright)' }}>
-                          <span style={{ color: pColor, fontWeight: 700 }}>{rsn}</span>
-                          <span style={{ opacity: 0.7 }}> ({have})</span>
-                          <span style={{ color: 'var(--gold)', fontWeight: 600 }}> +{need - have}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                  {quests.size > 0 && (
-                    <div style={{ fontSize: 10, color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                      Blocks: {questList.join(' · ')}{extra > 0 ? ` +${extra} more` : ''}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
 
       {/* Quests tab — group-wide quest completion grid */}
       {tab === 'quests' && (
