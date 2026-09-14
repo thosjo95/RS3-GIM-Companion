@@ -197,6 +197,61 @@ function autoDetectDiaries(playerId, activities) {
  *  2. Otherwise, record the activity as +1 kill using a dedup log so we never
  *     double-count the same activity across multiple syncs.
  */
+// Maps the RS3 hiscores' curated boss-kill-count label (BOSS_KILLS in runescape.js)
+// to the same boss_key slugs used by BOSS_KILL_PATTERNS above, so both sources
+// write into the same boss_kills rows.
+const HISCORE_BOSS_KEY_MAP = {
+  'Corporeal Beast':               'corporeal_beast',
+  'General Graardor':              'general_graardor',
+  "K'ril Tsutsaroth":              'kril_tsutsaroth',
+  'Commander Zilyana':             'commander_zilyana',
+  "Kree'arra":                     'kreearra',
+  'Dagannoth Kings':               'dagannoth_kings',
+  'Kalphite Queen':                'kalphite_queen',
+  'Nex':                           'nex',
+  'TzTok-Jad':                     'tztok_jad',
+  'TzKal-Zuk':                     'tzkal_zuk',
+  'Kalphite King':                 'kalphite_king',
+  'Vorago':                        'vorago',
+  'Araxxi':                        'araxxi',
+  'Nex: Angel of Death':           'nex_aod',
+  'Telos, the Warden':             'telos',
+  'Solak':                         'solak',
+  'Helwyr':                        'helwyr',
+  'Vindicta':                      'vindicta',
+  'Gregorovic':                    'gregorovic',
+  'Twin Furies':                   'twin_furies',
+  'Rasial, the First Necromancer': 'rasial',
+  'Zamorak, Lord of Erebus':       'zamorak_loe',
+};
+
+/**
+ * Merge exact boss-kill counts straight from the RS3 hiscores into boss_kills.
+ * This is far more reliable than activity-feed text scraping for the ~22 bosses
+ * hiscores actually tracks: the Adventurer's Log only logs milestone kills and
+ * rare drops — NOT every kill — so a casual player who hasn't hit a round-number
+ * kill count (or a notable drop) shows 0 from autoCountBossKills alone even
+ * though they really have kills. Hiscores give the live running total directly,
+ * no logging heuristics involved. Bosses outside this curated list have no
+ * hiscores entry at all, so autoCountBossKills' activity-feed scan remains the
+ * only available source for those (a genuine Jagex-side data limitation).
+ */
+function mergeHiscoreBossKills(playerId, bossKills) {
+  if (!bossKills) return;
+  const upsert = db.prepare(`
+    INSERT INTO boss_kills (player_id, boss_key, kills, last_seen)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(player_id, boss_key) DO UPDATE SET
+      kills     = MAX(kills, excluded.kills),
+      last_seen = CASE WHEN excluded.kills >= kills THEN CURRENT_TIMESTAMP ELSE last_seen END
+  `);
+  for (const [label, kills] of Object.entries(bossKills)) {
+    const key = HISCORE_BOSS_KEY_MAP[label];
+    if (!key || !(kills > 0)) continue;
+    upsert.run(playerId, key, kills);
+  }
+}
+
 function autoCountBossKills(playerId, activities) {
   if (!activities?.length) return;
 
@@ -365,4 +420,4 @@ function autoCompleteQuestGoals(playerId, activities) {
   }
 }
 
-module.exports = { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };
+module.exports = { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, mergeHiscoreBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };

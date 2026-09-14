@@ -91,7 +91,7 @@ cron.schedule('0 */2 * * *', async () => {
 // Runs at midnight every day — syncs hiscores (skills, boss kills, clue scrolls).
 cron.schedule('0 0 * * *', async () => {
   const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('./services/runescape');
-  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals } = require('./services/activitySync');
+  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, mergeHiscoreBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players').all();
   const today   = new Date().toISOString().slice(0, 10);
@@ -103,9 +103,11 @@ cron.schedule('0 0 * * *', async () => {
         fetchRuneMetrics(player.rsn, 20).catch(() => null),
       ]);
       const combat = calcCombatLevel(data.skills);
+      mergeHiscoreBossKills(player.id, data.bossKills);
 
-      // stats_json: hiscores activities (clue scrolls) + RuneMetrics meta
-      // Note: bossKills are now tracked separately via the boss_kills table
+      // stats_json: hiscores activities (clue scrolls) + RuneMetrics meta.
+      // data.bossKills is handled above via mergeHiscoreBossKills — it goes
+      // straight into the boss_kills table, not into this JSON blob.
       const statsJson = JSON.stringify({
         activities:     data.activities,   // hiscores activities — clue scrolls etc.
         questsComplete: rm?.questsComplete ?? null,

@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const router = express.Router();
 const db = require('../database');
 const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
+const { mergeHiscoreBossKills } = require('../services/activitySync');
 const { hashPassword, verifyGroupPassword, checkGroupAuth } = require('../utils/auth');
 const { sendTestWebhook, isValidDiscordWebhookUrl, DEFAULT_EVENTS } = require('../services/discord');
 const { createRateLimiter } = require('../utils/rateLimit');
@@ -334,6 +335,7 @@ router.post('/setup', async (req, res) => {
     try {
       const data = await fetchHiscores(player.rsn);
       const combat = calcCombatLevel(data.skills);
+      mergeHiscoreBossKills(player.id, data.bossKills);
 
       db.prepare('UPDATE players SET combat_level = ?, last_synced = CURRENT_TIMESTAMP WHERE id = ?')
         .run(combat, player.id);

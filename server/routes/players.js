@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
 const { fetchHiscores, fetchRuneMetrics, fetchPlayerQuests, calcCombatLevel, sanitizeRSN } = require('../services/runescape');
-const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
+const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, mergeHiscoreBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 const { notifyGoalCompleted } = require('../services/discord');
 const { createRateLimiter } = require('../utils/rateLimit');
@@ -196,6 +196,7 @@ router.post('/:id/sync', syncOneLimiter, async (req, res) => {
 
     const data = await fetchHiscores(player.rsn);
     const combat = calcCombatLevel(data.skills);
+    mergeHiscoreBossKills(player.id, data.bossKills);
 
     // Preserve existing RuneMetrics quest data — only hiscores activities updated here.
     // Also take the opportunity to resolve the canonical display name (fixes casing /
@@ -305,6 +306,7 @@ router.post('/sync-all/:groupId', syncAllLimiter, async (req, res) => {
 
       const data = await fetchHiscores(player.rsn);
       const combat = calcCombatLevel(data.skills);
+      mergeHiscoreBossKills(player.id, data.bossKills);
 
       // Resolve canonical name + preserve RuneMetrics quest data.
       let existing = {};
