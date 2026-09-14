@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.8-4caf50?style=flat-square" alt="v1.9.8"/>
+    <img src="https://img.shields.io/badge/version-1.9.9-4caf50?style=flat-square" alt="v1.9.9"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -491,6 +491,9 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.9 — September 2026
+- 🐉 **Boss drops/requirements corrected in the reference database** — the Goal Browser's boss cards are populated from the `rs3_bosses` SQL table (seeded by `server/scripts/seedRs3Data.js` and `addMissingBosses.js`), a separate data source from `client/src/data/goalSuggestions.js` that a previous pass had audited — that earlier work never touched what's actually shown here. Verified all 64 bosses against runescape.wiki: removed fabricated skill/quest requirements many bosses don't actually enforce, corrected wrong/invented drop names to real current RS3 uniques (e.g. King Black Dragon and Chaos Elemental were showing OSRS-conflated drops like "Dragon pickaxe"), and fixed one boss's display name (Zamorak, Lord of Chaos was mislabelled)
 
 ### v1.9.8 — August 2026
 - 🧹 **Removed the Gaps tab** — the automatic skill-gap analysis tab in Group Stats has been removed entirely, along with its filter/sort controls and the setup-screen tagline mentioning it
