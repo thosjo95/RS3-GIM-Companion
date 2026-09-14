@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.9</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.10</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9.9 documentation</div>
+        <div class="sidebar-version">v1.9.10 documentation</div>
       </div>
     </div>
 
@@ -276,7 +276,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.9</span>
+          <span class="badge badge-green">v1.9.10</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -946,7 +946,12 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.9 — September 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.10 — September 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Boss Kills leaderboard under-counting fixed</strong> — RS3's Adventurer's Log only logs milestone kills and rare drops, not every kill, so a casual player's real kills could show as 0 even with activity sharing fully enabled. The RS3 hiscores already expose an exact, always-current kill count for a curated ~22-boss list (Nex, Vorago, Araxxi, Telos, Solak, Rasial, GWD1/2, Dagannoth Kings, TzTok-Jad, TzKal-Zuk, Kalphite King/Queen, and others) — that data was already being fetched on every sync but silently discarded. It's now merged into the Boss Kills table (taking the higher of the two sources, so neither can undercount the other) on every player sync, group setup, and the daily cron. Bosses outside that curated hiscores list (King Black Dragon, Chaos Elemental, Queen Black Dragon, Rex Matriarchs, and others) still rely on activity-feed detection only — RS3 hiscores doesn't expose a kill count for those at all, which is a Jagex-side limitation this app can't work around</li>
+    </ul>
+
+    <h3>v1.9.9 — September 2026</h3>
     <ul>
       <li><strong>Boss drops/requirements corrected in the reference database</strong> — the Goal Browser's boss cards are populated from the <code>rs3_bosses</code> SQL table (seeded by <code>server/scripts/seedRs3Data.js</code> and <code>addMissingBosses.js</code>), a separate data source from <code>client/src/data/goalSuggestions.js</code> that a previous pass had audited — that earlier work never touched what's actually shown here. Verified all 64 bosses against runescape.wiki: removed fabricated skill/quest requirements many bosses don't actually enforce, corrected wrong/invented drop names to real current RS3 uniques (e.g. King Black Dragon and Chaos Elemental were showing OSRS-conflated drops like "Dragon pickaxe"), and fixed one boss's display name (Zamorak, Lord of Chaos was mislabelled)</li>
     </ul>
@@ -1136,7 +1141,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.9 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.10 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 
