@@ -3,47 +3,14 @@ import { api } from '../api/client';
 import GoalModal from './GoalModal';
 import { QUESTS } from '../data/quests';
 
+import { fmtNum, xpForLevel, parseDetails, SKILL_EMOJI as SKILL_ICONS } from '../lib/rs3';
+
 const STATUS_LABELS = {
   not_started: 'Not Started',
   in_progress: 'In Progress',
   blocked: 'Blocked',
   complete: '✓ Complete',
 };
-
-const SKILL_ICONS = {
-  Attack: '⚔️', Defence: '🛡️', Strength: '💪', Constitution: '❤️',
-  Ranged: '🏹', Prayer: '🙏', Magic: '🔮', Cooking: '🍳',
-  Woodcutting: '🪵', Fletching: '🎯', Fishing: '🐟', Firemaking: '🔥',
-  Crafting: '💎', Smithing: '⚒️', Mining: '⛏️', Herblore: '🌿',
-  Agility: '🏃', Thieving: '🕵️', Slayer: '💀', Farming: '🌾',
-  Runecrafting: '🔵', Hunter: '🦌', Construction: '🏠', Summoning: '🐉',
-  Dungeoneering: '🏰', Divination: '✨', Invention: '🔬', Archaeology: '🦴',
-  Necromancy: '☠️',
-};
-
-const XP_TABLE = (() => {
-  const t = [0, 0];
-  for (let lvl = 2; lvl <= 120; lvl++) {
-    const points = Math.floor(lvl - 1 + 300 * Math.pow(2, (lvl - 1) / 7));
-    t[lvl] = Math.floor(t[lvl - 1] + points / 4);
-  }
-  return t;
-})();
-
-function xpForLevel(lvl) { return XP_TABLE[Math.min(Math.max(lvl, 1), 120)] ?? 0; }
-
-function fmtNum(n) {
-  if (!n && n !== 0) return '0';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
-  return String(n);
-}
-
-function parseDetails(raw) {
-  if (!raw) return null;
-  if (typeof raw === 'object') return raw;
-  try { return JSON.parse(raw); } catch { return null; }
-}
 
 function getPlayerSkillLevel(players, ownerId, skillName) {
   const player = players.find(p => p.id === ownerId);

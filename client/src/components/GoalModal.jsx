@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 import { QUESTS, QUEST_NAMES, DIFF_COLOUR } from '../data/quests';
-import { RECIPES, RECIPE_NAMES, expandRecipe } from '../data/itemRecipes';
+
+import { fmtNum, xpForLevel, normRsn, SKILL_ICON_URLS as SKILL_ICONS } from '../lib/rs3';
 
 const SKILL_LIST = [
   'Attack', 'Defence', 'Strength', 'Constitution', 'Ranged', 'Prayer', 'Magic',
@@ -10,38 +11,6 @@ const SKILL_LIST = [
   'Runecrafting', 'Hunter', 'Construction', 'Summoning', 'Dungeoneering',
   'Divination', 'Invention', 'Archaeology', 'Necromancy',
 ];
-
-const SKILL_ICONS = {
-  Attack:       'https://runescape.wiki/images/Attack.png',
-  Defence:      'https://runescape.wiki/images/Defence.png',
-  Strength:     'https://runescape.wiki/images/Strength.png',
-  Constitution: 'https://runescape.wiki/images/Constitution.png',
-  Ranged:       'https://runescape.wiki/images/Ranged.png',
-  Prayer:       'https://runescape.wiki/images/Prayer.png',
-  Magic:        'https://runescape.wiki/images/Magic.png',
-  Cooking:      'https://runescape.wiki/images/Cooking.png',
-  Woodcutting:  'https://runescape.wiki/images/Woodcutting.png',
-  Fletching:    'https://runescape.wiki/images/Fletching.png',
-  Fishing:      'https://runescape.wiki/images/Fishing.png',
-  Firemaking:   'https://runescape.wiki/images/Firemaking.png',
-  Crafting:     'https://runescape.wiki/images/Crafting.png',
-  Smithing:     'https://runescape.wiki/images/Smithing.png',
-  Mining:       'https://runescape.wiki/images/Mining.png',
-  Herblore:     'https://runescape.wiki/images/Herblore.png',
-  Agility:      'https://runescape.wiki/images/Agility.png',
-  Thieving:     'https://runescape.wiki/images/Thieving.png',
-  Slayer:       'https://runescape.wiki/images/Slayer.png',
-  Farming:      'https://runescape.wiki/images/Farming.png',
-  Runecrafting: 'https://runescape.wiki/images/Runecrafting.png',
-  Hunter:       'https://runescape.wiki/images/Hunter.png',
-  Construction: 'https://runescape.wiki/images/Construction.png',
-  Summoning:    'https://runescape.wiki/images/Summoning.png',
-  Dungeoneering:'https://runescape.wiki/images/Dungeoneering.png',
-  Divination:   'https://runescape.wiki/images/Divination.png',
-  Invention:    'https://runescape.wiki/images/Invention.png',
-  Archaeology:  'https://runescape.wiki/images/Archaeology.png',
-  Necromancy:   'https://runescape.wiki/images/Necromancy.png',
-};
 
 // Custom skill picker that shows RS3 wiki icons (native <select> can't render images)
 function SkillSelect({ value, onChange, owner }) {
@@ -114,24 +83,7 @@ function getPlayerSkill(player, skillName) {
   return player.skills.find(s => s.skill_name === skillName)?.level ?? 1;
 }
 
-function fmtNum(n) {
-  if (!n) return '0';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
-  return String(n);
-}
-
 // XP table for RS3 (levels 1–120)
-const XP_TABLE = (() => {
-  const t = [0, 0];
-  for (let lvl = 2; lvl <= 120; lvl++) {
-    const points = Math.floor(lvl - 1 + 300 * Math.pow(2, (lvl - 1) / 7));
-    t[lvl] = Math.floor(t[lvl - 1] + points / 4);
-  }
-  return t;
-})();
-
-function xpForLevel(lvl) { return XP_TABLE[Math.min(Math.max(lvl, 1), 120)] ?? 0; }
 
 // ── Level Goal Form ───────────────────────────────────────────────────────────
 
@@ -633,87 +585,6 @@ function QuestGoalForm({ players, form, set, onSaved, onToast }) {
   );
 }
 
-// ── Item Goal Form ────────────────────────────────────────────────────────────
-
-function ItemGoalForm({ players, form, set }) {
-  const itemName = form.details?.itemName ?? '';
-  const quantity = Number(form.details?.quantity) || 1;
-  const recipe = RECIPES[itemName];
-  const materials = recipe ? expandRecipe(itemName, quantity) : null;
-
-  function handleItemChange(val) {
-    set('details', { ...form.details, itemName: val });
-  }
-  function handleQtyChange(val) {
-    set('details', { ...form.details, quantity: Number(val) || 1 });
-  }
-
-  return (
-    <>
-      {form.type === 'personal' && (
-        <div className="form-group">
-          <label className="form-label">Player</label>
-          <select className="form-select" value={form.owner_id} onChange={e => set('owner_id', e.target.value)}>
-            {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
-          </select>
-        </div>
-      )}
-      <div className="form-group">
-        <label className="form-label">Item</label>
-        <input className="form-input" list="item-recipe-list" value={itemName}
-          onChange={e => handleItemChange(e.target.value)}
-          placeholder="Search or type any item name…" />
-        <datalist id="item-recipe-list">
-          {RECIPE_NAMES.map(r => <option key={r} value={r} />)}
-        </datalist>
-        {recipe && (
-          <div className="text-xs text-dim mt-8">
-            📦 Craftable via {recipe.method}{recipe.skill ? ` (${recipe.skill} ${recipe.skillLevel})` : ''}
-          </div>
-        )}
-        {itemName && !recipe && (
-          <div className="text-xs text-dim mt-8">📋 Raw gathering goal — no recipe found</div>
-        )}
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Target Quantity</label>
-        <input type="number" min="1" className="form-input"
-          value={quantity} onChange={e => handleQtyChange(e.target.value)} />
-      </div>
-
-      {/* Material breakdown for craftable items */}
-      {recipe && materials && (
-        <div style={{
-          padding: '12px 14px', background: 'var(--bg-panel-alt)',
-          border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12,
-        }}>
-          <div style={{ fontWeight: 700, color: 'var(--text-bright)', marginBottom: 8 }}>
-            Materials needed for {fmtNum(quantity)} {itemName}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {materials.map((m, i) => (
-              <div key={i} className="flex align-center justify-between" style={{
-                padding: '5px 8px', borderRadius: 'var(--radius)',
-                background: m.raw ? 'rgba(90,74,50,0.3)' : 'rgba(74,136,184,0.1)',
-                border: `1px solid ${m.raw ? 'var(--border)' : 'var(--blue)'}`,
-              }}>
-                <span style={{ color: 'var(--text)' }}>
-                  {m.raw ? '🪨' : '⚙️'} {m.item}
-                </span>
-                <span style={{ fontWeight: 700, color: 'var(--gold)' }}>{fmtNum(m.quantity)}</span>
-              </div>
-            ))}
-          </div>
-          {recipe.note && (
-            <div style={{ marginTop: 8, color: 'var(--text-dim)', fontStyle: 'italic' }}>ℹ {recipe.note}</div>
-          )}
-        </div>
-      )}
-    </>
-  );
-}
-
 // ── Main Modal ────────────────────────────────────────────────────────────────
 
 const GOAL_TYPES = [
@@ -724,12 +595,6 @@ const GOAL_TYPES = [
   { id: 'diary',          label: 'Area Tasks',          desc: 'Area task set tier completion' },
   { id: 'boss_kill',      label: 'Boss Kill',           desc: 'Combat milestone or boss completion goal' },
 ];
-
-// Normalize RSN — collapses non-breaking spaces and other Unicode variants before comparing
-function normRsn(s) {
-  // Collapse ALL unicode whitespace variants (NBSP U+00A0, thin-space, etc.) to a plain space
-  return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
-}
 
 export default function GoalModal({ players, onClose, onSaved, prefill = {}, onToast, myRsn = '', editId = null }) {
   // Resolve "me" — prefer explicit prefill, then myRsn match, then first player

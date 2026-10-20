@@ -418,6 +418,12 @@ try {
   try { db.exec('PRAGMA foreign_keys = ON'); } catch {}
 }
 
+// The players rebuild above doesn't carry these columns over. On a brand-new
+// database it runs right after they were added, so re-add them here — otherwise
+// the first boot of a fresh install fails with "no such column: p.rune_score".
+try { db.exec('ALTER TABLE players ADD COLUMN quests_json TEXT DEFAULT NULL'); } catch {}
+try { db.exec('ALTER TABLE players ADD COLUMN rune_score INTEGER DEFAULT NULL'); } catch {}
+
 // Helper: run a function inside a BEGIN/COMMIT transaction
 db.runTransaction = function (fn) {
   db.exec('BEGIN');

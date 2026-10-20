@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import {
   STYLES, EQUIPMENT_SLOTS,
-  canWear, getMissingReqs, getBestAndNext, levelToXp,
+  canWear, getMissingReqs, getBestAndNext,
 } from '../data/gearSuggestions';
 
 // ── Combined hook — fetches /api/rs3/items once, builds icon map + gear DB ───

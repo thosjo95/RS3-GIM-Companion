@@ -1,14 +1,8 @@
 import React, { useState, useMemo } from 'react';
 
+import { parseRMDate } from '../lib/rs3';
+
 // RuneMetrics dates come as "04-May-2024 01:03" — parse to a comparable timestamp
-function parseRMDate(str) {
-  if (!str) return 0;
-  try {
-    return new Date(str.replace(/(\d+)-(\w+)-(\d+)/, '$2 $1 $3')).getTime();
-  } catch {
-    return 0;
-  }
-}
 
 const PLAYER_COLORS = [
   'var(--gold)',

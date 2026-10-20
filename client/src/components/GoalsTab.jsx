@@ -6,6 +6,8 @@ import {
   detectStage, checkPlayerReadiness,
 } from '../data/goalSuggestions';
 
+import { fmtNum, xpForLevel, normRsn, parseDetails, SKILL_ICON_URLS as SKILL_ICONS } from '../lib/rs3';
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_COLS = [
@@ -29,70 +31,6 @@ const SUGG_CAT_ICON = {
   diary:          '📋',
   boss_kill:      '💀',
 };
-
-const SKILL_ICONS = {
-  // Combat
-  Attack:        'https://runescape.wiki/images/Attack.png',
-  Strength:      'https://runescape.wiki/images/Strength.png',
-  Defence:       'https://runescape.wiki/images/Defence.png',
-  Constitution:  'https://runescape.wiki/images/Constitution.png',
-  Ranged:        'https://runescape.wiki/images/Ranged.png',
-  Prayer:        'https://runescape.wiki/images/Prayer.png',
-  Magic:         'https://runescape.wiki/images/Magic.png',
-  Necromancy:    'https://runescape.wiki/images/Necromancy.png',
-  // Gathering
-  Mining:        'https://runescape.wiki/images/Mining.png',
-  Fishing:       'https://runescape.wiki/images/Fishing.png',
-  Woodcutting:   'https://runescape.wiki/images/Woodcutting.png',
-  Farming:       'https://runescape.wiki/images/Farming.png',
-  Hunter:        'https://runescape.wiki/images/Hunter.png',
-  Divination:    'https://runescape.wiki/images/Divination.png',
-  // Artisan
-  Smithing:      'https://runescape.wiki/images/Smithing.png',
-  Cooking:       'https://runescape.wiki/images/Cooking.png',
-  Crafting:      'https://runescape.wiki/images/Crafting.png',
-  Firemaking:    'https://runescape.wiki/images/Firemaking.png',
-  Fletching:     'https://runescape.wiki/images/Fletching.png',
-  Herblore:      'https://runescape.wiki/images/Herblore.png',
-  Runecrafting:  'https://runescape.wiki/images/Runecrafting.png',
-  Construction:  'https://runescape.wiki/images/Construction.png',
-  // Support
-  Agility:       'https://runescape.wiki/images/Agility.png',
-  Thieving:      'https://runescape.wiki/images/Thieving.png',
-  Slayer:        'https://runescape.wiki/images/Slayer.png',
-  Summoning:     'https://runescape.wiki/images/Summoning.png',
-  Dungeoneering: 'https://runescape.wiki/images/Dungeoneering.png',
-  Invention:     'https://runescape.wiki/images/Invention.png',
-};
-
-// RS3 XP table
-const XP_TABLE = (() => {
-  const t = [0, 0];
-  for (let lvl = 2; lvl <= 120; lvl++) {
-    const pts = Math.floor(lvl - 1 + 300 * Math.pow(2, (lvl - 1) / 7));
-    t[lvl] = Math.floor(t[lvl - 1] + pts / 4);
-  }
-  return t;
-})();
-function xpForLevel(lvl) { return XP_TABLE[Math.min(Math.max(lvl, 1), 120)] ?? 0; }
-
-function fmtNum(n) {
-  if (!n) return '0';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
-  return String(n);
-}
-
-function parseDetails(raw) {
-  if (!raw) return null;
-  if (typeof raw === 'object') return raw;
-  try { return JSON.parse(raw); } catch { return null; }
-}
-
-function normRsn(s) {
-  // Collapse ALL unicode whitespace variants (NBSP U+00A0, thin-space, etc.) to a plain space
-  return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
-}
 
 // ── Area task suggestion ID → achievement key mapping ─────────────────────────
 // Goal suggestion IDs (diary_*) don't always match the achievement keys used in
