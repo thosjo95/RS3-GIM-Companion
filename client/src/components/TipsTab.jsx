@@ -1,18 +1,9 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
-// ── Milestone data ─────────────────────────────────────────────────────────────
+import { wikiUrl, SKILL_EMOJI as SKILL_ICONS } from '../lib/rs3';
 
-const SKILL_ICONS = {
-  Attack: '⚔️', Defence: '🛡️', Strength: '💪', Constitution: '❤️',
-  Ranged: '🏹', Prayer: '🙏', Magic: '🔮', Cooking: '🍳',
-  Woodcutting: '🪵', Fletching: '🎯', Fishing: '🐟', Firemaking: '🔥',
-  Crafting: '💎', Smithing: '⚒️', Mining: '⛏️', Herblore: '🌿',
-  Agility: '🏃', Thieving: '🕵️', Slayer: '💀', Farming: '🌾',
-  Runecrafting: '🔵', Hunter: '🦌', Construction: '🏠', Summoning: '🐉',
-  Dungeoneering: '🏰', Divination: '✨', Invention: '🔬', Archaeology: '🦴',
-  Necromancy: '☠️',
-};
+// ── Milestone data ─────────────────────────────────────────────────────────────
 
 const SKILL_LIST = [
   'Attack', 'Defence', 'Strength', 'Constitution', 'Ranged', 'Prayer', 'Magic',
@@ -95,10 +86,6 @@ const MILESTONE_ITEMS = [
 ];
 
 const PRIORITY_COLOR = { high: '#e05252', medium: '#c8a84b', low: '#7eb8f7' };
-
-function wikiUrl(name) {
-  return `https://runescape.wiki/w/${encodeURIComponent((name || '').replace(/ /g, '_'))}`;
-}
 
 // ── Add as Goal inline panel ───────────────────────────────────────────────────
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { api } from '../api/client';
 import GearLoadouts from './GearLoadouts';
-import GroupNotesOverlay from './GroupNotesOverlay';
 
 // ── Item icon map — name → wiki icon URL ──────────────────────────────────────
 function useItemIconMap() {
@@ -48,10 +47,6 @@ function ItemIcon({ name, iconMap, size = 32 }) {
   );
 }
 
-function normRsn(s) {
-  return (s || '').replace(/\s/g, ' ').trim().toLowerCase();
-}
-
 function fmtGp(n) {
   if (!n) return null;
   if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B gp`;
@@ -64,7 +59,6 @@ function fmtDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
-
 
 // ── Vault item tile (compact, click to expand) ────────────────────────────────
 
@@ -287,7 +281,6 @@ function ExpandedTileDetail({ item, wornBy, isWorn, isDupe, onClose, canWrite, o
   );
 }
 
-
 // ── Vaulted achievement card ──────────────────────────────────────────────────
 
 function AchievementCard({ goal }) {
@@ -317,7 +310,6 @@ function AchievementCard({ goal }) {
     </div>
   );
 }
-
 
 // ── Add Item modal ────────────────────────────────────────────────────────────
 
@@ -463,7 +455,6 @@ function AddItemModal({ players, groupId, onClose, onAdded, onToast }) {
     </div>
   );
 }
-
 
 // ── Group Vault panel ─────────────────────────────────────────────────────────
 
@@ -668,7 +659,6 @@ function VaultPanel({ players, groupId, goals, onToast, myRsn, canWrite, groupEq
     </div>
   );
 }
-
 
 // ── Root VaultTab ─────────────────────────────────────────────────────────────
 

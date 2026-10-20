@@ -1,26 +1,10 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
-const SKILL_ICONS = {
-  Attack: '⚔️', Defence: '🛡️', Strength: '💪', Constitution: '❤️',
-  Ranged: '🏹', Prayer: '🙏', Magic: '🔮', Cooking: '🍳',
-  Woodcutting: '🪵', Fletching: '🎯', Fishing: '🐟', Firemaking: '🔥',
-  Crafting: '💎', Smithing: '⚒️', Mining: '⛏️', Herblore: '🌿',
-  Agility: '🏃', Thieving: '🕵️', Slayer: '💀', Farming: '🌾',
-  Runecrafting: '🔵', Hunter: '🦌', Construction: '🏠', Summoning: '🐉',
-  Dungeoneering: '🏰', Divination: '✨', Invention: '🔬', Archaeology: '🦴',
-  Necromancy: '☠️',
-};
+import { fmtXp, SKILL_EMOJI as SKILL_ICONS } from '../lib/rs3';
 
 const TOP_SKILLS = ['Attack', 'Strength', 'Defence', 'Ranged', 'Magic', 'Prayer',
   'Slayer', 'Herblore', 'Summoning', 'Dungeoneering'];
-
-function fmtXp(n) {
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
-  return String(n ?? 0);
-}
 
 export default function PlayerCard({ player, isMe, onSetMe, onRefresh, onToast }) {
   const [syncing, setSyncing] = useState(false);

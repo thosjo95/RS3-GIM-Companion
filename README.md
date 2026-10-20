@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.10-4caf50?style=flat-square" alt="v1.9.10"/>
+    <img src="https://img.shields.io/badge/version-1.9.11-4caf50?style=flat-square" alt="v1.9.11"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -195,13 +195,22 @@ RS3-GIM-Companion/
 │   ├── public/
 │   │   └── logo.svg                 # App logo (shield + iron helm + GIM)
 │   └── src/
-│       ├── App.jsx                  # Root: sidebar, group management, auth modals, mobile drawer
+│       ├── App.jsx                  # Root: app state, group selection, layout, modal wiring
 │       ├── index.css                # Global styles + CSS variables + mobile media queries
 │       ├── api/client.js            # Typed fetch wrapper with group auth headers
+│       ├── hooks/useToasts.js       # Toast notification state
+│       ├── lib/
+│       │   ├── rs3.js               # Shared RS3 helpers: skills, icons, XP table, formatters, RSN/date parsing
+│       │   └── localPrefs.js        # localStorage: saved groups, favourites, group secrets
 │       └── components/
 │           ├── Dashboard.jsx        # Tab router (Overview / Goals / Vault / Area Tasks / Leaderboards)
 │           ├── Header.jsx           # Logo, Discord link, lock/unlock, sync button
-│           ├── OverviewTab.jsx      # Member cards · Group Stats · Goals panel · Activity feed
+│           ├── common/              # AnnouncementModal · GimTypeLabel · SkillIcon · ToastArea
+│           ├── modals/              # SetRsnModal · UnlockModal · ClaimModal
+│           ├── setup/SetupScreen.jsx # Landing / "add your group" screen
+│           ├── groups/              # Sidebar · SearchGroupModal · BrowseTrackedGroups · GroupBrowseRow
+│           ├── OverviewTab.jsx      # Overview layout: member cards, stats, player detail
+│           ├── overview/            # MemberCard · GroupStats · QuestTables · SkillTable · GoalItem · RightPanel · ActivityFeed · SnapshotButton · EditRsnModal
 │           ├── GoalsTab.jsx         # Goal Browser (suggestions) · Active Goals · Goal management
 │           ├── VaultTab.jsx         # Unified tile grid (worn + free items) · player filter chips
 │           ├── GearLoadouts.jsx     # Equipment grid, item picker, wiki-verified requirements, player chips
@@ -491,6 +500,12 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.11 — October 2026
+- 📢 **Announcement popup** — a dismissible notice on page load says this tool will soon be obsolete now that RuneScape 3 plugins are out, and links to the new preferred tracker at [rs3groupiron.men/demo](https://www.rs3groupiron.men/demo). It shows once per browser session, and "Don't show again" hides it for good in that browser. To publish a different announcement, edit `client/src/components/common/AnnouncementModal.jsx` and change `ANNOUNCEMENT.id`. The first-visit tour now waits until the popup is closed
+- 🧹 **Code health** — `App.jsx` (1,562 → ~460 lines) and `OverviewTab.jsx` (1,825 → ~270 lines) are split into focused components under `components/common`, `modals`, `setup`, `groups` and `overview`. Helpers that were copy-pasted into up to 7 components (XP table, skill icons, `fmtXp`/`fmtNum`, `normRsn`, `parseRMDate`, `parseDetails`, `wikiUrl`, member colours) now live in one place, `client/src/lib/rs3.js`. Dead code is removed: the unused `ItemGoalForm`, the unused `data/itemRecipes.js` (~550 lines) and a dozen unused imports. There are no visual or behaviour changes
+- 🐛 **Fresh-install crash fixed** — on a brand-new database, the `players` table rebuild (`UNIQUE(rsn, group_id)` migration) dropped the `quests_json` and `rune_score` columns, so every group page failed with `no such column: p.rune_score` until the server was restarted. Those columns are now re-added after the migration. Existing databases are unaffected
+- 🖼️ **Archaeology icon on Goals tab** — the Goals tab's private copy of the skill-icon map was missing Archaeology; it now uses the shared map
 
 ### v1.9.10 — September 2026
 - ⚔️ **Boss Kills leaderboard under-counting fixed** — RS3's Adventurer's Log only logs milestone kills and rare drops, not every kill, so a casual player's real kills could show as 0 even with activity sharing fully enabled. The RS3 hiscores already expose an exact, always-current kill count for a curated ~22-boss list (Nex, Vorago, Araxxi, Telos, Solak, Rasial, GWD1/2, Dagannoth Kings, TzTok-Jad, TzKal-Zuk, Kalphite King/Queen, and others) — that data was already being fetched on every sync but silently discarded. It's now merged into the Boss Kills table (taking the higher of the two sources, so neither can undercount the other) on every player sync, group setup, and the daily cron. Bosses outside that curated hiscores list (King Black Dragon, Chaos Elemental, Queen Black Dragon, Rex Matriarchs, and others) still rely on activity-feed detection only — RS3 hiscores doesn't expose a kill count for those at all, which is a Jagex-side limitation this app can't work around

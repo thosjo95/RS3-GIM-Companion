@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { adminApi, setAdminToken, loadAdminToken, clearAdminToken, hasAdminToken } from '../../api/adminClient';
+import { adminApi, setAdminToken, loadAdminToken, clearAdminToken } from '../../api/adminClient';
 
 // ── Tiny toast for admin ──────────────────────────────────────────────────────
 function useToast() {

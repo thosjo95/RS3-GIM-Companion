@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 
+import { MEMBER_COLORS } from '../lib/rs3';
+
 // ── RS3 area task definitions ─────────────────────────────────────────────────
 
 const TIERS = [
@@ -37,8 +39,6 @@ const DIARY_REGIONS = [
 ];
 
 const regionTiers = region => region.tiers ?? TIERS;
-
-const MEMBER_COLORS = ['#c8a84b', '#7eb8f7', '#7ef7a8', '#f77e7e', '#d07ef7', '#f7c97e'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

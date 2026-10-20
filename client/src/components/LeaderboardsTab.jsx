@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { api } from '../api/client';
 
+import { MEMBER_COLORS, parseRMDate } from '../lib/rs3';
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const SKILL_ICON_URL = name =>
   `https://runescape.wiki/images/${encodeURIComponent(name)}.png`;
-
-const MEMBER_COLORS = ['#c8a84b', '#7eb8f7', '#7ef7a8', '#f77e7e', '#d07ef7', '#f7c97e'];
 
 // RS3 hiscores has no "All" row — only the 5 individual tiers
 const CLUE_TYPES = [
@@ -373,11 +373,6 @@ function parseActivities(raw) {
   try { return JSON.parse(raw); } catch { return []; }
 }
 
-function parseRMDate(str) {
-  if (!str) return 0;
-  try { return new Date(str.replace(/(\d+)-(\w+)-(\d+)/, '$2 $1 $3')).getTime(); } catch { return 0; }
-}
-
 // Manual/server-set dates come through as plain ISO ("2026-06-12" or a full
 // timestamp) rather than RuneMetrics' "12-Jun-2026" format — detect which shape
 // it is rather than guessing, since Date.parse is unreliable on the RM format.
@@ -506,9 +501,6 @@ function FirstsBoard({ players, colorMap, groupId, canWrite, onToast }) {
   const achieved = visible.filter(r => r.status !== 'pending');
   const pending  = visible.filter(r => r.status === 'pending');
 
-  const MILESTONE_DEFS = [
-    // activity-based milestone patterns for the old milestone feed
-  ];
 
   return (
     <div>
