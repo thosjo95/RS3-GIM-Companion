@@ -1111,7 +1111,7 @@ export const QUESTS = {
       qp: 0,
     },
     rewards: { qp: 3 },
-    unlocks: ["God emissaries", "Mahjarrat aura", "Memorial to Guthix"],
+    unlocks: ["God emissaries", "Memorial to Guthix"],
   },
 
   // ── Summer / Spirit series ────────────────────────────────────────────────
@@ -1263,6 +1263,86 @@ export const QUESTS = {
     },
     rewards: { qp: 1 },
     unlocks: ["Beacons (Firemaking XP)"],
+  },
+
+  // ── 2025–2026 releases ──────────────────────────────────────────────────
+  "Visions of Havenhythe": {
+    difficulty: "Novice",
+    requirements: { skills: {}, quests: [], qp: 0 },
+    rewards: { qp: 1 },
+    unlocks: ["Access to Havenhythe","Wendlewick lodestone"],
+  },
+  "Hearts of Sanguine": {
+    difficulty: "Novice",
+    requirements: { skills: {}, quests: ["Visions of Havenhythe"], qp: 0 },
+    rewards: { qp: 1 },
+    unlocks: ["Silverquill, the Dreadhog boss access (members)","Antisanguine potions (members)","Havensilver smithing","Herblore and Smithing XP lamps (250 each)"],
+  },
+  "Wiz Kid": {
+    difficulty: "Novice",
+    requirements: { skills: {"Magic":33}, quests: ["Visions of Havenhythe"], qp: 0 },
+    rewards: { qp: 1 },
+    unlocks: ["Wendlewick Teleport spell (Marigold Farm)","3,500 Magic XP lamp","Ben's spare hat"],
+  },
+  "Hermit Permits": {
+    difficulty: "Novice",
+    requirements: { skills: {"Construction":5,"Crafting":15}, quests: ["Visions of Havenhythe"], qp: 0 },
+    rewards: { qp: 1 },
+    unlocks: ["1,000 Crafting XP","500 Construction XP","Snippers cosmetic override"],
+  },
+  "Secrets of Amberfell": {
+    difficulty: "Intermediate",
+    requirements: { skills: {"Construction":30,"Herblore":35,"Hunter":32,"Slayer":28}, quests: ["Hearts of Sanguine","Visions of Havenhythe"], qp: 0 },
+    rewards: { qp: 3 },
+    unlocks: ["Amberfell","Moonrise Temple","Moonrise Dig Site (Archaeology 52)","Inanna's gift"],
+  },
+  "Heralds of Crimson": {
+    difficulty: "Experienced",
+    requirements: { skills: {"Crafting":51,"Herblore":55,"Mining":65,"Smithing":60}, quests: ["Secrets of Amberfell","Hearts of Sanguine","Visions of Havenhythe"], qp: 0 },
+    rewards: { qp: 3 },
+    unlocks: ["The Ghrazi Blood Knights boss access","Full access to Havenhythe","Super and extreme antisanguine potions","Havensilver halberds"],
+  },
+  "Beneath Scabaras' Sands": {
+    difficulty: "Experienced",
+    requirements: { skills: {"Slayer":87}, quests: ["'Phite Club","Ode of the Devourer"], qp: 0 },
+    rewards: { qp: 2 },
+    unlocks: ["Scabaras' Temple of Isolation","Elite Profane Scabarites","Primed keris (upgrade to consecrated keris for 40k Prayer XP)"],
+  },
+  "Pharaoh's Folly": {
+    difficulty: "Experienced",
+    requirements: { skills: {}, quests: ["Beneath Scabaras' Sands"], qp: 0 },
+    rewards: { qp: 2 },
+    unlocks: ["Leela's favour","2.5x Menaphos reputation gain","Shifting Tombs bonuses"],
+  },
+  "Eclipse of the Heart": {
+    difficulty: "Experienced",
+    requirements: { skills: {"Agility":65,"Necromancy":90}, quests: ["Pharaoh's Folly"], qp: 0 },
+    rewards: { qp: 3 },
+    unlocks: ["Amascut, the Devourer boss access","Four 250,000 XP lamps (level 85)","Four demigod boons","Fourth room of the Sunken Pyramid"],
+  },
+  "Stellar Born": {
+    difficulty: "Experienced",
+    requirements: { skills: {"Mining":70,"Divination":70}, quests: ["Observatory Quest"], qp: 0 },
+    rewards: { qp: 2 },
+    unlocks: ["Zolarea","+5% XP mining shooting stars","Magical meteorite chunk","500 stardust"],
+  },
+  "Princess and the Pauper": {
+    difficulty: "Novice",
+    requirements: { skills: {"Cooking":25,"Construction":25}, quests: ["Gertrude's Cat","Murder on the Border"], qp: 0 },
+    rewards: { qp: 1 },
+    unlocks: ["1,000 Cooking XP","1,000 Construction XP","Fort Forinthry household dog"],
+  },
+  "There's No Place Like Home...": {
+    difficulty: "Novice",
+    requirements: { skills: {}, quests: [], qp: 0 },
+    rewards: { qp: 1 },
+    unlocks: ["Player-owned housing access","House Teleport spell","250 Construction XP lamp"],
+  },
+  "Duck Quest": {
+    difficulty: "Novice",
+    requirements: { skills: {}, quests: [], qp: 0 },
+    rewards: { qp: 1 },
+    unlocks: ["Duckling pet","Paddlington access","500 Herblore XP lamp"],
   },
 };
 

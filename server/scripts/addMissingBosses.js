@@ -28,6 +28,50 @@ function upsertBoss(b) {
 
 const MISSING_BOSSES = [
 
+  // ── Havenhythe (2026) ─────────────────────────────────────────────────────
+
+  { id: 'ivar',
+    name: 'Ivar, King of Bones',
+    difficulty: 'early', min_combat_level: 0,
+    requirements: { skills: {}, quests: ['Visions of Havenhythe'] },
+    drops: [
+      { name: 'Bonecrusher maul (1/64 — free-to-play unique)' },
+      { name: 'Magic skull mask (1/64 — free-to-play unique)' },
+      { name: "Ivar's loincloth (1/1,250, improves with kills)" },
+      { name: "Ivar's head (1/500)" },
+      { name: 'Colossal bone (always)' },
+      { name: 'Giant Champion\'s scroll / Long bone / Curved bone (very rare)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Ivar,_King_of_Bones' },
+
+  { id: 'silverquill',
+    name: 'Silverquill, the Dreadhog',
+    difficulty: 'early', min_combat_level: 0,
+    requirements: { skills: {}, quests: ['Hearts of Sanguine'] },
+    drops: [
+      { name: 'Sanguine spines / Silver spines (always, 10 of one)' },
+      { name: "Silverquill's blood-filled cyst (1/1,000)" },
+      { name: "Silverquill's head (1/500)" },
+      { name: 'Long bone (1/400)' },
+      { name: 'Curved bone (very rare)' },
+      { name: 'Dragonstone bracelet / Rune 2h crossbow (3/128)' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/Silverquill,_the_Dreadhog' },
+
+  { id: 'ghrazi_blood_knights',
+    name: 'The Ghrazi Blood Knights',
+    difficulty: 'end', min_combat_level: 100,
+    requirements: { skills: {}, quests: ['Heralds of Crimson'] },
+    drops: [
+      { name: "Malachi's tooth (T95 Ranged main-hand crossbow, 1/1,500 normal mode)" },
+      { name: "Malachi's claw (T95 Ranged off-hand crossbow, 1/1,500 normal mode)" },
+      { name: 'Invoke Arisen Flesh incantation codex (1/3,000 normal mode)' },
+      { name: 'Ghrazi Fauld (1/500 tertiary, not tradeable)' },
+      { name: 'Forgotten painting pieces 1-5' },
+      { name: 'Crimson ichor (always) / Uncut onyx' },
+    ],
+    wiki_url: 'https://runescape.wiki/w/The_Ghrazi_Blood_Knights' },
+
   // ── GWD2 individual bosses (currently only "gwd2" group entry exists) ─────
 
   { id: 'gregorovic',

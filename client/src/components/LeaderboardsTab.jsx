@@ -40,6 +40,18 @@ const TRUE_120_SKILLS = [
 const PREDEFINED_FIRSTS = [
   // ── PvM — Fight Caves / Kiln ─────────────────────────────────────────────
   {
+    key: 'ghrazi_blood_knights', label: 'The Ghrazi Blood Knights', sub: 'Havenhythe · duo/solo endgame boss', cat: 'PvM', icon: '🩸',
+    actMatch: t => /ghrazi blood knight/i.test(t),
+  },
+  {
+    key: 'silverquill', label: 'Silverquill, the Dreadhog', sub: 'Havenhythe · members boss', cat: 'PvM', icon: '🐗',
+    actMatch: t => /silverquill/i.test(t),
+  },
+  {
+    key: 'ivar', label: 'Ivar, King of Bones', sub: 'Havenhythe · free-to-play boss', cat: 'PvM', icon: '🦴',
+    actMatch: t => /ivar,? (?:the )?king of bones/i.test(t),
+  },
+  {
     key: 'fire_cape', label: 'Fire Cape', sub: 'TzTok-Jad', cat: 'PvM', icon: '🔥',
     actMatch: t => /fire cape/i.test(t) || /tztok.jad/i.test(t) || /\bjad\b.*defeat/i.test(t),
     dropMatch: t => /fire cape/i.test(t),

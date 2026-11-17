@@ -53,6 +53,9 @@ const QUEST_COMPLETE_PATTERN = /I completed the quest[:\s]+['"]?([^'".\n]+?)['"]
 // Order matters: more specific patterns (e.g. Nex: AoD) must come before generic ones (Nex).
 const BOSS_KILL_PATTERNS = [
   // Specific first — more specific patterns before overlapping ones
+  { key: 'ghrazi_blood_knights', label: 'The Ghrazi Blood Knights',        pattern: /ghrazi blood knight/i },
+  { key: 'silverquill',         label: 'Silverquill, the Dreadhog',      pattern: /\bsilverquill\b/i },
+  { key: 'ivar',                label: 'Ivar, King of Bones',            pattern: /ivar,? (?:the )?king of bones/i },
   { key: 'nex_aod',             label: 'Nex: Angel of Death',            pattern: /angel of death/i },
   { key: 'nex',                 label: 'Nex',                            pattern: /\bnex\b/i },
   { key: 'telos',               label: 'Telos, the Warden',              pattern: /\btelos\b/i },
