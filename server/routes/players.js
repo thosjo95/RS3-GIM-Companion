@@ -54,12 +54,6 @@ function getPlayerGroupId(playerId) {
   return db.prepare('SELECT group_id FROM players WHERE id = ?').get(playerId)?.group_id;
 }
 
-// GET /api/players
-router.get('/', (req, res) => {
-  const players = db.prepare('SELECT * FROM players ORDER BY rsn').all();
-  res.json(players);
-});
-
 // GET /api/players/:id
 router.get('/:id', (req, res) => {
   const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
@@ -101,7 +95,12 @@ router.get('/:id', (req, res) => {
 router.post('/', async (req, res) => {
   const { rsn, group_id } = req.body;
   if (!rsn?.trim()) return res.status(400).json({ error: 'RSN is required' });
-  if (!checkGroupAuth(req, res, group_id || req.headers['x-group-id'])) return;
+  if (!group_id) return res.status(400).json({ error: 'group_id is required' });
+  if (!checkGroupAuth(req, res, group_id)) return;
+
+  // Sane upper bound — stops a client from stuffing a group with junk rows.
+  const memberCount = db.prepare('SELECT COUNT(*) n FROM players WHERE group_id = ?').get(group_id).n;
+  if (memberCount >= 100) return res.status(400).json({ error: 'This group already has the maximum number of members' });
 
   const cleanRSN = sanitizeRSN(rsn.trim());
   if (!cleanRSN) return res.status(400).json({ error: 'RSN is required' });
@@ -147,7 +146,8 @@ router.post('/', async (req, res) => {
     if (err.message.includes('UNIQUE')) {
       return res.status(409).json({ error: `Player "${cleanRSN}" is already in this group` });
     }
-    throw err;
+    console.error('[add-player] insert failed:', err.message);
+    return res.status(500).json({ error: 'Could not add player' });
   }
 });
 
@@ -155,16 +155,19 @@ router.post('/', async (req, res) => {
 router.put('/:id', (req, res) => {
   const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
   if (!player) return res.status(404).json({ error: 'Player not found' });
-  if (!checkGroupAuth(req, res, player.group_id || req.headers['x-group-id'])) return;
+  if (!player.group_id) return res.status(403).json({ error: 'Player is not attached to a group' });
+  if (!checkGroupAuth(req, res, player.group_id)) return;
 
-  const { rsn, quest_points, group_id } = req.body;
+  // group_id is deliberately NOT updatable here: letting a write-authenticated
+  // client reassign a player would let them inject players into any other group.
+  const { rsn, quest_points } = req.body;
   const newRSN = rsn != null ? sanitizeRSN(rsn) : player.rsn;
+  if (!newRSN) return res.status(400).json({ error: 'RSN is required' });
   db.prepare(
-    'UPDATE players SET rsn = ?, quest_points = ?, group_id = ? WHERE id = ?'
+    'UPDATE players SET rsn = ?, quest_points = ? WHERE id = ?'
   ).run(
     newRSN,
-    quest_points ?? player.quest_points,
-    group_id ?? player.group_id,
+    Number.isFinite(Number(quest_points)) ? Number(quest_points) : player.quest_points,
     req.params.id
   );
   res.json({ success: true });
@@ -173,7 +176,9 @@ router.put('/:id', (req, res) => {
 // DELETE /api/players/:id
 router.delete('/:id', (req, res) => {
   const player = db.prepare('SELECT group_id FROM players WHERE id = ?').get(req.params.id);
-  if (!checkGroupAuth(req, res, player?.group_id || req.headers['x-group-id'])) return;
+  if (!player) return res.status(404).json({ error: 'Player not found' });
+  if (!player.group_id) return res.status(403).json({ error: 'Player is not attached to a group' });
+  if (!checkGroupAuth(req, res, player.group_id)) return;
   db.prepare('DELETE FROM players WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

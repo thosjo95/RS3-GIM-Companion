@@ -36,7 +36,8 @@ router.post('/', (req, res) => {
   if (!player_id || !item_name?.trim()) {
     return res.status(400).json({ error: 'player_id and item_name are required' });
   }
-  const groupId = req.headers['x-group-id'] || playerGroupId(player_id);
+  const groupId = playerGroupId(player_id);
+  if (!groupId) return res.status(400).json({ error: 'player_id is not a valid group member' });
   if (!checkGroupAuth(req, res, groupId)) return;
 
   const result = db.prepare(`
@@ -49,7 +50,8 @@ router.post('/', (req, res) => {
 // DELETE /api/drops/:id
 router.delete('/:id', (req, res) => {
   const drop = db.prepare('SELECT player_id FROM drops WHERE id = ?').get(req.params.id);
-  const groupId = req.headers['x-group-id'] || (drop && playerGroupId(drop.player_id));
+  if (!drop) return res.status(404).json({ error: 'Drop not found' });
+  const groupId = playerGroupId(drop.player_id);
   if (!checkGroupAuth(req, res, groupId)) return;
   db.prepare('DELETE FROM drops WHERE id = ?').run(req.params.id);
   res.json({ success: true });
@@ -84,7 +86,8 @@ router.post('/requests', (req, res) => {
   if (!player_id || !item_name?.trim() || !boss_name?.trim()) {
     return res.status(400).json({ error: 'player_id, item_name, and boss_name are required' });
   }
-  const groupId = req.headers['x-group-id'] || playerGroupId(player_id);
+  const groupId = playerGroupId(player_id);
+  if (!groupId) return res.status(400).json({ error: 'player_id is not a valid group member' });
   if (!checkGroupAuth(req, res, groupId)) return;
 
   const result = db.prepare(`
@@ -99,7 +102,7 @@ router.put('/requests/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM item_requests WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Request not found' });
 
-  const groupId = req.headers['x-group-id'] || playerGroupId(existing.player_id);
+  const groupId = playerGroupId(existing.player_id);
   if (!checkGroupAuth(req, res, groupId)) return;
 
   const { obtained, priority, notes } = req.body;
@@ -115,7 +118,8 @@ router.put('/requests/:id', (req, res) => {
 // DELETE /api/drops/requests/:id
 router.delete('/requests/:id', (req, res) => {
   const req_ = db.prepare('SELECT player_id FROM item_requests WHERE id = ?').get(req.params.id);
-  const groupId = req.headers['x-group-id'] || (req_ && playerGroupId(req_.player_id));
+  if (!req_) return res.status(404).json({ error: 'Request not found' });
+  const groupId = playerGroupId(req_.player_id);
   if (!checkGroupAuth(req, res, groupId)) return;
   db.prepare('DELETE FROM item_requests WHERE id = ?').run(req.params.id);
   res.json({ success: true });

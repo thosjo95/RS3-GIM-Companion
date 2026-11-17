@@ -11,8 +11,28 @@ const PORT = process.env.PORT || 3001;
 // all per-IP rate limiting (including the existing admin login lockout).
 app.set('trust proxy', 1);
 
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+
+// In production nginx serves the client and proxies /api from the same origin, so
+// CORS is only needed for local dev (vite on :5173). Override with CORS_ORIGINS.
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS
+  || 'https://groupiron.com,https://www.groupiron.com,http://localhost:5173').split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, cb) => cb(null, !origin || ALLOWED_ORIGINS.includes(origin)),
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Group-Id', 'X-Group-Password'],
+}));
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+
+// Small body limit everywhere except the snapshot upload (base64 PNG), which
+// installs its own larger parser on that one route.
+const smallJson = express.json({ limit: '100kb' });
+app.use((req, res, next) => (req.path.endsWith('/share-snapshot') ? next() : smallJson(req, res, next)));
 
 const { createRateLimiter } = require('./utils/rateLimit');
 
@@ -171,6 +191,20 @@ cron.schedule('0 2 * * *', () => {
     console.error(`[cleanup cron] Failed: ${err.message}`);
   }
 });
+
+// Unknown /api routes → JSON 404; uncaught route errors → JSON 500 (no stack leak).
+app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+app.use((err, req, res, next) => {
+  if (err?.type === 'entity.too.large') return res.status(413).json({ error: 'Request body too large' });
+  if (err?.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON' });
+  console.error(`[error] ${req.method} ${req.originalUrl}: ${err?.stack || err}`);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// Express 4 doesn't route async-handler rejections to the error middleware, and
+// Node 22 exits on unhandled rejections — log instead of taking the whole app down.
+process.on('unhandledRejection', err => console.error('[unhandledRejection]', err));
 
 app.listen(PORT, () => {
   console.log(`RS3 GIM Companion server running on http://localhost:${PORT}`);

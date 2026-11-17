@@ -448,18 +448,24 @@ router.put('/:id/webhook', (req, res) => {
 
 // POST /api/groups/:id/share-snapshot
 // Accepts a base64 PNG and posts it as a file to the group's Discord webhook
-router.post('/:id/share-snapshot', async (req, res) => {
+const snapshotLimiter = createRateLimiter({ windowMs: 60_000, max: 6, message: 'Too many snapshot uploads. Try again shortly.' });
+router.post('/:id/share-snapshot', snapshotLimiter, express.json({ limit: '6mb' }), async (req, res) => {
   if (!checkGroupAuth(req, res, req.params.id)) return;
   const group = db.prepare('SELECT discord_webhook_url AS webhook_url, name FROM groups WHERE id = ?').get(req.params.id);
   if (!group?.webhook_url) return res.status(400).json({ error: 'No Discord webhook configured for this group. Set one in the notification settings.' });
   if (!isValidDiscordWebhookUrl(group.webhook_url)) return res.status(400).json({ error: 'Stored webhook URL is invalid — please re-save it in notification settings.' });
 
   const { imageData } = req.body;
-  if (!imageData) return res.status(400).json({ error: 'No image data provided' });
+  if (typeof imageData !== 'string' || !imageData) return res.status(400).json({ error: 'No image data provided' });
 
   try {
     const base64 = imageData.replace(/^data:image\/png;base64,/, '');
     const buffer = Buffer.from(base64, 'base64');
+    // Must actually be a PNG (magic bytes) and a sane size before we forward it anywhere.
+    const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    if (buffer.length < 8 || !buffer.subarray(0, 8).equals(PNG_MAGIC) || buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Snapshot must be a PNG under 5MB' });
+    }
 
     // Build a multipart/form-data body manually (Node 18+ has no native FormData for fetch)
     const boundary = `----FormBoundary${Date.now()}`;

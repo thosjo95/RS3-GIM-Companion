@@ -5,10 +5,22 @@ const { generateSuggestedGoals } = require('../services/runescape');
 const { checkGroupAuth } = require('../utils/auth');
 const { notifyGoalCompleted } = require('../services/discord');
 
+// The group a goal belongs to is a property of the goal itself — never trust a
+// client-supplied X-Group-Id header for this, or anyone could authenticate
+// against their own group and then modify/delete another group's goals.
 function goalGroupId(goalId) {
-  const goal = db.prepare('SELECT owner_id FROM goals WHERE id = ?').get(goalId);
-  if (!goal?.owner_id) return null;
-  return db.prepare('SELECT group_id FROM players WHERE id = ?').get(goal.owner_id)?.group_id;
+  const goal = db.prepare('SELECT group_id, owner_id FROM goals WHERE id = ?').get(goalId);
+  if (!goal) return null;
+  if (goal.group_id) return goal.group_id;
+  if (!goal.owner_id) return null;
+  return db.prepare('SELECT group_id FROM players WHERE id = ?').get(goal.owner_id)?.group_id ?? null;
+}
+
+// Keep only player ids that actually belong to the group.
+function playersInGroup(ids, groupId) {
+  if (!Array.isArray(ids) || !groupId) return [];
+  const check = db.prepare('SELECT id FROM players WHERE id = ? AND group_id = ?');
+  return ids.map(Number).filter(pid => Number.isInteger(pid) && check.get(pid, groupId));
 }
 
 /**
@@ -119,8 +131,15 @@ router.post('/', (req, res) => {
   const { type, owner_id, title, description, category, skill, target_value, priority, status, contributor_ids, details_json } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
 
-  const groupId = req.headers['x-group-id']
-    || (owner_id && db.prepare('SELECT group_id FROM players WHERE id = ?').get(owner_id)?.group_id);
+  // Group comes from the owner player when there is one; the header is only
+  // honoured for ownerless group goals, and is validated by checkGroupAuth.
+  let groupId;
+  if (owner_id) {
+    groupId = db.prepare('SELECT group_id FROM players WHERE id = ?').get(owner_id)?.group_id;
+    if (!groupId) return res.status(400).json({ error: 'owner_id is not a valid group member' });
+  } else {
+    groupId = req.headers['x-group-id'];
+  }
   if (!checkGroupAuth(req, res, groupId)) return;
 
   // ── Duplicate prevention ──────────────────────────────────────────────────
@@ -173,9 +192,10 @@ router.post('/', (req, res) => {
 
   const goalId = result.lastInsertRowid;
 
-  if (contributor_ids?.length) {
+  const validContributors = playersInGroup(contributor_ids, groupId);
+  if (validContributors.length) {
     const ins = db.prepare('INSERT OR IGNORE INTO goal_contributors (goal_id, player_id) VALUES (?, ?)');
-    db.runTransaction(() => contributor_ids.forEach(pid => ins.run(goalId, pid)));
+    db.runTransaction(() => validContributors.forEach(pid => ins.run(goalId, pid)));
   }
 
   // Run auto-completion effects if created already complete (e.g. "Mark as Done")
@@ -203,7 +223,8 @@ router.put('/:id', (req, res) => {
   const goal = db.prepare('SELECT * FROM goals WHERE id = ?').get(req.params.id);
   if (!goal) return res.status(404).json({ error: 'Goal not found' });
 
-  const groupId = req.headers['x-group-id'] || goalGroupId(req.params.id);
+  const groupId = goalGroupId(req.params.id);
+  if (!groupId) return res.status(403).json({ error: 'Goal is not attached to a group' });
   if (!checkGroupAuth(req, res, groupId)) return;
 
   const justCompleted = status === 'complete' && goal.status !== 'complete';
@@ -230,9 +251,10 @@ router.put('/:id', (req, res) => {
 
   if (contributor_ids !== undefined) {
     db.prepare('DELETE FROM goal_contributors WHERE goal_id = ?').run(req.params.id);
-    if (contributor_ids.length) {
+    const validContributors = playersInGroup(contributor_ids, groupId);
+    if (validContributors.length) {
       const ins = db.prepare('INSERT OR IGNORE INTO goal_contributors (goal_id, player_id) VALUES (?, ?)');
-      db.runTransaction(() => contributor_ids.forEach(pid => ins.run(req.params.id, pid)));
+      db.runTransaction(() => validContributors.forEach(pid => ins.run(req.params.id, pid)));
     }
   }
 
@@ -271,7 +293,8 @@ router.put('/:id', (req, res) => {
 
 // DELETE /api/goals/:id
 router.delete('/:id', (req, res) => {
-  const groupId = req.headers['x-group-id'] || goalGroupId(req.params.id);
+  const groupId = goalGroupId(req.params.id);
+  if (!groupId) return res.status(404).json({ error: 'Goal not found' });
   if (!checkGroupAuth(req, res, groupId)) return;
   db.prepare('DELETE FROM goals WHERE id = ?').run(req.params.id);
   res.json({ success: true });

@@ -15,6 +15,9 @@ router.put('/:groupId', (req, res) => {
   const { groupId } = req.params;
   const { content } = req.body;
   if (!checkGroupAuth(req, res, groupId)) return;
+  if (content != null && (typeof content !== 'string' || content.length > 20000)) {
+    return res.status(400).json({ error: 'Notes must be text up to 20,000 characters' });
+  }
 
   db.prepare(`
     INSERT INTO group_notes (group_id, content, updated_at)

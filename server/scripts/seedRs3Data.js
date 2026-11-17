@@ -17,7 +17,10 @@ const db = require('../database');
 
 // ── Admin credentials ─────────────────────────────────────────────────────────
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'GIM$Vault_Adm1n!2025';   // <-- shown once at bottom
+// Never hard-code this: the repo is public. Set ADMIN_PASSWORD in the environment,
+// otherwise a random one is generated (and printed once) only if no admin exists yet.
+let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || null;
+let adminPasswordGenerated = false;
 
 function hashPassword(password, saltHex) {
   const salt = saltHex ? Buffer.from(saltHex, 'hex') : crypto.randomBytes(32);
@@ -1752,6 +1755,7 @@ console.log('🌱 Seeding RS3 reference data...\n');
 // Admin user
 const existing = db.prepare('SELECT id FROM admin_users WHERE username = ?').get(ADMIN_USERNAME);
 if (!existing) {
+  if (!ADMIN_PASSWORD) { ADMIN_PASSWORD = crypto.randomBytes(18).toString('base64url'); adminPasswordGenerated = true; }
   const { hash, salt } = hashPassword(ADMIN_PASSWORD);
   db.prepare('INSERT INTO admin_users (username, password_hash, salt) VALUES (?,?,?)').run(ADMIN_USERNAME, hash, salt);
   console.log('✅ Admin user created');
@@ -1925,12 +1929,13 @@ for (const [source_id, acq, id] of TYPE_PATCHES) {
 console.log(`   ${patchCount} items patched`);
 
 console.log('\n✅ Seed complete!\n');
-console.log('═══════════════════════════════════════════════════════');
-console.log('  ADMIN CREDENTIALS');
-console.log('  Username : admin');
-console.log(`  Password : ${ADMIN_PASSWORD}`);
-console.log('  Portal   : http://localhost:5173/admin');
-console.log('  Keep this password safe — it will not be shown again.');
-console.log('═══════════════════════════════════════════════════════\n');
+if (adminPasswordGenerated) {
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('  ADMIN ACCOUNT CREATED');
+  console.log(`  Username : ${ADMIN_USERNAME}`);
+  console.log(`  Password : ${ADMIN_PASSWORD}`);
+  console.log('  Shown once only — store it in a password manager now.');
+  console.log('═══════════════════════════════════════════════════════\n');
+}
 
 process.exit(0);
