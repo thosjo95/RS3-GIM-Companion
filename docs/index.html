@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.12</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.13</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9.12 documentation</div>
+        <div class="sidebar-version">v1.9.13 documentation</div>
       </div>
     </div>
 
@@ -276,7 +276,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.12</span>
+          <span class="badge badge-green">v1.9.13</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -946,7 +946,14 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.12 — November 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.13 — November 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Havenhythe and 2025–2026 content</strong> — the Goal Browser had no quests after January 2025. Added 13 quests (checked against runescape.wiki): the Havenhythe set (Visions of Havenhythe, Hearts of Sanguine, Wiz Kid, Hermit Permits, Secrets of Amberfell, Heralds of Crimson), the Menaphos arc (Beneath Scabaras' Sands, Pharaoh's Folly, Eclipse of the Heart, which unlocks Amascut), plus Stellar Born, Princess and the Pauper, Duck Quest and There's No Place Like Home... Seasonal event quests and the tutorial are left out on purpose</li>
+      <li><strong>New bosses</strong> — Ivar, King of Bones (free-to-play), Silverquill, the Dreadhog and The Ghrazi Blood Knights (endgame, needs Heralds of Crimson; drops Malachi's tooth/claw, T95 Ranged crossbows), with requirements, drops, kill detection and Firsts cards</li>
+      <li><strong>Auras removed</strong> — RS3 removed all auras in April 2026. The four Daemonheim area-task tiers now list the passive rewards and XP lamps the wiki gives instead of "Daemonheim aura 1–4"</li>
+    </ul>
+
+    <h3>v1.9.12 — November 2026</h3>
     <ul>
       <li><strong>Cross-group authorization bypass fixed (critical)</strong> — goal, drop, item-request and player write routes checked the password of the group named in the client-supplied <code>X-Group-Id</code> header instead of the group the record actually belongs to, so anyone could use their own (or any unclaimed) group to edit or delete another group's data. The group is now always derived from the record itself. Players can no longer be moved between groups via <code>PUT /players/:id</code>, goal contributors must belong to the group, and the unused <code>GET /api/players</code> (which dumped every group's players) is removed</li>
       <li><strong>Admin password no longer in the repo</strong> — the seed script hard-coded the admin password in this public repository. It now reads <code>ADMIN_PASSWORD</code> from the environment, or generates a random one (printed once) only when no admin exists. If your admin account was created by the seed script, change its password — the old default is public in git history</li>
@@ -1155,7 +1162,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.12 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.13 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 

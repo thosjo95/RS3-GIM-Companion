@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.12-4caf50?style=flat-square" alt="v1.9.12"/>
+    <img src="https://img.shields.io/badge/version-1.9.13-4caf50?style=flat-square" alt="v1.9.13"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -500,6 +500,12 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.13 — November 2026
+- 🆕 **Havenhythe and 2025–2026 content** — the Goal Browser had no quests after January 2025. Added 13 quests (checked against runescape.wiki): the Havenhythe set (Visions of Havenhythe, Hearts of Sanguine, Wiz Kid, Hermit Permits, Secrets of Amberfell, Heralds of Crimson), the Menaphos arc (Beneath Scabaras' Sands, Pharaoh's Folly, Eclipse of the Heart — the quest that unlocks Amascut), plus Stellar Born, Princess and the Pauper, Duck Quest and There's No Place Like Home... Seasonal event quests and the tutorial are left out on purpose
+- 🩸 **New bosses** — Ivar, King of Bones (free-to-play), Silverquill, the Dreadhog and The Ghrazi Blood Knights (endgame, needs Heralds of Crimson; drops Malachi's tooth/claw, T95 Ranged crossbows), with requirements, drops, kill detection and Firsts cards
+- 🧹 **Auras removed** — RS3 removed all auras in April 2026. The four Daemonheim area-task tiers now list the passive rewards and XP lamps the wiki gives instead of "Daemonheim aura 1–4"
+- ℹ️ After deploying, re-run the reference-data seeds on the server (`node server/scripts/seedRs3Data.js && node server/scripts/addMissingBosses.js`) so the new quests, bosses and gear appear in the database-driven lists
 
 ### v1.9.12 — November 2026
 - 🔒 **Cross-group authorization bypass fixed (critical)** — goal, drop, item-request and player write routes checked the password of the group named in the client-supplied `X-Group-Id` header instead of the group the record actually belongs to, so anyone could use their own (or any unclaimed) group to edit or delete another group's data. The group is now always derived from the record itself. Also: players can no longer be moved between groups via `PUT /players/:id`, goal contributors must belong to the group, and the unused `GET /api/players` (which dumped every group's players) is removed
