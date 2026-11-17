@@ -54,7 +54,7 @@ export function PlayerQuestTable({ player }) {
         <div className="icon">📜</div>
         <p>No quest data yet.</p>
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-          Requires a public RuneMetrics profile. Sync {player.rsn} to fetch quest data.
+          Sync {player.rsn} to fetch quest data.
         </p>
       </div>
     );
@@ -175,7 +175,7 @@ export function QuestsPanel({ players, colorMap }) {
         <div className="icon">📜</div>
         <p>Quest data not yet loaded.</p>
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-          Sync your players — quest lists are fetched from RuneMetrics (public profile required).
+          Sync your players — quest lists are fetched from the Adventurer's Log.
         </p>
       </div>
     );

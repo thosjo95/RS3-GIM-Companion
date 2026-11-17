@@ -40,7 +40,7 @@ export default function ActivityTab({ players }) {
     return (
       <div className="empty-state" style={{ paddingTop: 48 }}>
         <div className="icon">📋</div>
-        <p>No recent activity found. Sync players to load their RuneMetrics feed.</p>
+        <p>No recent activity found. Sync players to load their Adventurer's Log feed.</p>
       </div>
     );
   }

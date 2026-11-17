@@ -33,7 +33,7 @@ const TRUE_120_SKILLS = [
 ];
 
 // ── Predefined milestone definitions ──────────────────────────────────────────
-// actMatch  : fn(combinedText) – match RuneMetrics activity text
+// actMatch  : fn(combinedText) – match Adventurer's Log activity text
 // dropMatch : fn(combinedText) – match drop-style activity ("I found/received a X")
 // skillCheck: fn(player)       – fallback: check current skill data
 
@@ -322,13 +322,15 @@ const PREDEFINED_FIRSTS = [
   // ── 99s — every skill, generated so none get left out
   ...ALL_SKILLS.map(skill => ({
     key: `first99_${skill.toLowerCase()}`, label: `First 99 ${skill}`, sub: '', cat: 'Skill', skillIcon: skill,
-    actMatch: t => new RegExp(`maximum level in ${skill}`, 'i').test(t),
+    actMatch: t => new RegExp(`maximum level in ${skill}`, 'i').test(t)
+      || new RegExp(`I levelled my ${skill} skill, I am now level 99\\b`, 'i').test(t),
     skillCheck: p => (p.skills?.find(s => s.skill_name === skill)?.level ?? 0) >= 99,
   })),
   // ── 120s — only the 13 skills with a true 120 cap
   ...TRUE_120_SKILLS.map(skill => ({
     key: `first120_${skill.toLowerCase()}`, label: `First 120 ${skill}`, sub: 'True 120', cat: 'Skill', skillIcon: skill,
-    actMatch: t => new RegExp(`maximum level in ${skill}`, 'i').test(t) && /120/.test(t),
+    actMatch: t => (new RegExp(`maximum level in ${skill}`, 'i').test(t) && /120/.test(t))
+      || new RegExp(`I levelled my ${skill} skill, I am now level 120\\b`, 'i').test(t),
     skillCheck: p => (p.skills?.find(s => s.skill_name === skill)?.level ?? 0) >= 120,
   })),
 
@@ -573,7 +575,7 @@ function FirstsBoard({ players, colorMap, groupId, canWrite, onToast }) {
       )}
 
       <div style={{ marginTop: 16, fontSize: 10, color: 'var(--text-dim)', textAlign: 'center' }}>
-        PvM / Quest / Item firsts detected from RuneMetrics activity feed (last 50 entries per player). Skill &amp; Clue milestones use current hiscores data (date shown as unknown). Drop count milestones count across all stored activities. Any entry can be corrected or backfilled by hand — click ✎ (unlocked groups only).
+        Firsts are detected from the Adventurer's Log activity feed (events are stored permanently as players sync). Skill &amp; Clue milestones fall back to current hiscores data (date shown as unknown) when the feed has no matching entry. Drop count milestones count across all stored activities. Any entry can be corrected or backfilled by hand — click ✎ (unlocked groups only).
       </div>
 
       {editingKey && (
@@ -782,7 +784,8 @@ function MilestonesFeed({ players, colorMap }) {
 
         // 99 / 120 skill achievement
         const maxMatch = combined.match(/I achieved the maximum level in ([\w\s]+?)!?\.?$/i)
-          ?? combined.match(/I (?:levelled|reached) (?:my )?([\w\s]+?) to (99|1[01]\d|120)\b/i);
+          ?? combined.match(/I (?:levelled|reached) (?:my )?([\w\s]+?) to (99|1[01]\d|120)\b/i)
+          ?? combined.match(/I levelled my ([\w\s]+?) skill, I am now level (99|120)\b/i);
         if (maxMatch) {
           const skillName = maxMatch[1].trim();
           if (ALL_SKILLS.includes(skillName)) {
@@ -843,7 +846,7 @@ function MilestonesFeed({ players, colorMap }) {
   if (milestones.length === 0) {
     return (
       <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '24px 0' }}>
-        No milestones detected yet. Sync players — milestones are picked up automatically from RuneMetrics activity feeds.
+        No milestones detected yet. Sync players — milestones are picked up automatically from the Adventurer's Log feed.
       </div>
     );
   }
@@ -1113,8 +1116,8 @@ function BossKills({ players, colorMap, groupId }) {
       <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: '24px 0' }}>
         <p>No boss kills detected yet.</p>
         <p style={{ marginTop: 8, fontSize: 11, lineHeight: 1.6 }}>
-          Kill counts are built from the RuneMetrics activity feed — they accumulate every time a player is synced.<br />
-          Sync your players and check back shortly. Only kills that appear in the activity feed will be counted.
+          Kill counts are built from the Adventurer's Log feed — they accumulate every time a player is synced.<br />
+          Sync your players and check back shortly. Only kills the game logged are counted — each player can switch event types on under Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log.
         </p>
       </div>
     );
@@ -1190,7 +1193,7 @@ function BossKills({ players, colorMap, groupId }) {
         </table>
       </div>
       <div style={{ marginTop: 10, fontSize: 10, color: 'var(--text-dim)' }}>
-        Counted from RuneMetrics activity feed — accumulates each sync. Numbers grow over time as more kills are detected.
+        Counted from the Adventurer's Log feed — accumulates each sync (the game batches kills, e.g. “I killed 17 Hermods”). Only kills since a player was added are counted.
       </div>
     </div>
   );
@@ -1320,7 +1323,7 @@ export default function LeaderboardsTab({ players, groupId, canWrite, onToast })
       </div>
 
       <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
-        Firsts/Milestones auto-detected from RuneMetrics activity feed (updates every ~2 hours) · Boss kills, clue counts &amp; XP from RS3 hiscores (syncs within ~5 min)
+        Firsts/Milestones and boss kills come from the Adventurer's Log feed (updates every ~2 hours) · Clue counts &amp; XP from RS3 hiscores (syncs within ~5 min)
       </div>
     </div>
   );

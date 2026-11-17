@@ -643,7 +643,7 @@ function MaintenanceTab({ pushToast }) {
       id: 'sync_activities',
       emoji: '🔄',
       title: 'Trigger Activity Sync',
-      desc: 'Manually runs the RuneMetrics activity fetch for all players in a group — same as the 2-hour background cron, but on demand. May take a while for large groups.',
+      desc: 'Manually runs the Adventurer\'s Log activity fetch for all players in a group — same as the 2-hour background cron, but on demand. May take a while for large groups.',
       fields: [
         { key: 'group_id', label: 'Group ID', placeholder: 'e.g. 12' },
       ],

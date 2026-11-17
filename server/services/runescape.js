@@ -9,84 +9,45 @@ const SKILLS = [
   'Necromancy',
 ];
 
-// Post-skill activity rows in the RS3 hiscores CSV (indices 30–60).
-// Order matches the RS3 hiscores lite endpoint exactly.
-// Note: RS3 does NOT have a "Clue Scrolls All" row — only the 5 tiers.
-const ACTIVITIES = [
-  'Bounty Hunter Hunter',                  // 30
-  'Bounty Hunter Rogues',                  // 31
-  'Dominion Tower',                        // 32
-  'The Crucible',                          // 33
-  'Castle Wars Games',                     // 34
-  'B.A. Attackers',                        // 35
-  'B.A. Defenders',                        // 36
-  'B.A. Collectors',                       // 37
-  'B.A. Healers',                          // 38
-  'Duel Tournament',                       // 39
-  'Mobilising Armies',                     // 40
-  'Conquest',                              // 41
-  'Fist of Guthix',                        // 42
-  'GG: Athletics',                         // 43
-  'GG: Resource Race',                     // 44
-  'WE2: Armadyl Lifetime Contribution',    // 45
-  'WE2: Bandos Lifetime Contribution',     // 46
-  'WE2: Armadyl PvP Kills',               // 47
-  'WE2: Bandos PvP Kills',                // 48
-  'Heist Guard Level',                     // 49
-  'Heist Robber Level',                    // 50
-  'CFP: 5 Game Average',                   // 51
-  'AF15: Cow Tipping',                     // 52
-  'AF15: Rats Killed After the Miniquest', // 53
-  'RuneScore',                             // 54
-  'Clue Scrolls Easy',                     // 55
-  'Clue Scrolls Medium',                   // 56
-  'Clue Scrolls Hard',                     // 57
-  'Clue Scrolls Elite',                    // 58
-  'Clue Scrolls Master',                   // 59
-];
+// ── Jagex Platform API (https://developer.runescape.com/platform/) ─────────────
+// RuneMetrics (apps.runescape.com/runemetrics/*) was switched off on 10 Nov 2026.
+//   hiscores       → index_lite.json          (named skills + activities)
+//   quests, skills → adventurers-log playerData
+//   activity feed  → adventurers-log playerEvents (20 most recent events)
+// Best practices from the docs: descriptive User-Agent, cache, don't hammer.
+const UA = 'RS3-GIM-Companion (groupiron.com; github.com/thosjo95/RS3-GIM-Companion)';
+const HISCORES_URL = 'https://secure.runescape.com/m=hiscore/index_lite.json';
+const ALOG_URL     = 'https://secure.runescape.com/m=adventurers-log/api/v1';
 
-// Boss kill-count rows in the RS3 hiscores CSV (indices 41+).
-// Note: exact ordering may vary between Jagex updates — values will be null if
-// an index is missing. Compare synced data with the RS3 hiscores site to verify.
-const BOSS_KILLS = [
-  'Corporeal Beast',
-  'General Graardor',
-  "K'ril Tsutsaroth",
-  'Commander Zilyana',
-  "Kree'arra",
-  'Dagannoth Kings',
-  'Kalphite Queen',
-  'Nex',
-  'TzTok-Jad',
-  'TzKal-Zuk',
-  'Kalphite King',
-  'Vorago',
-  'Araxxi',
-  'Nex: Angel of Death',
-  'Telos, the Warden',
-  'Solak',
-  'Helwyr',
-  'Vindicta',
-  'Gregorovic',
-  'Twin Furies',
-  'Rasial, the First Necromancer',
-  'Zamorak, Lord of Erebus',
-];
-
-const HISCORES_URL = 'https://secure.runescape.com/m=hiscore/index_lite.ws';
-const RUNEMETRICS_URL = 'https://apps.runescape.com/runemetrics/profile/profile';
-
-// RuneMetrics skill ID → skill name mapping (used as hiscores fallback for private profiles)
-const RUNEMETRICS_SKILL_IDS = {
-   0: 'Attack',       1: 'Defence',      2: 'Strength',    3: 'Constitution',
-   4: 'Ranged',       5: 'Prayer',       6: 'Magic',       7: 'Cooking',
-   8: 'Woodcutting',  9: 'Fletching',   10: 'Fishing',    11: 'Firemaking',
-  12: 'Crafting',    13: 'Smithing',    14: 'Mining',     15: 'Herblore',
-  16: 'Agility',     17: 'Thieving',    18: 'Slayer',     19: 'Farming',
-  20: 'Runecrafting', 21: 'Hunter',     22: 'Construction', 23: 'Summoning',
-  24: 'Dungeoneering', 25: 'Divination', 26: 'Invention', 27: 'Archaeology',
-  28: 'Necromancy',
+// API names that differ from the names used everywhere else in this app.
+const HISCORE_SKILL_NAME = { Hitpoints: 'Constitution', Runecraft: 'Runecrafting' };
+const ALOG_SKILL_NAME    = {
+  attack: 'Attack', defence: 'Defence', strength: 'Strength', hitpoints: 'Constitution', ranged: 'Ranged',
+  prayer: 'Prayer', magic: 'Magic', cooking: 'Cooking', woodcutting: 'Woodcutting', fletching: 'Fletching',
+  fishing: 'Fishing', firemaking: 'Firemaking', crafting: 'Crafting', smithing: 'Smithing', mining: 'Mining',
+  herblore: 'Herblore', agility: 'Agility', thieving: 'Thieving', slayer: 'Slayer', farming: 'Farming',
+  runecraft: 'Runecrafting', hunter: 'Hunter', construction: 'Construction', summoning: 'Summoning',
+  dungeoneering: 'Dungeoneering', divination: 'Divination', invention: 'Invention',
+  archaeology: 'Archaeology', necromancy: 'Necromancy',
 };
+// Keep the activity keys the rest of the app (clue leaderboard, RuneScore) already reads.
+const HISCORE_ACTIVITY_NAME = {
+  'Clue Scrolls (easy)':   'Clue Scrolls Easy',
+  'Clue Scrolls (medium)': 'Clue Scrolls Medium',
+  'Clue Scrolls (hard)':   'Clue Scrolls Hard',
+  'Clue Scrolls (elite)':  'Clue Scrolls Elite',
+  'Clue Scrolls (master)': 'Clue Scrolls Master',
+};
+
+async function apiGet(url, timeoutMs = 10000) {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': UA, Accept: 'application/json' },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  let body = null;
+  try { body = await res.json(); } catch { /* error pages are HTML */ }
+  return { status: res.status, body };
+}
 
 /**
  * Sanitize an RSN before sending it to Jagex APIs.
@@ -105,132 +66,105 @@ function sanitizeRSN(rsn) {
 
 async function fetchHiscores(rsn) {
   const cleanRSN = sanitizeRSN(rsn);
-  // RS3 hiscores runs on old Jagex infrastructure that expects application/x-www-form-urlencoded
-  // query strings — i.e. spaces must be '+', not '%20'.  Using URLSearchParams gives us that
-  // automatically and is the correct encoding for query parameters on this endpoint.
-  const url = `${HISCORES_URL}?${new URLSearchParams({ player: cleanRSN })}`;
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
-    signal: AbortSignal.timeout(10000),
-  });
+  const { status, body } = await apiGet(`${HISCORES_URL}?${new URLSearchParams({ player: cleanRSN })}`);
 
-  if (response.status === 404) {
-    // Player has private hiscores — fall back to RuneMetrics skillvalues
-    console.log(`[sync] ${cleanRSN}: hiscores private, falling back to RuneMetrics`);
-    return fetchRuneMetricsAsHiscores(cleanRSN);
+  if (status === 404) {
+    // Not on the hiscores (private / unranked) — the Adventurer's Log still has levels and XP.
+    console.log(`[sync] ${cleanRSN}: not on hiscores, falling back to Adventurer's Log`);
+    return fetchSkillsFromPlayerData(cleanRSN);
   }
-  if (!response.ok) throw new Error(`Hiscores API returned ${response.status}`);
-
-  const text = await response.text();
-  return parseHiscores(text);
+  if (status !== 200 || !body) throw new Error(`Hiscores API returned ${status}`);
+  return parseHiscores(body);
 }
 
-/**
- * Fetches skill data from the RuneMetrics profile API and returns it in the
- * same shape as parseHiscores() so the rest of the sync pipeline is unchanged.
- * Used as a fallback for players who have set their hiscores to private.
- */
-async function fetchRuneMetricsAsHiscores(cleanRSN) {
-  const url = `${RUNEMETRICS_URL}?${new URLSearchParams({ user: cleanRSN, activities: 0 })}`;
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!response.ok) throw new Error(`RuneMetrics returned ${response.status} for "${cleanRSN}"`);
-  const data = await response.json();
-  if (data.error) throw new Error(`RuneMetrics error for "${cleanRSN}": ${data.error}`);
-  if (!Array.isArray(data.skillvalues) || data.skillvalues.length === 0) {
-    throw new Error(`"${cleanRSN}" not found on hiscores and RuneMetrics profile is private`);
-  }
+/** Skills-only fallback in the same shape as parseHiscores(), for players missing from the hiscores. */
+async function fetchSkillsFromPlayerData(cleanRSN) {
+  const { status, body } = await apiGet(`${ALOG_URL}/playerData/${encodeURIComponent(cleanRSN)}?includeSkills=true`);
+  if (status === 404) throw new Error(`"${cleanRSN}" not found on hiscores`);
+  if (status !== 200 || !body?.skills) throw new Error(`Adventurer's Log returned ${status} for "${cleanRSN}"`);
 
-  const result = { skills: {}, activities: {}, bossKills: {}, totalXp: 0, totalLevel: 0, privateHiscores: true };
-
-  for (const sv of data.skillvalues) {
-    const name = RUNEMETRICS_SKILL_IDS[sv.id];
+  const result = { skills: {}, activities: {}, totalXp: 0, totalLevel: 0, privateHiscores: true };
+  for (const [key, s] of Object.entries(body.skills)) {
+    const name = ALOG_SKILL_NAME[key];
     if (!name) continue;
-    // RuneMetrics stores XP * 10 — divide to get real XP
-    const xp = Math.floor((sv.xp ?? 0) / 10);
-    result.skills[name] = { rank: null, level: sv.level ?? 1, xp };
+    result.skills[name] = { rank: null, level: s.level ?? 1, xp: Math.floor((s.fine_xp ?? 0) / 10) };
   }
-
-  // Synthesise Overall from the individual skills (mirrors parseHiscores)
-  const totalLevel = Object.values(result.skills).reduce((s, sk) => s + (sk.level ?? 1), 0);
-  const totalXp    = Object.values(result.skills).reduce((s, sk) => s + (sk.xp   ?? 0), 0);
+  const totalLevel = Object.values(result.skills).reduce((n, s) => n + (s.level ?? 1), 0);
+  const totalXp    = Object.values(result.skills).reduce((n, s) => n + (s.xp ?? 0), 0);
   result.skills['Overall'] = { rank: null, level: totalLevel, xp: totalXp };
-  result.totalLevel = data.totalskill ?? totalLevel;
-  result.totalXp    = data.totalxp    ?? totalXp;
-
+  result.totalLevel = totalLevel;
+  result.totalXp    = totalXp;
   return result;
 }
 
-function parseHiscores(csv) {
-  const lines = csv.trim().split('\n');
-  const result = { skills: {}, activities: {}, bossKills: {}, totalXp: 0, totalLevel: 0 };
+function parseHiscores(json) {
+  const result = { skills: {}, activities: {}, totalXp: 0, totalLevel: 0 };
 
-  for (let i = 0; i < SKILLS.length && i < lines.length; i++) {
-    const parts = lines[i].trim().split(',');
-    if (parts.length < 3) continue;
-
-    const rank  = parseInt(parts[0], 10);
-    const level = parseInt(parts[1], 10);
-    const xp    = parseInt(parts[2], 10);
-    const name  = SKILLS[i];
-
-    result.skills[name] = { rank: rank < 0 ? null : rank, level, xp };
-
-    if (i === 0) {
-      result.totalXp    = xp    > 0 ? xp    : 0;
-      result.totalLevel = level > 0 ? level : 0;
+  for (const s of json.skills ?? []) {
+    const name = HISCORE_SKILL_NAME[s.name] ?? s.name;
+    // level/xp are -1 on some old records ("no data")
+    result.skills[name] = {
+      rank:  s.rank < 0 ? null : s.rank,
+      level: s.level < 0 ? 1 : s.level,
+      xp:    s.xp    < 0 ? 0 : s.xp,
+    };
+    if (name === 'Overall') {
+      result.totalXp    = s.xp    > 0 ? s.xp    : 0;
+      result.totalLevel = s.level > 0 ? s.level : 0;
     }
   }
 
-  // Activities / minigames (indices 30–40, format: rank,score)
-  for (let i = 0; i < ACTIVITIES.length; i++) {
-    const csvIdx = SKILLS.length + i;
-    if (csvIdx >= lines.length) break;
-    const parts = lines[csvIdx].trim().split(',');
-    if (parts.length < 2) continue;
-    const score = parseInt(parts[1], 10);
-    if (score >= 0) result.activities[ACTIVITIES[i]] = score;
+  // Activities are identified by NAME — ids aren't stable. Note the hiscores have no
+  // boss kill counts: only minigames, clues, RuneScore and Leagues.
+  for (const a of json.activities ?? []) {
+    if (a.score >= 0) result.activities[HISCORE_ACTIVITY_NAME[a.name] ?? a.name] = a.score;
   }
-
-  // Boss kill counts (indices 41+, format: rank,kills)
-  for (let i = 0; i < BOSS_KILLS.length; i++) {
-    const csvIdx = SKILLS.length + ACTIVITIES.length + i;
-    if (csvIdx >= lines.length) break;
-    const parts = lines[csvIdx].trim().split(',');
-    if (parts.length < 2) continue;
-    const kills = parseInt(parts[1], 10);
-    if (kills >= 0) result.bossKills[BOSS_KILLS[i]] = kills;
-  }
-
   return result;
 }
 
-async function fetchRuneMetrics(rsn, activityCount = 20) {
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+/** ISO 8601 → the "DD-Mon-YYYY HH:mm" (UTC) format the rest of the app stores and parses. */
+function isoToActivityDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getUTCDate())}-${MONTHS[d.getUTCMonth()]}-${d.getUTCFullYear()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
+/**
+ * Most recent Adventurer's Log events (the API returns the latest 20, newest first).
+ * Returns { name, activities: [{ date, text, details, type }] }. Kill and level-up
+ * events are batched by the game, e.g. "I killed 17 Hermods." is one event.
+ */
+async function fetchPlayerEvents(rsn) {
   const cleanRSN = sanitizeRSN(rsn);
-  // Same + encoding requirement as the hiscores endpoint.
-  const url = `${RUNEMETRICS_URL}?${new URLSearchParams({ user: cleanRSN, activities: activityCount })}`;
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
-    signal: AbortSignal.timeout(8000),
-  });
-
-  if (!response.ok) throw new Error(`RuneMetrics returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error);
-
+  const { status, body } = await apiGet(`${ALOG_URL}/playerEvents/${encodeURIComponent(cleanRSN)}`);
+  if (status !== 200 || !body) throw new Error(`Adventurer's Log events returned ${status}${body?.error ? ` (${body.error})` : ''}`);
   return {
-    // 'name' is the canonical RS3 display name — useful for normalising stored RSNs
-    name: typeof data.name === 'string' ? data.name.trim() : null,
-    questsComplete: data.questscomplete ?? 0,
-    questsStarted: data.questsstarted ?? 0,
-    activities: (data.activities || []).map(a => ({
-      date: a.date,
-      text: a.text,
-      details: a.details,
+    name: typeof body.name === 'string' ? body.name.trim() : null,
+    activities: (body.events || []).map(e => ({
+      date: isoToActivityDate(e.date),
+      text: e.text,
+      details: e.details,
+      type: e.type,
     })),
   };
+}
+
+/**
+ * Quest list + quest points from the Adventurer's Log player data.
+ * Returns { quests: [{ title, status, difficulty, members, questPoints, userEligible }], qp }
+ * (same item shape the old RuneMetrics quests API produced). Parent "Multi" nodes
+ * (difficulty 250, e.g. Recipe for Disaster) are grouping rows, not real quests.
+ */
+async function fetchPlayerQuests(rsn) {
+  const cleanRSN = sanitizeRSN(rsn);
+  const { status, body } = await apiGet(`${ALOG_URL}/playerData/${encodeURIComponent(cleanRSN)}?includeQuests=true`);
+  if (status !== 200 || !body?.quests) throw new Error(`Adventurer's Log quests returned ${status}${body?.error ? ` (${body.error})` : ''}`);
+  const quests = Object.values(body.quests)
+    .filter(q => q.difficulty !== 250)
+    .map(q => ({ title: q.title, status: q.status, difficulty: q.difficulty, members: q.members, questPoints: q.qp, userEligible: q.eligible }));
+  return { quests, qp: body.qp ?? 0 };
 }
 
 function calcCombatLevel(skills) {
@@ -324,23 +258,4 @@ function generateSuggestedGoals(players) {
   return suggestions;
 }
 
-/**
- * Fetch a player's quest completion list from the RuneMetrics quests API.
- * Returns an array of { title, status, difficulty, members, questPoints } objects.
- * status is one of: 'COMPLETED', 'STARTED', 'NOT_STARTED'
- * Requires a public RuneMetrics profile — throws on private or unavailable.
- */
-async function fetchPlayerQuests(rsn) {
-  const cleanRSN = sanitizeRSN(rsn);
-  const url = `https://apps.runescape.com/runemetrics/quests?user=${encodeURIComponent(cleanRSN)}`;
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'RS3-GIM-Companion/1.0' },
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!response.ok) throw new Error(`RuneMetrics quests ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error); // e.g. "PROFILE_PRIVATE"
-  return data.quests ?? [];
-}
-
-module.exports = { fetchHiscores, fetchRuneMetrics, fetchPlayerQuests, calcCombatLevel, generateSuggestedGoals, sanitizeRSN, SKILLS, BOSS_KILLS };
+module.exports = { fetchHiscores, fetchPlayerEvents, fetchPlayerQuests, calcCombatLevel, generateSuggestedGoals, sanitizeRSN, SKILLS };

@@ -1,8 +1,8 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../database');
-const { fetchHiscores, fetchRuneMetrics, fetchPlayerQuests, calcCombatLevel, sanitizeRSN } = require('../services/runescape');
-const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, mergeHiscoreBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
+const { fetchHiscores, fetchPlayerEvents, fetchPlayerQuests, calcCombatLevel, sanitizeRSN } = require('../services/runescape');
+const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones } = require('../services/activitySync');
 const { checkGroupAuth } = require('../utils/auth');
 const { notifyGoalCompleted } = require('../services/discord');
 const { createRateLimiter } = require('../utils/rateLimit');
@@ -121,12 +121,12 @@ router.post('/', async (req, res) => {
     console.warn(`[add-player] Hiscores check failed for "${cleanRSN}": ${err.message}${isCustomGroup ? ' (custom group — proceeding anyway)' : ' — proceeding anyway'}`);
   }
 
-  // Step 2 — Resolve the canonical display name from RuneMetrics.
-  // RS3 normalises names (capitalisation, spaces) and RuneMetrics returns the definitive
+  // Step 2 — Resolve the canonical display name from the Adventurer's Log.
+  // RS3 normalises names (capitalisation, spaces) and the API returns the definitive
   // form in its 'name' field.  Storing the canonical name avoids future encoding mismatches.
   let canonicalRSN = cleanRSN;
   try {
-    const rm = await fetchRuneMetrics(cleanRSN, 0);
+    const rm = await fetchPlayerEvents(cleanRSN);
     if (rm.name && rm.name.length > 0) {
       canonicalRSN = rm.name;
       if (canonicalRSN !== cleanRSN) {
@@ -134,7 +134,7 @@ router.post('/', async (req, res) => {
       }
     }
   } catch {
-    // RuneMetrics unavailable or profile is private — fall back to the sanitised name
+    // Adventurer's Log unavailable — fall back to the sanitised name
   }
 
   try {
@@ -201,15 +201,14 @@ router.post('/:id/sync', syncOneLimiter, async (req, res) => {
 
     const data = await fetchHiscores(player.rsn);
     const combat = calcCombatLevel(data.skills);
-    mergeHiscoreBossKills(player.id, data.bossKills);
 
-    // Preserve existing RuneMetrics quest data — only hiscores activities updated here.
+    // Quest data comes from the Adventurer's Log; hiscores activities are updated here.
     // Also take the opportunity to resolve the canonical display name (fixes casing /
     // encoding mismatches that slipped through sanitiseRSN).
     let existing = {};
     let canonicalRSN = player.rsn;
     try {
-      const rm = await fetchRuneMetrics(player.rsn, 0);
+      const rm = await fetchPlayerEvents(player.rsn);
       if (rm.name && rm.name.length > 0 && rm.name !== player.rsn) {
         // Only rename if no other player in the same group already has the canonical name
         const conflict = db.prepare('SELECT id FROM players WHERE rsn = ? AND group_id = ? AND id != ?').get(rm.name, player.group_id, player.id);
@@ -225,17 +224,19 @@ router.post('/:id/sync', syncOneLimiter, async (req, res) => {
         player.rsn = canonicalRSN;
       }
     } catch {
-      // RuneMetrics unavailable or private — no problem, hiscores data is still valid
+      // Adventurer's Log unavailable — no problem, hiscores data is still valid
     }
 
-    // Fetch quest completion list from RuneMetrics (fire-and-forget — doesn't block sync)
+    // Fetch quest completion list from the Adventurer's Log (doesn't block sync on failure)
+    let questCounts = null;
     try {
-      const quests = await fetchPlayerQuests(player.rsn);
-      const totalQP = quests
-        .filter(q => q.status === 'COMPLETED')
-        .reduce((sum, q) => sum + (q.questPoints || 0), 0);
+      const { quests, qp } = await fetchPlayerQuests(player.rsn);
+      questCounts = {
+        complete: quests.filter(q => q.status === 'COMPLETED').length,
+        started:  quests.filter(q => q.status === 'STARTED').length,
+      };
       db.prepare('UPDATE players SET quests_json = ?, quest_points = ? WHERE id = ?')
-        .run(JSON.stringify(quests), totalQP, player.id);
+        .run(JSON.stringify(quests), qp, player.id);
     } catch (e) {
       console.log(`[sync] Quest fetch skipped for ${player.rsn}: ${e.message}`);
     }
@@ -244,11 +245,11 @@ router.post('/:id/sync', syncOneLimiter, async (req, res) => {
     try { existing = player.stats_json ? JSON.parse(player.stats_json) : {}; } catch {}
     const statsJson = JSON.stringify({
       activities:     data.activities,
-      questsComplete: existing.questsComplete ?? null,
-      questsStarted:  existing.questsStarted  ?? null,
+      questsComplete: questCounts?.complete ?? existing.questsComplete ?? null,
+      questsStarted:  questCounts?.started  ?? existing.questsStarted  ?? null,
     });
 
-    // activities_json (RuneMetrics feed) is NOT touched here — cron keeps it fresh
+    // activities_json (Adventurer's Log feed) is NOT touched here — cron keeps it fresh
     // Clear any previous sync_error on success
     const runeScore = data.activities?.['RuneScore'] ?? null;
     db.prepare(
@@ -311,29 +312,30 @@ router.post('/sync-all/:groupId', syncAllLimiter, async (req, res) => {
 
       const data = await fetchHiscores(player.rsn);
       const combat = calcCombatLevel(data.skills);
-      mergeHiscoreBossKills(player.id, data.bossKills);
 
-      // Resolve canonical name + preserve RuneMetrics quest data.
+      // Resolve canonical name + refresh quest data.
       let existing = {};
       try {
-        const rm = await fetchRuneMetrics(player.rsn, 0);
+        const rm = await fetchPlayerEvents(player.rsn);
         if (rm.name && rm.name.length > 0 && rm.name !== player.rsn) {
           db.prepare('UPDATE players SET rsn = ? WHERE id = ?').run(rm.name, player.id);
           console.log(`[sync-all] Canonical RSN: "${player.rsn}" → "${rm.name}"`);
           player.rsn = rm.name;
         }
       } catch {
-        // RuneMetrics unavailable or private — no problem
+        // Adventurer's Log unavailable — no problem
       }
 
-      // Fetch quest completion list from RuneMetrics
+      // Fetch quest completion list from the Adventurer's Log
+      let questCounts = null;
       try {
-        const quests = await fetchPlayerQuests(player.rsn);
-        const totalQP = quests
-          .filter(q => q.status === 'COMPLETED')
-          .reduce((sum, q) => sum + (q.questPoints || 0), 0);
+        const { quests, qp } = await fetchPlayerQuests(player.rsn);
+        questCounts = {
+          complete: quests.filter(q => q.status === 'COMPLETED').length,
+          started:  quests.filter(q => q.status === 'STARTED').length,
+        };
         db.prepare('UPDATE players SET quests_json = ?, quest_points = ? WHERE id = ?')
-          .run(JSON.stringify(quests), totalQP, player.id);
+          .run(JSON.stringify(quests), qp, player.id);
       } catch (e) {
         console.log(`[sync-all] Quest fetch skipped for ${player.rsn}: ${e.message}`);
       }
@@ -342,11 +344,11 @@ router.post('/sync-all/:groupId', syncAllLimiter, async (req, res) => {
       try { existing = player.stats_json ? JSON.parse(player.stats_json) : {}; } catch {}
       const statsJson = JSON.stringify({
         activities:     data.activities,
-        questsComplete: existing.questsComplete ?? null,
-        questsStarted:  existing.questsStarted  ?? null,
+        questsComplete: questCounts?.complete ?? existing.questsComplete ?? null,
+        questsStarted:  questCounts?.started  ?? existing.questsStarted  ?? null,
       });
 
-      // activities_json (RuneMetrics feed) NOT touched — cron keeps it fresh
+      // activities_json (Adventurer's Log feed) NOT touched — cron keeps it fresh
       // Clear any previous sync_error on success
       const runeScore = data.activities?.['RuneScore'] ?? null;
       db.prepare(
@@ -412,7 +414,7 @@ router.post('/sync-activities/:groupId', syncAllLimiter, async (req, res) => {
   for (let i = 0; i < players.length; i++) {
     const player = players[i];
     try {
-      const rm = await fetchRuneMetrics(player.rsn, 20);
+      const rm = await fetchPlayerEvents(player.rsn);
       const newActivities = saveActivities(player.id, rm.activities);
       if (newActivities.length > 0) {
         autoLogDrops(player.id, newActivities);

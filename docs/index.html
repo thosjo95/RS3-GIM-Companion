@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.13</title>
+  <title>RS3 GIM Companion — Group Ironman Tracker for RuneScape 3 | v1.9.14</title>
   <meta name="description" content="RS3 GIM Companion is a free web app for RuneScape 3 Group Ironman teams. Track hiscores, XP gains, goals, gear loadouts, boss drops, and achievement diaries — all in one private dashboard at groupiron.com." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://thosjo95.github.io/RS3-GIM-Companion/" />
@@ -229,7 +229,7 @@
       <img src="logo.svg" alt="logo" />
       <div>
         <span>RS3 GIM<br>Companion</span>
-        <div class="sidebar-version">v1.9.13 documentation</div>
+        <div class="sidebar-version">v1.9.14 documentation</div>
       </div>
     </div>
 
@@ -276,7 +276,7 @@
         <h1>RS3 GIM Companion</h1>
         <p>A private companion web app for <strong>RuneScape 3 Group Ironman</strong> teams. Track hiscores, XP gains, goals, gear loadouts, vault items, and achievements — all in one place.</p>
         <div class="badges">
-          <span class="badge badge-green">v1.9.13</span>
+          <span class="badge badge-green">v1.9.14</span>
           <span class="badge badge-gold">RS3 · Not OSRS</span>
           <a class="badge badge-discord" href="https://discord.gg/uZT4JDdtn2" target="_blank" rel="noopener">Discord Support</a>
         </div>
@@ -306,7 +306,7 @@
     <p>After unlocking, click <strong>Set your name</strong> in the header and pick your RSN. This tells the app which gear loadout belongs to you — you can only edit your own character's equipment.</p>
 
     <h3>4. Sync Data</h3>
-    <p>Click <strong>Sync All</strong> to pull the latest hiscores for all members. The activity feed (RuneMetrics) is updated automatically every 2 hours in the background. XP snapshots are taken daily at midnight.</p>
+    <p>Click <strong>Sync All</strong> to pull the latest hiscores for all members. The activity feed (Adventurer's Log) is updated automatically every 2 hours in the background. XP snapshots are taken daily at midnight.</p>
 
     <!-- Access Control -->
     <h2 id="access">Access Control</h2>
@@ -340,7 +340,7 @@
       <li>Shown with a teal <strong>C</strong> badge throughout the UI instead of a GIM badge image</li>
       <li>The app auto-suggests a unique RS-themed name (e.g. <em>Shadow Vanguard</em>, <em>Gilded Champions</em>) that is guaranteed not to conflict with any existing group — editable before confirming</li>
       <li>A dismissable info banner appears on the dashboard for custom groups</li>
-      <li>Activity feed and drops require a public RuneMetrics profile (same as GIM groups)</li>
+      <li>The activity feed and drops depend on each player's in-game <em>RuneMetrics Event Log</em> settings (same as GIM groups)</li>
     </ul>
 
     <h3>Starring / Favouriting Groups</h3>
@@ -399,7 +399,7 @@
     </ul>
 
     <h3>Activity Feed</h3>
-    <p>Side panel showing the RuneMetrics history for the selected player — entries are stored permanently in the database and auto-refreshed every 2 hours.</p>
+    <p>Side panel showing the Adventurer's Log history for the selected player — entries are stored permanently in the database and auto-refreshed every 2 hours.</p>
 
     <hr />
 
@@ -558,7 +558,7 @@
     <p>Per-player breakdown with tier buttons and completion dates. Completion percentage bar per player.</p>
 
     <h3>Auto-detection</h3>
-    <p>Diary completions are detected from the RuneMetrics activity feed on every sync. Any cell can also be toggled manually if the feed entry was missed.</p>
+    <p>Diary completions are detected from the Adventurer's Log activity feed on every sync. Any cell can also be toggled manually if the feed entry was missed.</p>
 
     <hr />
 
@@ -566,7 +566,7 @@
     <h2 id="tab-leaderboards">Leaderboards</h2>
 
     <h3>Boss Kills</h3>
-    <p>Accumulated boss kill counts from the RuneMetrics activity feed. Boss × player matrix with a boss filter dropdown. Auto-updates on every sync.</p>
+    <p>Accumulated boss kill counts from the Adventurer's Log activity feed. Boss × player matrix with a boss filter dropdown. Auto-updates on every sync.</p>
 
     <h3>Firsts</h3>
     <p>~40 milestone cards showing who achieved each one first in the group — quests, bosses, skill 99s, rare drops. Unachieved cards are dimmed as "Not yet".</p>
@@ -599,7 +599,7 @@
     <table>
       <thead><tr><th>Event</th><th>Default</th><th>Trigger</th></tr></thead>
       <tbody>
-        <tr><td><strong>Level 99s &amp; 120s</strong></td><td><span class="tag-green">On</span></td><td>Detected from RuneMetrics activity feed on every sync</td></tr>
+        <tr><td><strong>Level 99s &amp; 120s</strong></td><td><span class="tag-green">On</span></td><td>Detected from Adventurer's Log activity feed on every sync</td></tr>
         <tr><td><strong>Achievement Diaries</strong></td><td><span class="tag-green">On</span></td><td>When a diary tier completion is detected or manually toggled</td></tr>
         <tr><td><strong>Boss First Kills</strong></td><td><span class="tag-green">On</span></td><td>First time a player's kill count for a boss goes above zero</td></tr>
         <tr><td><strong>Group Goals</strong></td><td><span class="tag-green">On</span></td><td>When any goal is marked as complete</td></tr>
@@ -622,7 +622,7 @@
         <tr><td><strong>Frontend</strong></td><td>React 18 + Vite</td></tr>
         <tr><td><strong>Backend</strong></td><td>Node.js 22 + Express</td></tr>
         <tr><td><strong>Database</strong></td><td>SQLite via <code>node:sqlite</code> built-in (zero extra deps)</td></tr>
-        <tr><td><strong>Data</strong></td><td>RS3 Hiscores CSV API + RuneMetrics JSON API + RS3 Wiki opensearch API</td></tr>
+        <tr><td><strong>Data</strong></td><td>RS3 Hiscores JSON API + Jagex Platform API (Adventurer's Log player data &amp; events) + RS3 Wiki opensearch API</td></tr>
         <tr><td><strong>Hosting</strong></td><td>Hetzner VPS — Ubuntu 22.04</td></tr>
         <tr><td><strong>Web server</strong></td><td>Nginx (reverse proxy + SSL termination)</td></tr>
         <tr><td><strong>SSL</strong></td><td>Cloudflare Origin Certificate</td></tr>
@@ -637,7 +637,7 @@
       <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
       <tbody>
         <tr><td><code>groups</code></td><td>Group name, type, size, password hash, last activity, Discord webhook URL + enabled events JSON</td></tr>
-        <tr><td><code>players</code></td><td>RSN, combat level, hiscores JSON, RuneMetrics JSON</td></tr>
+        <tr><td><code>players</code></td><td>RSN, combat level, hiscores JSON, quest list JSON</td></tr>
         <tr><td><code>skills</code></td><td>Per-player skill levels, XP, hiscores rank</td></tr>
         <tr><td><code>snapshots</code></td><td>Daily XP snapshots for weekly gain calculation</td></tr>
         <tr><td><code>goals</code></td><td>Goal type, status, current/target values, details JSON</td></tr>
@@ -648,7 +648,7 @@
         <tr><td><code>boss_kill_log</code></td><td>Deduplication log — prevents double-counting on re-sync</td></tr>
         <tr><td><code>equipment_loadouts</code></td><td>Gear slots: player × combat style × slot, item name, confirmed flag</td></tr>
         <tr><td><code>group_notes</code></td><td>Shared pinboard content per group</td></tr>
-        <tr><td><code>player_activities</code></td><td>Persistent RuneMetrics activity log (deduplicated by player + date + text)</td></tr>
+        <tr><td><code>player_activities</code></td><td>Persistent Adventurer's Log activity log (deduplicated by player + date + text)</td></tr>
         <tr><td><code>rs3_items</code></td><td>RS3 item names and wiki icon URLs (seeded from <code>seedRs3Data.js</code>)</td></tr>
         <tr><td><code>admin_users</code></td><td>Admin portal credentials (PBKDF2-SHA512 hashed)</td></tr>
       </tbody>
@@ -785,7 +785,7 @@ cd /var/www/RS3-GIM-Companion &amp;&amp; node server/scripts/seedRs3Data.js</cod
         </tr>
         <tr>
           <td>🔄 <strong>Trigger Activity Sync</strong></td>
-          <td>Runs the RuneMetrics activity fetch for all players in a group on demand — same as the 2-hour background cron, but immediate. Shows per-player results with new activity counts.</td>
+          <td>Runs the Adventurer's Log activity fetch for all players in a group on demand — same as the 2-hour background cron, but immediate. Shows per-player results with new activity counts.</td>
           <td><a href="#faq-feed">Feed empty FAQ</a></td>
         </tr>
         <tr>
@@ -860,16 +860,16 @@ console.log('Moved:', moved.changes, 'players. Deleted:', del.changes, 'group(s)
       <span class="callout-icon">⚙️</span>
       <p><strong>Easier via Admin Portal:</strong> Use <strong>Maintenance → Trigger Activity Sync</strong> — enter the group ID and click Run. Shows per-player results with new activity counts instantly.</p>
     </div>
-    <p><strong>Cause:</strong> The activity feed is populated by a 2-hour background cron (RuneMetrics API). <strong>Sync All</strong> only updates hiscores — it does not touch RuneMetrics.</p>
+    <p><strong>Cause:</strong> The activity feed is populated by a 2-hour background cron (Adventurer's Log API). <strong>Sync All</strong> only updates hiscores — it does not touch Adventurer's Log.</p>
     <p>Check the last cron run:</p>
     <pre><code>pm2 logs rs3-gim --lines 50</code></pre>
     <p>To trigger immediately without the portal (server-side only):</p>
     <pre><code># Replace 5 with your group's numeric ID
 curl -s -X POST http://localhost:3001/api/players/sync-activities/5 | python3 -m json.tool</code></pre>
 
-    <h3>RuneMetrics returns 502 / 503 errors</h3>
-    <p><strong>Cause:</strong> Jagex's RuneMetrics endpoint is temporarily down, or the player's profile is set to Private.</p>
-    <p><strong>Fix:</strong> Ensure each player has their RuneMetrics profile set to <strong>Public</strong> in-game: <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em>. For server errors, wait and the 2-hour cron will retry automatically.</p>
+    <h3>Adventurer's Log returns errors / events are missing</h3>
+    <p><strong>Cause:</strong> Jagex's Adventurer's Log endpoint is temporarily down, or the player has switched off the event types you expect (kills, drops, quests…). There is no public/private profile requirement any more.</p>
+    <p><strong>Fix:</strong> Each player can turn event types on in-game under <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em> — changes are not retroactive. For server errors, wait and the 2-hour cron will retry automatically.</p>
     <div class="callout callout-info">
       <span class="callout-icon">ℹ️</span>
       <p><strong>502</strong> = Jagex server error (just wait). <strong>429</strong> = rate limited (reduce sync frequency). At 1 req/sec with a 2-hour window the app is well within safe limits.</p>
@@ -946,7 +946,15 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
     <!-- Changelog -->
     <h2 id="changelog">Changelog</h2>
 
-    <h3>v1.9.13 — November 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <h3>v1.9.14 — November 2026 &nbsp;<span class="tag-green">Current</span></h3>
+    <ul>
+      <li><strong>Migrated off RuneMetrics (switched off on 10 November 2026)</strong> — Jagex shut down the <code>apps.runescape.com/runemetrics</code> endpoints, so since then the activity feed, quest lists, quest points, name resolution and the private-hiscores fallback had been silently failing. Everything now uses Jagex's new official <a href="https://developer.runescape.com/platform/index.html" target="_blank" rel="noopener">Platform API</a>: the Adventurer's Log <code>playerEvents</code> (activity feed), <code>playerData</code> (quests, quest points, skills) and the named <code>index_lite.json</code> hiscores (replacing the fragile positional CSV). Players no longer need a public RuneMetrics profile — each player switches event types on in-game under <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em></li>
+      <li><strong>Boss kills now actually work, and v1.9.10 is retracted</strong> — v1.9.10 assumed the hiscores carry boss kill counts. They don't: the rows it read were Leagues scores, so players with Leagues points could show huge fake Corporeal Beast / General Graardor kills. That code is removed. The events feed does include kills, batched by the game ("I killed 17 Hermods."), and they are now counted as exactly that many new kills, once. Detection added for Hermod, Amascut, Vermyx, Kezalam, Nakatra, Gate of Elidinis, Kerapac, Arch-Glacor, Astellarn, Verak Lith, Sanctum Guardian, Masuta and the Exiled Kalphite Queen. After deploying, run <code>node server/scripts/rebuildBossKills.js</code> once to clear the bad numbers and recompute from stored history</li>
+      <li><strong>Level 99/120 detection fixed</strong> — the level lives in the event's description, which the detector never read, so Skill Mastery dates and level Firsts were never recorded from the feed</li>
+      <li><strong>Quest goals now auto-complete</strong> — the feature wrote to a database column that doesn't exist, so it had never worked; it also understands the current "Quest complete: …" wording</li>
+    </ul>
+
+    <h3>v1.9.13 — November 2026</h3>
     <ul>
       <li><strong>Havenhythe and 2025–2026 content</strong> — the Goal Browser had no quests after January 2025. Added 13 quests (checked against runescape.wiki): the Havenhythe set (Visions of Havenhythe, Hearts of Sanguine, Wiz Kid, Hermit Permits, Secrets of Amberfell, Heralds of Crimson), the Menaphos arc (Beneath Scabaras' Sands, Pharaoh's Folly, Eclipse of the Heart, which unlocks Amascut), plus Stellar Born, Princess and the Pauper, Duck Quest and There's No Place Like Home... Seasonal event quests and the tutorial are left out on purpose</li>
       <li><strong>New bosses</strong> — Ivar, King of Bones (free-to-play), Silverquill, the Dreadhog and The Ghrazi Blood Knights (endgame, needs Heralds of Crimson; drops Malachi's tooth/claw, T95 Ranged crossbows), with requirements, drops, kill detection and Firsts cards</li>
@@ -969,7 +977,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 
     <h3>v1.9.10 — September 2026</h3>
     <ul>
-      <li><strong>Boss Kills leaderboard under-counting fixed</strong> — RS3's Adventurer's Log only logs milestone kills and rare drops, not every kill, so a casual player's real kills could show as 0 even with activity sharing fully enabled. The RS3 hiscores already expose an exact, always-current kill count for a curated ~22-boss list (Nex, Vorago, Araxxi, Telos, Solak, Rasial, GWD1/2, Dagannoth Kings, TzTok-Jad, TzKal-Zuk, Kalphite King/Queen, and others) — that data was already being fetched on every sync but silently discarded. It's now merged into the Boss Kills table (taking the higher of the two sources, so neither can undercount the other) on every player sync, group setup, and the daily cron. Bosses outside that curated hiscores list (King Black Dragon, Chaos Elemental, Queen Black Dragon, Rex Matriarchs, and others) still rely on activity-feed detection only — RS3 hiscores doesn't expose a kill count for those at all, which is a Jagex-side limitation this app can't work around</li>
+      <li><strong>Boss Kills leaderboard under-counting fixed</strong> <em>(retracted in v1.9.14 — the hiscores have no boss kill counts; see above)</em> — RS3's Adventurer's Log only logs milestone kills and rare drops, not every kill, so a casual player's real kills could show as 0 even with activity sharing fully enabled. The RS3 hiscores already expose an exact, always-current kill count for a curated ~22-boss list (Nex, Vorago, Araxxi, Telos, Solak, Rasial, GWD1/2, Dagannoth Kings, TzTok-Jad, TzKal-Zuk, Kalphite King/Queen, and others) — that data was already being fetched on every sync but silently discarded. It's now merged into the Boss Kills table (taking the higher of the two sources, so neither can undercount the other) on every player sync, group setup, and the daily cron. Bosses outside that curated hiscores list (King Black Dragon, Chaos Elemental, Queen Black Dragon, Rex Matriarchs, and others) still rely on activity-feed detection only — RS3 hiscores doesn't expose a kill count for those at all, which is a Jagex-side limitation this app can't work around</li>
     </ul>
 
     <h3>v1.9.9 — September 2026</h3>
@@ -1162,7 +1170,7 @@ curl -s -X POST http://localhost:3001/api/players/PLAYER_ID/sync | python3 -m js
 </div>
 
 <footer>
-  <p>RS3 GIM Companion · v1.9.13 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
+  <p>RS3 GIM Companion · v1.9.14 ·<a href="https://groupiron.com">groupiron.com</a> · <a href="https://discord.gg/uZT4JDdtn2">Discord</a> · <a href="https://github.com/thosjo95/RS3-GIM-Companion">GitHub</a></p>
   <p style="margin-top:6px;">Not affiliated with Jagex Ltd. RuneScape is a trademark of Jagex Ltd.</p>
 </footer>
 

@@ -30,10 +30,10 @@ export default function ActivityFeed({ players, filteredPlayerId }) {
             Activity feed unavailable
           </div>
           <div style={{ color: 'var(--text-dim)', fontSize: 12, lineHeight: 1.5 }}>
-            No activity data has been loaded yet. This is usually because the RuneMetrics API (Jagex) is
+            No activity data has been loaded yet. This is usually because Jagex's Adventurer's Log API is
             temporarily down or unreachable. The feed refreshes automatically every 2 hours — check back later.
-            Also make sure each player's RuneMetrics profile is set to{' '}
-            <strong style={{ color: 'var(--text)' }}>Public</strong> in-game under{' '}
+            Also make sure each player has the event types they want recorded switched{' '}
+            <strong style={{ color: 'var(--text)' }}>on</strong> in-game under{' '}
             <em>Settings → Gameplay → Chat &amp; Social → RuneMetrics Event Log</em>.
           </div>
         </div>

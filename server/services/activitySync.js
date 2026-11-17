@@ -45,14 +45,35 @@ function matchAreaTask(text) {
   return null;
 }
 
-// "I completed the quest 'While Guthix Sleeps'." or "I completed the quest While Guthix Sleeps."
+// Current Adventurer's Log text: "Quest complete: Gertrude's Cat" / "Quest complete: Bar Crawl (miniquest)".
+// Older phrasing (kept for stored history): "I completed the quest 'While Guthix Sleeps'."
 const QUEST_COMPLETE_PATTERN = /I completed the quest[:\s]+['"]?([^'".\n]+?)['"]?\s*\.?\s*$/i;
+function matchQuestComplete(text) {
+  if (!text) return null;
+  let m = text.match(/^Quest complete:\s*(.+?)\s*(?:\(miniquest\))?\s*\.?\s*$/i);
+  if (m) return m[1];
+  m = text.match(QUEST_COMPLETE_PATTERN);
+  return m ? m[1] : null;
+}
 
 // ── Boss kill detection ────────────────────────────────────────────────────────
 // Patterns are matched against the RuneMetrics activity text + details combined.
 // Order matters: more specific patterns (e.g. Nex: AoD) must come before generic ones (Nex).
 const BOSS_KILL_PATTERNS = [
   // Specific first — more specific patterns before overlapping ones
+  { key: 'amascut',             label: 'Amascut, the Devourer',          pattern: /\bamascut\b/i },
+  { key: 'vermyx',              label: 'Vermyx, Brood Mother',           pattern: /\bvermyx\b/i },
+  { key: 'kezalam',             label: 'Kezalam, the Wanderer',          pattern: /\bkezalam\b/i },
+  { key: 'nakatra',             label: 'Nakatra, Devourer Eternal',      pattern: /\bnakatra\b/i },
+  { key: 'gate_of_elidinis',    label: 'The Gate of Elidinis',           pattern: /gate of elidinis/i },
+  { key: 'kerapac',             label: 'Kerapac, the Bound',             pattern: /\bkerapac\b/i },
+  { key: 'arch_glacor',         label: 'Arch-Glacor',                    pattern: /arch.glacor/i },
+  { key: 'hermod',              label: 'Hermod, the Spirit of War',      pattern: /\bhermod/i },
+  { key: 'astellarn',           label: 'Astellarn',                      pattern: /\bastellarn\b/i },
+  { key: 'verak_lith',          label: 'Verak Lith',                     pattern: /verak lith/i },
+  { key: 'sanctum_guardian',    label: 'The Sanctum Guardian',           pattern: /sanctum guardian/i },
+  { key: 'masuta',              label: 'Masuta the Ascended',            pattern: /\bmasuta\b/i },
+  { key: 'exiled_kalphite_queen', label: 'Exiled Kalphite Queen',        pattern: /exiled kalphite queen/i },
   { key: 'ghrazi_blood_knights', label: 'The Ghrazi Blood Knights',        pattern: /ghrazi blood knight/i },
   { key: 'silverquill',         label: 'Silverquill, the Dreadhog',      pattern: /\bsilverquill\b/i },
   { key: 'ivar',                label: 'Ivar, King of Bones',            pattern: /ivar,? (?:the )?king of bones/i },
@@ -62,7 +83,7 @@ const BOSS_KILL_PATTERNS = [
   { key: 'vorago',              label: 'Vorago',                         pattern: /\bvorago\b/i },
   { key: 'solak',               label: 'Solak',                          pattern: /\bsolak\b/i },
   { key: 'rasial',              label: 'Rasial, the First Necromancer',  pattern: /\brasial\b/i },
-  { key: 'zamorak_loe',         label: 'Zamorak, Lord of Erebus',        pattern: /lord of erebus/i },
+  { key: 'zamorak_loe',         label: 'Zamorak, Lord of Chaos',         pattern: /lord of (?:erebus|chaos)/i },
   { key: 'raksha',              label: 'Raksha the Shadow Colossus',     pattern: /\braksha\b/i },
   { key: 'croesus',             label: 'Croesus',                        pattern: /\bcroesus\b/i },
   { key: 'araxxi',              label: 'Araxxi',                         pattern: /\baraxxi\b/i },
@@ -107,23 +128,17 @@ const SKIP_PATTERNS = [
   /I completed the .+ (?:Achievement Diary|achievements|area tasks)/i,
   /I (?:levelled|achieved|reached) (?:my )?/i,
   /I completed the quest/i,
+  /^Quest complete:/i,
 ];
 
 /**
- * Try to extract an absolute kill count from an activity's details string.
- * RS3 RuneMetrics often includes the cumulative kill count in the details field,
- * e.g. "Your kill count is: 1,285" or "You've killed Nex 157 times."
- * Returns null if no count can be reliably extracted.
+ * A *cumulative* kill count, when the details literally state one ("Your kill count is: 1,285").
+ * Returns null otherwise. Deliberately does NOT treat "5 times" as a total: the Adventurer's Log
+ * batches kills, so "I defeated the Queen Black Dragon 5 times." is 5 new kills, not 5 overall.
  */
-function extractKillCount(details) {
+function extractCumulativeKillCount(details) {
   if (!details) return null;
-  const patterns = [
-    /kill count[:\s]+(\d[\d,\s]*)/i,
-    /killed.*?(\d[\d,\s]+)\s*times?/i,
-    /(\d[\d,\s]+)\s*times?/i,
-    /count[:\s]+(\d[\d,\s]*)/i,
-  ];
-  for (const p of patterns) {
+  for (const p of [/kill count[:\s]+(\d[\d,\s]*)/i, /count[:\s]+(\d[\d,\s]*)/i]) {
     const m = details.match(p);
     if (m) {
       const n = parseInt(m[1].replace(/[\s,]/g, ''), 10);
@@ -131,6 +146,19 @@ function extractKillCount(details) {
     }
   }
   return null;
+}
+
+/**
+ * Number of kills a single Adventurer's Log event represents. The game batches them:
+ *   "I killed 17 Hermods."                       → 17
+ *   "I defeated the Queen Black Dragon 5 times." → 5
+ *   "I defeated the Queen Black Dragon."         → 1
+ */
+function extractBatchKills(text) {
+  const m = (text || '').match(/\b(?:killed|defeated|slain|vanquished)\s+(?:the\s+)?(\d[\d,]*)\b/i)
+         || (text || '').match(/\b(\d[\d,]*)\s+times?\b/i);
+  const n = m ? parseInt(m[1].replace(/,/g, ''), 10) : 1;
+  return n > 0 && n < 100000 ? n : 1;
 }
 
 module.exports.BOSS_KILL_PATTERNS = BOSS_KILL_PATTERNS;
@@ -200,62 +228,7 @@ function autoDetectDiaries(playerId, activities) {
  *  2. Otherwise, record the activity as +1 kill using a dedup log so we never
  *     double-count the same activity across multiple syncs.
  */
-// Maps the RS3 hiscores' curated boss-kill-count label (BOSS_KILLS in runescape.js)
-// to the same boss_key slugs used by BOSS_KILL_PATTERNS above, so both sources
-// write into the same boss_kills rows.
-const HISCORE_BOSS_KEY_MAP = {
-  'Corporeal Beast':               'corporeal_beast',
-  'General Graardor':              'general_graardor',
-  "K'ril Tsutsaroth":              'kril_tsutsaroth',
-  'Commander Zilyana':             'commander_zilyana',
-  "Kree'arra":                     'kreearra',
-  'Dagannoth Kings':               'dagannoth_kings',
-  'Kalphite Queen':                'kalphite_queen',
-  'Nex':                           'nex',
-  'TzTok-Jad':                     'tztok_jad',
-  'TzKal-Zuk':                     'tzkal_zuk',
-  'Kalphite King':                 'kalphite_king',
-  'Vorago':                        'vorago',
-  'Araxxi':                        'araxxi',
-  'Nex: Angel of Death':           'nex_aod',
-  'Telos, the Warden':             'telos',
-  'Solak':                         'solak',
-  'Helwyr':                        'helwyr',
-  'Vindicta':                      'vindicta',
-  'Gregorovic':                    'gregorovic',
-  'Twin Furies':                   'twin_furies',
-  'Rasial, the First Necromancer': 'rasial',
-  'Zamorak, Lord of Erebus':       'zamorak_loe',
-};
-
-/**
- * Merge exact boss-kill counts straight from the RS3 hiscores into boss_kills.
- * This is far more reliable than activity-feed text scraping for the ~22 bosses
- * hiscores actually tracks: the Adventurer's Log only logs milestone kills and
- * rare drops — NOT every kill — so a casual player who hasn't hit a round-number
- * kill count (or a notable drop) shows 0 from autoCountBossKills alone even
- * though they really have kills. Hiscores give the live running total directly,
- * no logging heuristics involved. Bosses outside this curated list have no
- * hiscores entry at all, so autoCountBossKills' activity-feed scan remains the
- * only available source for those (a genuine Jagex-side data limitation).
- */
-function mergeHiscoreBossKills(playerId, bossKills) {
-  if (!bossKills) return;
-  const upsert = db.prepare(`
-    INSERT INTO boss_kills (player_id, boss_key, kills, last_seen)
-    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(player_id, boss_key) DO UPDATE SET
-      kills     = MAX(kills, excluded.kills),
-      last_seen = CASE WHEN excluded.kills >= kills THEN CURRENT_TIMESTAMP ELSE last_seen END
-  `);
-  for (const [label, kills] of Object.entries(bossKills)) {
-    const key = HISCORE_BOSS_KEY_MAP[label];
-    if (!key || !(kills > 0)) continue;
-    upsert.run(playerId, key, kills);
-  }
-}
-
-function autoCountBossKills(playerId, activities) {
+function autoCountBossKills(playerId, activities, { silent = false } = {}) {
   if (!activities?.length) return;
 
   const upsertAbsolute = db.prepare(`
@@ -268,9 +241,9 @@ function autoCountBossKills(playerId, activities) {
 
   const upsertIncrement = db.prepare(`
     INSERT INTO boss_kills (player_id, boss_key, kills, last_seen)
-    VALUES (?, ?, 1, ?)
+    VALUES (?, ?, ?, ?)
     ON CONFLICT(player_id, boss_key) DO UPDATE SET
-      kills     = kills + 1,
+      kills     = kills + excluded.kills,
       last_seen = excluded.last_seen
   `);
 
@@ -292,24 +265,23 @@ function autoCountBossKills(playerId, activities) {
     for (const boss of BOSS_KILL_PATTERNS) {
       if (!boss.pattern.test(combined)) continue;
 
-      const killCount = extractKillCount(act.details);
       const seenAt = parseActivityDate(act.date);
+      const prev = db.prepare('SELECT kills FROM boss_kills WHERE player_id = ? AND boss_key = ?').get(playerId, boss.key);
+      let counted = false;
 
-      if (killCount !== null) {
-        // Absolute count from details — most accurate
-        const prev = db.prepare('SELECT kills FROM boss_kills WHERE player_id = ? AND boss_key = ?').get(playerId, boss.key);
-        upsertAbsolute.run(playerId, boss.key, killCount, seenAt);
-        if (!prev || prev.kills === 0) discord.notifyBossFirstKill(playerId, boss.label);
+      const total = extractCumulativeKillCount(act.details);
+      if (total !== null) {
+        upsertAbsolute.run(playerId, boss.key, total, seenAt);
+        counted = true;
       } else {
-        // Fall back to +1 with dedup
+        // Batched event: add its kills once. The signature makes re-processing a no-op.
         const sig = `${boss.key}:${act.date || ''}:${text.slice(0, 80)}`;
-        const inserted = logSig.run(playerId, sig);
-        if (inserted.changes > 0) {
-          const prev = db.prepare('SELECT kills FROM boss_kills WHERE player_id = ? AND boss_key = ?').get(playerId, boss.key);
-          upsertIncrement.run(playerId, boss.key, seenAt);
-          if (!prev || prev.kills === 0) discord.notifyBossFirstKill(playerId, boss.label);
+        if (logSig.run(playerId, sig).changes > 0) {
+          upsertIncrement.run(playerId, boss.key, extractBatchKills(text), seenAt);
+          counted = true;
         }
       }
+      if (counted && !silent && (!prev || prev.kills === 0)) discord.notifyBossFirstKill(playerId, boss.label);
       break; // Only match the first (most specific) boss pattern
     }
   }
@@ -330,7 +302,7 @@ function autoDetectLevelMilestones(playerId, activities) {
   `);
 
   for (const act of activities) {
-    const text = act.text || '';
+    const text = `${act.text || ''} ${act.details || ''}`.trim();
     for (const { re, extract } of LEVEL_MILESTONE_PATTERNS) {
       const m = text.match(re);
       if (!m) continue;
@@ -398,9 +370,9 @@ function autoCompleteQuestGoals(playerId, activities) {
   if (!player?.group_id) return;
 
   for (const act of activities) {
-    const match = (act.text || '').match(QUEST_COMPLETE_PATTERN);
-    if (!match) continue;
-    const questName = match[1].trim();
+    const matched = matchQuestComplete(act.text);
+    if (!matched) continue;
+    const questName = matched.trim();
 
     const matchingGoals = db.prepare(`
       SELECT g.id, g.title
@@ -414,7 +386,7 @@ function autoCompleteQuestGoals(playerId, activities) {
 
     for (const goal of matchingGoals) {
       db.prepare(
-        "UPDATE goals SET status = 'complete', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        "UPDATE goals SET status = 'complete', completed_at = CURRENT_TIMESTAMP WHERE id = ?"
       ).run(goal.id);
       const { notifyGoalCompleted } = require('./discord');
       notifyGoalCompleted(player.group_id, goal.title, []);
@@ -423,4 +395,4 @@ function autoCompleteQuestGoals(playerId, activities) {
   }
 }
 
-module.exports = { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, mergeHiscoreBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };
+module.exports = { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals, parseActivityDate, diaryRegionKey, BOSS_KILL_PATTERNS };

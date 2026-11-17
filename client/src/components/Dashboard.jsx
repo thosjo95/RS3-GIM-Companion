@@ -19,7 +19,7 @@ function CustomGroupBanner({ groupId }) {
         <strong style={{ color: '#38bdf8' }}>Custom Group</strong> — for regular RS3 players tracking shared progress together.
         Stats sync from the RS3 hiscores just like a GIM group.{' '}
         <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
-          Note: activity feed &amp; drops require a public RuneMetrics profile.
+          Note: the activity feed &amp; drops depend on each player's in-game RuneMetrics Event Log settings.
         </span>
       </span>
       <button
@@ -84,7 +84,7 @@ const TAB_TOURS = {
     {
       target: null,
       title: '📋 Area Tasks',
-      body: 'Track diary completion across all 14 RS3 regions × 4 tiers (Easy → Elite). Auto-detected from RuneMetrics, or toggle manually.',
+      body: 'Track diary completion across all 14 RS3 regions × 4 tiers (Easy → Elite). Auto-detected from the Adventurer\'s Log, or toggle manually.',
     },
     {
       target: '[data-tour="achievements-progress"]',
@@ -112,7 +112,7 @@ const TAB_TOURS = {
     {
       target: '[data-tour="leaderboards-panel"]',
       title: '🤖 Auto-Updated Data',
-      body: 'Firsts and Milestones are detected from RuneMetrics activity feeds (updates every ~2 hours). Boss kills, clue counts, and XP pull from RS3 hiscores every time you sync (~5 min delay).',
+      body: 'Firsts, Milestones and boss kills are detected from the Adventurer\'s Log feed (updates every ~2 hours). Clue counts and XP pull from RS3 hiscores every time you sync (~5 min delay).',
     },
   ],
 };

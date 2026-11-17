@@ -140,7 +140,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
         <div>
           <div className="section-title" style={{ marginBottom: 4 }}>📋 Area Tasks</div>
           <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-            Auto-detected from RuneMetrics activity feed · Click a cell to mark manually
+            Auto-detected from the Adventurer's Log feed · Click a cell to mark manually
           </div>
         </div>
         <div data-tour="achievements-view" className="flex gap-4 tab-bar-scroll" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
@@ -189,7 +189,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
       )}
 
       <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
-        ✅ Auto-detected from RuneMetrics &nbsp;·&nbsp; ✏️ Manually marked &nbsp;·&nbsp;
+        ✅ Auto-detected from the Adventurer's Log &nbsp;·&nbsp; ✏️ Manually marked &nbsp;·&nbsp;
         Click any cell (if claimed) to toggle · Completions are stored permanently once detected
         <div style={{ marginTop: 4 }}>* Lumbridge uses Beginner / Easy / Medium / Hard instead of Easy / Medium / Hard / Elite</div>
       </div>

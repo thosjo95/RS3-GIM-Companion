@@ -56,11 +56,11 @@ app.use('/api/admin',        require('./routes/admin'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // ── 2-hour activity sync ───────────────────────────────────────────────────────
-// Fetches the last 20 RuneMetrics activities for every tracked player and
+// Fetches the 20 most recent Adventurer's Log events for every tracked player and
 // persists NEW entries to the player_activities table (INSERT OR IGNORE —
 // re-fetching never duplicates). Detectors (drops, diaries, boss kills,
 // milestones) only fire on newly inserted rows so notifications never repeat.
-// Batched RuneMetrics fetching: 10 players per batch, 1s within batch, 60s between batches.
+// Batched fetching: 10 players per batch, 1s within batch, 60s between batches.
 // Looks more human-like than a steady drip and avoids sustained-rate throttling.
 // 306 players → ~31 batches → ~34 minutes total — well within the 2h window.
 const BATCH_SIZE        = 10;
@@ -68,17 +68,17 @@ const WITHIN_BATCH_MS   = 1000;  // 1s between players inside a batch
 const BETWEEN_BATCH_MS  = 60000; // 60s pause between batches
 
 cron.schedule('0 */2 * * *', async () => {
-  const { fetchRuneMetrics } = require('./services/runescape');
+  const { fetchPlayerEvents } = require('./services/runescape');
   const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players WHERE group_id IS NOT NULL').all();
   const batches = Math.ceil(players.length / BATCH_SIZE);
-  console.log(`[2h cron] Syncing RuneMetrics for ${players.length} player(s) in ${batches} batch(es)…`);
+  console.log(`[2h cron] Syncing Adventurer's Log events for ${players.length} player(s) in ${batches} batch(es)…`);
 
   for (let i = 0; i < players.length; i++) {
     const player = players[i];
     try {
-      const rm = await fetchRuneMetrics(player.rsn, 20);
+      const rm = await fetchPlayerEvents(player.rsn);
       const newActivities = saveActivities(player.id, rm.activities);
       if (newActivities.length > 0) {
         autoLogDrops(player.id, newActivities);
@@ -108,10 +108,10 @@ cron.schedule('0 */2 * * *', async () => {
 });
 
 // ── Daily snapshot cron ────────────────────────────────────────────────────────
-// Runs at midnight every day — syncs hiscores (skills, boss kills, clue scrolls).
+// Runs at midnight every day — syncs hiscores (skills, clue scrolls, RuneScore).
 cron.schedule('0 0 * * *', async () => {
-  const { fetchHiscores, fetchRuneMetrics, calcCombatLevel } = require('./services/runescape');
-  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, mergeHiscoreBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals } = require('./services/activitySync');
+  const { fetchHiscores, fetchPlayerEvents, calcCombatLevel } = require('./services/runescape');
+  const { saveActivities, autoLogDrops, autoDetectDiaries, autoCountBossKills, autoDetectLevelMilestones, autoCompleteQuestGoals } = require('./services/activitySync');
 
   const players = db.prepare('SELECT * FROM players').all();
   const today   = new Date().toISOString().slice(0, 10);
@@ -120,18 +120,18 @@ cron.schedule('0 0 * * *', async () => {
     try {
       const [data, rm] = await Promise.all([
         fetchHiscores(player.rsn),
-        fetchRuneMetrics(player.rsn, 20).catch(() => null),
+        fetchPlayerEvents(player.rsn).catch(() => null),
       ]);
       const combat = calcCombatLevel(data.skills);
-      mergeHiscoreBossKills(player.id, data.bossKills);
 
-      // stats_json: hiscores activities (clue scrolls) + RuneMetrics meta.
-      // data.bossKills is handled above via mergeHiscoreBossKills — it goes
-      // straight into the boss_kills table, not into this JSON blob.
+      // stats_json: hiscores activities (clue scrolls, RuneScore…). The quest counts are
+      // written by the player sync routes, so carry the previous values over.
+      let prevStats = {};
+      try { prevStats = player.stats_json ? JSON.parse(player.stats_json) : {}; } catch { /* corrupt — ignore */ }
       const statsJson = JSON.stringify({
-        activities:     data.activities,   // hiscores activities — clue scrolls etc.
-        questsComplete: rm?.questsComplete ?? null,
-        questsStarted:  rm?.questsStarted  ?? null,
+        activities:     data.activities,
+        questsComplete: prevStats.questsComplete ?? null,
+        questsStarted:  prevStats.questsStarted  ?? null,
       });
       const activitiesJson = rm ? JSON.stringify(rm.activities) : null;
 
