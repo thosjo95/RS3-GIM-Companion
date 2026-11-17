@@ -288,7 +288,7 @@ Navigate to `https://groupiron.com/admin` (or `http://localhost:5173/admin` in d
 
 **Create the first admin account on your server:**
 ```bash
-node server/scripts/createAdmin.js <username> <password>
+node server/scripts/setAdminPassword.js <username>   # prompts for the password (hidden); also changes an existing admin's password
 ```
 
 ---
