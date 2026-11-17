@@ -817,7 +817,7 @@ cd /var/www/RS3-GIM-Companion &amp;&amp; node server/scripts/seedRs3Data.js</cod
     <div class="callout callout-tip">
       <span class="callout-icon">💡</span>
       <p><strong>Self-hosting tip:</strong> To create the first admin account, run the setup script on your server:<br>
-      <code>node server/scripts/setAdminPassword.js node server/scripts/createAdmin.js &lt;username&gt; &lt;password&gt;lt;username&gt;   (prompts for the password, hidden; also changes an existing admin password)</code><br>
+      <code>node server/scripts/setAdminPassword.js &lt;username&gt;</code> &mdash; prompts for the password (hidden); also changes an existing admin password<br>
       This hashes the password with PBKDF2-SHA512 and inserts it into the <code>admin_users</code> table.</p>
     </div>
 
