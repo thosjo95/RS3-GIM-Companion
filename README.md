@@ -5,7 +5,7 @@
   <p>
     <a href="https://groupiron.com"><img src="https://img.shields.io/badge/live-groupiron.com-c8a84b?style=flat-square&logo=runescape&logoColor=white" alt="Live site"/></a>
     <a href="https://discord.gg/uZT4JDdtn2"><img src="https://img.shields.io/badge/Discord-support-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"/></a>
-    <img src="https://img.shields.io/badge/version-1.9.11-4caf50?style=flat-square" alt="v1.9.11"/>
+    <img src="https://img.shields.io/badge/version-1.9.12-4caf50?style=flat-square" alt="v1.9.12"/>
     <img src="https://img.shields.io/badge/RS3-Group_Ironman-c8a84b?style=flat-square" alt="RS3 GIM"/>
   </p>
 </div>
@@ -500,6 +500,11 @@ If you're unsure, always run the full `deploy.sh` — it's safe to run for any c
 ---
 
 ## Changelog
+
+### v1.9.12 — November 2026
+- 🔒 **Cross-group authorization bypass fixed (critical)** — goal, drop, item-request and player write routes checked the password of the group named in the client-supplied `X-Group-Id` header instead of the group the record actually belongs to, so anyone could use their own (or any unclaimed) group to edit or delete another group's data. The group is now always derived from the record itself. Also: players can no longer be moved between groups via `PUT /players/:id`, goal contributors must belong to the group, and the unused `GET /api/players` (which dumped every group's players) is removed
+- 🔑 **Admin password no longer in the repo** — the seed script hard-coded the admin password in this public repository. It now reads `ADMIN_PASSWORD` from the environment, or generates a random one (printed once) only when no admin exists. **If your production admin was created by the seed script, change its password** — the old default is public in git history
+- 🛡️ **API hardening** — 100 kB JSON body limit (snapshot upload has its own 6 MB parser, must be a real PNG, and is rate limited), notes capped at 20,000 characters, 100-member cap per group, CORS restricted to groupiron.com (+ localhost for dev, override with `CORS_ORIGINS`), `nosniff`/`X-Frame-Options`/`Referrer-Policy` headers, JSON 404 and error responses with no stack leaks, and unhandled promise rejections are logged instead of crashing the server
 
 ### v1.9.11 — October 2026
 - 📢 **Announcement popup** — a dismissible notice on page load says this tool will soon be obsolete now that RuneScape 3 plugins are out, and links to the new preferred tracker at [rs3groupiron.men/demo](https://www.rs3groupiron.men/demo). It shows once per browser session, and "Don't show again" hides it for good in that browser. To publish a different announcement, edit `client/src/components/common/AnnouncementModal.jsx` and change `ANNOUNCEMENT.id`. The first-visit tour now waits until the popup is closed
