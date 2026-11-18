@@ -6,8 +6,8 @@ import React, { useState } from 'react';
 // ANNOUNCEMENT.id (so earlier dismissals no longer apply) and the text below.
 
 export const ANNOUNCEMENT = {
-  id: 'gim2-preview-2026-11',                  // a new id: everyone who closed the old announcement sees this one
-  title: 'GIM Companion 2.0 is coming',
+  id: 'gim2-preview-2026-11b',                 // a new id: everyone who closed the old announcement sees this one
+  title: 'A new version is coming',
   linkUrl: 'https://beta.groupiron.com',
   linkLabel: 'See the new tracker →',
 };
@@ -54,11 +54,13 @@ export default function AnnouncementModal({ onClose }) {
         </div>
         <div className="modal-body">
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', marginBottom: 12 }}>
-            GIM Companion 2.0 adds a <strong style={{ color: 'var(--text-bright)' }}>RuneScape 3 plugin</strong> that reads
-            your Group Ironman straight from the game: bank and group storage, quests, boss kills, drops and more.
+            A new version of this tracker is on its way. With a <strong style={{ color: 'var(--text-bright)' }}>RuneScape 3 plugin</strong> it can read your Group Ironman straight from the game: bank and group storage, quests, boss kills, drops and more.
+          </p>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', marginBottom: 12 }}>
+            Come and try the preview. It already shows your group and its history.
           </p>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', marginBottom: 16 }}>
-            This site stays online while the plugin goes through Jagex's review. You can already look at the preview:
+            If Jagex approves the plugin, <strong style={{ color: 'var(--text-bright)' }}>groupiron.com will switch to the new version by itself</strong> and your group and its history come along. Nothing for you to move or redo, you only get a new group secret.
           </p>
           <a
             href={ANNOUNCEMENT.linkUrl}
