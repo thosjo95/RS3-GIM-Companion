@@ -6,9 +6,9 @@ import React, { useState } from 'react';
 // ANNOUNCEMENT.id (so earlier dismissals no longer apply) and the text below.
 
 export const ANNOUNCEMENT = {
-  id: 'rs3-plugins-2026-10',
-  title: '📢 An important update',
-  linkUrl: 'https://www.rs3groupiron.men/demo',
+  id: 'gim2-preview-2026-11',                  // a new id: everyone who closed the old announcement sees this one
+  title: 'GIM Companion 2.0 is coming',
+  linkUrl: 'https://beta.groupiron.com',
   linkLabel: 'See the new tracker →',
 };
 
@@ -54,11 +54,11 @@ export default function AnnouncementModal({ onClose }) {
         </div>
         <div className="modal-body">
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', marginBottom: 12 }}>
-            With the release of <strong style={{ color: 'var(--text-bright)' }}>RuneScape 3 plugins</strong>,
-            this tool will soon be obsolete.
+            GIM Companion 2.0 adds a <strong style={{ color: 'var(--text-bright)' }}>RuneScape 3 plugin</strong> that reads
+            your Group Ironman straight from the game: bank and group storage, quests, boss kills, drops and more.
           </p>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', marginBottom: 16 }}>
-            I recommend taking a look at the new preferred method to track your Group Ironman:
+            This site stays online while the plugin goes through Jagex's review. You can already look at the preview:
           </p>
           <a
             href={ANNOUNCEMENT.linkUrl}
