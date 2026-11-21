@@ -46,9 +46,15 @@ export const XP_TABLE = (() => {
   return t;
 })();
 
-// Skills that go to level 120; the others stop at 99 (Invention reaches 120 too, on its own XP curve).
-export const SKILLS_TO_120 = ['Herblore', 'Slayer', 'Farming', 'Dungeoneering', 'Archaeology', 'Necromancy', 'Invention'];
-export const skillCap = name => (SKILLS_TO_120.includes(name) ? 120 : 99);
+// The highest level of each skill (runescape.wiki, each skill's page; checked 21 Nov 2026). Everything not listed stops at 99:
+// Defence, Constitution, Prayer, Summoning, Cooking, Fishing, Agility and Divination. Invention uses its own XP curve.
+export const SKILL_CAPS = {
+  Attack: 120, Strength: 120, Ranged: 120, Magic: 120, Necromancy: 120, Herblore: 120, Farming: 120, Archaeology: 120,
+  Thieving: 120, Slayer: 120, Dungeoneering: 120, Invention: 120, Construction: 120,
+  Woodcutting: 110, Fletching: 110, Firemaking: 110, Crafting: 110, Smithing: 110, Mining: 110, Runecrafting: 110, Hunter: 110,
+};
+export const skillCap = name => SKILL_CAPS[name] ?? 99;
+export const SKILLS_TO_120 = Object.keys(SKILL_CAPS).filter(n => SKILL_CAPS[n] === 120);
 
 export function xpForLevel(lvl) { return XP_TABLE[Math.min(Math.max(lvl, 1), 120)] ?? 0; }
 

@@ -25,9 +25,10 @@ export default function SkillTip({ tip }) {
   const elite = skill === 'Invention';                  // elite skills use another XP curve: no "next level" figures
   // the level the XP is worth: skills go on past 99 (to 120), the hiscores level stops at 99
   let virt = level ?? 1;
-  if (!elite) while (virt < 120 && xp >= xpForLevel(virt + 1)) virt++;
+  const levelTop = skillCap(skill) > 99 ? skillCap(skill) : 120;     // 110 / 120 skills stop at their maximum; the 99 skills show virtual levels up to 120
+  if (!elite) while (virt < levelTop && xp >= xpForLevel(virt + 1)) virt++;
   const maxed = xp >= MAX_XP;
-  const next = !elite && !maxed && virt < 120 ? xpForLevel(virt + 1) : null;
+  const next = !elite && !maxed && virt < levelTop ? xpForLevel(virt + 1) : null;
   const W = 250, H = 175;
   const left = Math.max(8, Math.min(tip.x + 16, window.innerWidth - W - 8));
   const top = Math.max(8, Math.min(tip.y + 18, window.innerHeight - H - 8));
@@ -51,7 +52,7 @@ export default function SkillTip({ tip }) {
       {next != null && row('Next level:', fmt(next))}
       {next != null && row('Remainder:', fmt(Math.max(0, next - xp)))}
       {maxed && <div style={{ color: '#8fe08f' }}>200M XP reached</div>}
-      {!maxed && !elite && virt >= 120 && <div style={{ color: '#8fe08f' }}>Maximum level reached</div>}
+      {!maxed && !elite && virt >= levelTop && <div style={{ color: '#8fe08f' }}>Maximum level reached</div>}
       {elite && <div style={{ color: '#a89870', fontSize: 11 }}>Elite skill: next-level XP not shown</div>}
       {rank > 0 && row('Hiscores rank:', '#' + fmt(rank), '#9cc7ff')}
       {gain > 0 && row(period ? `Gained (${period}):` : 'Gained:', '+' + fmt(gain) + ' XP', '#8fe08f')}

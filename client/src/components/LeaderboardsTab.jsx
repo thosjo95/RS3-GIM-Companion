@@ -27,8 +27,8 @@ const ALL_SKILLS = [
 ];
 
 // Skills with a true level-120 cap, per runescape.wiki/w/Skills. Everything else caps
-// at 99 (Defence, Constitution, Prayer, Summoning, Cooking, Agility, Hunter, Divination)
-// or 110 (Mining, Smithing, Woodcutting, Fletching, Firemaking, Runecrafting, Crafting).
+// at 99 (Defence, Constitution, Prayer, Summoning, Cooking, Fishing, Agility, Divination)
+// or 110 (Mining, Smithing, Woodcutting, Fletching, Firemaking, Runecrafting, Crafting, Hunter).
 const TRUE_120_SKILLS = [
   'Attack','Strength','Ranged','Magic','Necromancy','Herblore','Farming',
   'Archaeology','Thieving','Slayer','Dungeoneering','Invention','Construction',

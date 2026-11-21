@@ -24,19 +24,19 @@ const Tile = ({ label, value, accent }) => (
 function SkillCard({ name, s, bind, player }) {
   const level = s.level ?? 1, xp = s.xp ?? 0;
   const elite = name === 'Invention';                                   // elite skills use another XP curve: no progress figures
-  const cap = Math.max(skillCap(name), level >= 100 ? 120 : 0);          // the skills that go to 120 show it
+  const cap = Math.max(skillCap(name), level);                          // skills that go past 99 show their maximum (110 or 120)
   const atCap = level >= cap;
   const from = xpForLevel(level), to = xpForLevel(level + 1);
   const pct = elite ? Math.min(100, (level / 150) * 100) : atCap ? 100 : Math.max(0, Math.min(100, ((xp - from) / Math.max(1, to - from)) * 100));
   const remainder = !elite && !atCap && xp < 200_000_000 ? Math.max(0, to - xp) : null;
-  const tone = level >= 120 ? 'var(--gold)' : level >= 99 ? '#e8d48a' : 'var(--text-bright)';
+  const tone = cap > 99 && level >= cap ? 'var(--gold)' : level >= 99 ? '#e8d48a' : 'var(--text-bright)';
   return (
     <div {...bind({ skill: name, level, xp, rank: s.rank, rsn: player?.rsn })}
       style={{ padding: '8px 10px 9px', borderRadius: 8, background: level >= 99 ? 'rgba(200,168,75,0.08)' : 'rgba(255,255,255,0.025)', border: `1px solid ${level >= 99 ? 'rgba(200,168,75,0.35)' : 'transparent'}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
         <SkillIcon name={name} size={20} />
         <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-        <span style={{ fontSize: 16, fontWeight: 800, color: tone, fontVariantNumeric: 'tabular-nums' }}>{level >= cap ? '★ ' : ''}{level}{cap === 120 && <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>/120</span>}</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color: tone, fontVariantNumeric: 'tabular-nums' }}>{level >= cap ? '★ ' : ''}{level}{cap > 99 && <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>/{cap}</span>}</span>
       </div>
       <div style={{ height: 4, borderRadius: 2, background: 'var(--bg-root)', margin: '7px 0 5px', overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: level >= 99 ? 'var(--gold)' : 'var(--text-dim)', opacity: 0.85 }} />

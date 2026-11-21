@@ -199,9 +199,9 @@ export default function GroupStats({ players, goals, groupId }) {
               const xpGain = sg?.gains?.[skill] ?? 0;
               const best = Math.max(...players.map(q => skillOf(q, skill)?.level ?? 0));
               const isLead = level != null && level === best && best > 1;
-              const cap = Math.max(skillCap(skill), level >= 100 ? 120 : 0);      // the skills that go to 120 show it
+              const cap = Math.max(skillCap(skill), level ?? 0);                    // skills that go past 99 show their maximum (110 or 120)
               const pct = level ? Math.min(100, (level / cap) * 100) : 0;
-              const tone = level >= 120 ? 'var(--gold)' : level >= 99 ? '#e8d48a' : 'var(--text-bright)';
+              const tone = cap > 99 && level >= cap ? 'var(--gold)' : level >= 99 ? '#e8d48a' : 'var(--text-bright)';
               const bar = level >= 99 ? 'var(--gold)' : colorMap[p.id];
               return (
                 <div {...bind({ skill, level, xp: s?.xp, rank: s?.rank, rsn: p.rsn, color: colorMap[p.id], gain: xpGain, period: GAIN_PERIODS.find(g => g.days === gainPeriod)?.label.toLowerCase() })}
@@ -210,7 +210,7 @@ export default function GroupStats({ players, goals, groupId }) {
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 4 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: level ? tone : 'var(--text-dim)', fontVariantNumeric: 'tabular-nums' }}>
                       {metric === 'xp' ? (s?.xp != null ? fmtXp(s.xp) : '—') : (level ?? '—')}
-                      {metric !== 'xp' && level != null && cap === 120 && <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>/120</span>}
+                      {metric !== 'xp' && level != null && cap > 99 && <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>/{cap}</span>}
                     </span>
                     {lvlGain > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-bright)' }}>+{lvlGain}</span>}
                   </div>
