@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { api } from '../../api/client';
-import { MEMBER_COLORS, fmtXp } from '../../lib/rs3';
+import { MEMBER_COLORS, fmtXp, skillCap } from '../../lib/rs3';
 import RsIcon from '../RsIcon';
 import SkillIcon from '../common/SkillIcon';
 import SkillTip, { useSkillTip } from './SkillTip';
@@ -199,7 +199,7 @@ export default function GroupStats({ players, goals, groupId }) {
               const xpGain = sg?.gains?.[skill] ?? 0;
               const best = Math.max(...players.map(q => skillOf(q, skill)?.level ?? 0));
               const isLead = level != null && level === best && best > 1;
-              const cap = level >= 100 ? 120 : 99;
+              const cap = Math.max(skillCap(skill), level >= 100 ? 120 : 0);      // the skills that go to 120 show it
               const pct = level ? Math.min(100, (level / cap) * 100) : 0;
               const tone = level >= 120 ? 'var(--gold)' : level >= 99 ? '#e8d48a' : 'var(--text-bright)';
               const bar = level >= 99 ? 'var(--gold)' : colorMap[p.id];
@@ -210,6 +210,7 @@ export default function GroupStats({ players, goals, groupId }) {
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 4 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: level ? tone : 'var(--text-dim)', fontVariantNumeric: 'tabular-nums' }}>
                       {metric === 'xp' ? (s?.xp != null ? fmtXp(s.xp) : '—') : (level ?? '—')}
+                      {metric !== 'xp' && level != null && cap === 120 && <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>/120</span>}
                     </span>
                     {lvlGain > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-bright)' }}>+{lvlGain}</span>}
                   </div>

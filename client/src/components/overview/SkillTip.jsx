@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import SkillIcon from '../common/SkillIcon';
-import { xpForLevel } from '../../lib/rs3';
+import { xpForLevel, skillCap } from '../../lib/rs3';
 
 // The hover box for a skill, like the one in the game: level, current XP, XP of the next level and what is left.
 // Usage:  const { tip, bind } = useSkillTip();   <div {...bind({ skill, level, xp, rank, rsn, color, gain, period })}>   <SkillTip tip={tip} />
@@ -45,7 +45,7 @@ export default function SkillTip({ tip }) {
       {rsn && <div style={{ fontSize: 11, fontWeight: 700, color: color ?? 'var(--gold)', marginBottom: 2 }}>{rsn}</div>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, marginBottom: 3, borderBottom: '1px solid #3e3220', paddingBottom: 4 }}>
         <SkillIcon name={skill} size={20} />
-        <span style={{ color: '#ffd75e' }}>{skill}: {virt}/{virt}{virt !== level && level ? <span style={{ color: '#a89870', fontWeight: 400 }}> (hiscores {level})</span> : null}</span>
+        <span style={{ color: '#ffd75e' }}>{skill}: {virt}/{Math.max(skillCap(skill), virt)}{virt !== level && level ? <span style={{ color: '#a89870', fontWeight: 400 }}> (hiscores {level})</span> : null}</span>
       </div>
       {row('Current XP:', fmt(xp))}
       {next != null && row('Next level:', fmt(next))}

@@ -46,6 +46,10 @@ export const XP_TABLE = (() => {
   return t;
 })();
 
+// Skills that go to level 120; the others stop at 99 (Invention reaches 120 too, on its own XP curve).
+export const SKILLS_TO_120 = ['Herblore', 'Slayer', 'Farming', 'Dungeoneering', 'Archaeology', 'Necromancy', 'Invention'];
+export const skillCap = name => (SKILLS_TO_120.includes(name) ? 120 : 99);
+
 export function xpForLevel(lvl) { return XP_TABLE[Math.min(Math.max(lvl, 1), 120)] ?? 0; }
 
 // ── Formatting ───────────────────────────────────────────────────────────────

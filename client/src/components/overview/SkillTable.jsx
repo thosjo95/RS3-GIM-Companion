@@ -1,5 +1,5 @@
 import React from 'react';
-import { fmtXp, xpForLevel } from '../../lib/rs3';
+import { fmtXp, xpForLevel, skillCap } from '../../lib/rs3';
 import SkillIcon from '../common/SkillIcon';
 import SkillTip, { useSkillTip } from './SkillTip';
 
@@ -24,7 +24,7 @@ const Tile = ({ label, value, accent }) => (
 function SkillCard({ name, s, bind, player }) {
   const level = s.level ?? 1, xp = s.xp ?? 0;
   const elite = name === 'Invention';                                   // elite skills use another XP curve: no progress figures
-  const cap = level >= 100 || ['Herblore', 'Slayer', 'Farming', 'Dungeoneering', 'Archaeology', 'Necromancy'].includes(name) ? 120 : 99;
+  const cap = Math.max(skillCap(name), level >= 100 ? 120 : 0);          // the skills that go to 120 show it
   const atCap = level >= cap;
   const from = xpForLevel(level), to = xpForLevel(level + 1);
   const pct = elite ? Math.min(100, (level / 150) * 100) : atCap ? 100 : Math.max(0, Math.min(100, ((xp - from) / Math.max(1, to - from)) * 100));
@@ -36,7 +36,7 @@ function SkillCard({ name, s, bind, player }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
         <SkillIcon name={name} size={20} />
         <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-        <span style={{ fontSize: 16, fontWeight: 800, color: tone, fontVariantNumeric: 'tabular-nums' }}>{level >= 99 ? '★ ' : ''}{level}</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color: tone, fontVariantNumeric: 'tabular-nums' }}>{level >= cap ? '★ ' : ''}{level}{cap === 120 && <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}>/120</span>}</span>
       </div>
       <div style={{ height: 4, borderRadius: 2, background: 'var(--bg-root)', margin: '7px 0 5px', overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: level >= 99 ? 'var(--gold)' : 'var(--text-dim)', opacity: 0.85 }} />
