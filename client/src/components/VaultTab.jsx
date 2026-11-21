@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { api } from '../api/client';
 import GearLoadouts from './GearLoadouts';
+import { ItemIcon } from './GameIcon';     // the shared picture lookup: item id, then the wiki picture under several spellings
 
 // ── Item icon map — name → wiki icon URL ──────────────────────────────────────
 function useItemIconMap() {
@@ -13,38 +14,6 @@ function useItemIconMap() {
     }).catch(() => {});
   }, []);
   return iconMap;
-}
-
-const VAULT_FALLBACK_ICON = 'https://runescape.wiki/images/RS_news_icon.png';
-
-function ItemIcon({ name, iconMap, size = 32 }) {
-  const [stage, setStage] = useState(0);
-  // stage 0: try iconMap / wiki-derived URL
-  // stage 1: try generic RS news icon
-  // stage 2: nothing (last resort — both images 404'd)
-
-  const imgStyle = { imageRendering: 'crisp-edges', flexShrink: 0, display: 'block', objectFit: 'contain' };
-
-  if (stage === 2) return null;
-
-  // Primary: gear-items DB icon → wiki image derived from item name
-  const primary = iconMap?.get(name)
-    ?? `https://runescape.wiki/images/${encodeURIComponent(name.replace(/ /g, '_'))}.png`;
-
-  if (stage === 0) {
-    return (
-      <img src={primary} alt={name} width={size} height={size}
-        onError={() => setStage(1)}
-        style={imgStyle} />
-    );
-  }
-
-  // Fallback: RS news icon
-  return (
-    <img src={VAULT_FALLBACK_ICON} alt="" width={size} height={size}
-      onError={() => setStage(2)}
-      style={imgStyle} />
-  );
 }
 
 function fmtGp(n) {
@@ -129,7 +98,7 @@ function ItemTile({ item, groupEquipment, iconMap, canWrite, onDropDeleted }) {
           background: 'var(--bg-root)', borderRadius: 'var(--radius)',
           border: `1px solid ${isWorn ? '#4caf5033' : 'var(--border)'}`,
         }}>
-          <ItemIcon name={item.name} iconMap={iconMap} size={30} />
+          <ItemIcon name={item.name} size={30} />
         </div>
 
         {/* Name */}
