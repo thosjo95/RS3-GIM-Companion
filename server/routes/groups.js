@@ -244,6 +244,15 @@ router.get('/', (req, res) => {
   res.json(groups);
 });
 
+// GET /api/groups/:id/rank — the group's position on Jagex's public Group Ironman hiscores ({ rank, total } or null)
+router.get('/:id/rank', async (req, res) => {
+  const g = db.prepare(`SELECT g.id, g.name, g.group_rsn, g.gim_type, g.gim_size, COALESCE(SUM(s.xp), 0) AS group_total_xp
+    FROM groups g LEFT JOIN players p ON p.group_id = g.id LEFT JOIN skills s ON s.player_id = p.id AND s.skill_name = 'Overall'
+    WHERE g.id = ? GROUP BY g.id`).get(req.params.id);
+  if (!g) return res.status(404).json({ error: 'Group not found' });
+  res.json(await require('../services/gimRank').groupRank(g));
+});
+
 // GET /api/groups/:id - get group with players and aggregates
 router.get('/:id', (req, res) => {
   const group = db.prepare(

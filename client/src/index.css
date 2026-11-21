@@ -689,3 +689,10 @@ a:hover { color: var(--gold-light); }
   .mb-20  { margin-bottom: 12px; }
   .mb-24  { margin-bottom: 16px; }
 }
+
+/* top bar: group info and stats strip on small screens */
+@media (max-width: 768px) {
+  .group-info { padding-left: 8px !important; }
+  .header-stats { display: none !important; }
+  .group-info-sub { display: none !important; }   /* the detail line is too wide for a phone */
+}

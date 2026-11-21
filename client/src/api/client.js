@@ -42,6 +42,7 @@ export const api = {
   // Groups
   getGroups: () => request('/groups'),
   getGroup: (id) => request(`/groups/${id}`),
+  getGroupRank: (id) => request(`/groups/${id}/rank`),
   searchGroups:  (name)          => request(`/groups/search?name=${encodeURIComponent(name)}`),
   browseGroups:  (limit = 25)    => request(`/groups/search?limit=${limit}`),
   createGroup: (body) => request('/groups', { method: 'POST', body }),

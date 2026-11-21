@@ -1,4 +1,6 @@
 import RsIcon from './RsIcon';
+import GroupHeaderInfo from './GroupHeaderInfo';
+import HeaderStats from './HeaderStats';
 import DiscordLogo from './DiscordLogo';
 import React, { useState } from 'react';
 import { api } from '../api/client';
@@ -62,8 +64,9 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
       )}
       <div className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" width={960} height={462} loading="eager" style={{ height: 34, width: 'auto', flexShrink: 0 }} />
-        {group && <span style={{ fontWeight: 400, opacity: 0.6, fontSize: 13 }}>— {group.name}</span>}
       </div>
+      {group && <GroupHeaderInfo group={group} />}
+      {group && <HeaderStats group={group} />}
       <div className="header-right">
         {lastSync && <span className="last-sync">Sync: {syncAgo}</span>}
 
