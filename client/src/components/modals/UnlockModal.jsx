@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState } from 'react';
 
 // Unlock modal — enter secret + pick who you are
@@ -26,7 +27,7 @@ export default function UnlockModal({ group, onConfirm, onCancel }) {
     <div className="modal-backdrop">
       <div className="modal" style={{maxWidth:400}}>
         <div className="modal-header">
-          <span className="modal-title">🔓 Unlock Group</span>
+          <span className="modal-title"><RsIcon name="key" size={18} style={{ marginRight: 8 }} />Unlock Group</span>
           {onCancel && <button className="btn btn-ghost btn-sm" onClick={onCancel}>✕</button>}
         </div>
         <form onSubmit={handleSubmit}>
@@ -60,7 +61,7 @@ export default function UnlockModal({ group, onConfirm, onCancel }) {
           <div className="modal-footer">
             {onCancel && <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>}
             <button type="submit" className="btn btn-primary" disabled={checking || !pw.trim()}>
-              {checking ? <span className="spinner" style={{width:12,height:12}} /> : '🔓 Unlock'}
+              {checking ? <span className="spinner" style={{width:12,height:12}} /> : 'Unlock'}
             </button>
           </div>
         </form>

@@ -1,3 +1,5 @@
+import SkillIcon from './common/SkillIcon';
+import RsIcon from './RsIcon';
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
@@ -132,7 +134,7 @@ export default function PlayerCard({ player, isMe, onSetMe, onRefresh, onToast }
               const maxed = s?.level >= 99;
               return (
                 <div key={name} className={`skill-chip${maxed ? ' maxed' : ''}`} title={`${name}: ${s?.xp?.toLocaleString()} XP`}>
-                  <span className="skill-chip-icon">{SKILL_ICONS[name] ?? '📊'}</span>
+                  <span className="skill-chip-icon"><SkillIcon name={name} size={18} /></span>
                   <span className="skill-chip-level">{s?.level ?? 1}</span>
                   <span className="skill-chip-name">{name}</span>
                 </div>
@@ -175,7 +177,7 @@ export default function PlayerCard({ player, isMe, onSetMe, onRefresh, onToast }
                 background:'rgba(200,155,60,0.1)', border:'1px solid var(--gold-dark)',
                 borderRadius:10, color:'var(--gold)', fontWeight:600,
               }}>
-                📜 {c.label}: {c.val}
+                <RsIcon name="quests" size={13} style={{ marginRight: 5 }} />{c.label}: {c.val}
               </span>
             ))}
           </div>
@@ -184,7 +186,7 @@ export default function PlayerCard({ player, isMe, onSetMe, onRefresh, onToast }
         {/* Quests from RuneMetrics */}
         {stats?.questsComplete > 0 && (
           <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>
-            ✅ {stats.questsComplete} quests completed
+            ✓ {stats.questsComplete} quests completed
             {stats.questsStarted > 0 ? ` · ${stats.questsStarted} in progress` : ''}
           </div>
         )}

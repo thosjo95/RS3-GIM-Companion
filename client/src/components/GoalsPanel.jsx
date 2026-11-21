@@ -1,3 +1,5 @@
+import RsIcon from './RsIcon';
+import { ItemIcon } from './GameIcon';
 import React, { useState, useMemo } from 'react';
 import { api } from '../api/client';
 import GoalModal from './GoalModal';
@@ -135,7 +137,7 @@ function QuestGoalDetail({ goal, players }) {
             <div>
               <span style={{ color: 'var(--text-dim)' }}>Quest prereqs: </span>
               {questReqs.map(q => (
-                <span key={q} className="tag" style={{ fontSize: 10, marginRight: 3 }}>📜 {q}</span>
+                <span key={q} className="tag" style={{ fontSize: 10, marginRight: 3 }}><RsIcon name="quests" size={11} /> {q}</span>
               ))}
             </div>
           )}
@@ -162,7 +164,7 @@ function ItemGoalDetail({ goal }) {
     <div style={{ marginTop: 6 }}>
       <div className="flex align-center gap-8">
         <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-          📦 {fmtNum(quantity)}x {itemName}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><ItemIcon name={itemName} size={18} /> {fmtNum(quantity)}x {itemName}</span>
           {method && <span style={{ marginLeft: 6 }}>· {method}{skill ? ` (${skill} ${skillLevel})` : ''}</span>}
         </span>
         {recipe?.length > 0 && (
@@ -189,7 +191,7 @@ function ItemGoalDetail({ goal }) {
               border: `1px solid ${m.raw ? 'var(--border)' : 'var(--blue)'}`,
               color: 'var(--text)',
             }}>
-              {m.raw ? '🪨' : '⚙️'} {m.item}: <strong style={{ color: 'var(--gold)' }}>{fmtNum(m.quantity)}</strong>
+              <RsIcon name={m.raw ? 'rawMaterial' : 'crafted'} size={12} /> {m.item}: <strong style={{ color: 'var(--gold)' }}>{fmtNum(m.quantity)}</strong>
             </span>
           ))}
         </div>
@@ -211,7 +213,7 @@ function GoalRow({ goal, players, onCycle, onDelete, canWrite }) {
         <span className={`goal-badge badge-${goal.type}`}>{goal.type}</span>
         {goalType && goalType !== 'custom' && (
           <span className="tag" style={{ fontSize: 10 }}>
-            {goalType === 'level' ? '📈' : goalType === 'quest' ? '📜' : '📦'} {goalType}
+            <RsIcon name={goalType === 'level' ? 'skills' : goalType === 'quest' ? 'quests' : 'backpack'} size={12} /> {goalType}
           </span>
         )}
         <div className="goal-info" style={{ flex: 1, minWidth: 0 }}>
@@ -220,7 +222,7 @@ function GoalRow({ goal, players, onCycle, onDelete, canWrite }) {
         </div>
         <div className="goal-actions" style={{ flexShrink: 0 }}>
           {goal.owner_rsn && (
-            <span style={{ fontSize: 11, color: 'var(--text-dim)', marginRight: 6 }}>👤 {goal.owner_rsn}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', marginRight: 6 }}><RsIcon name="player" size={12} /> {goal.owner_rsn}</span>
           )}
           <button
             className={`goal-status status-${goal.status}`}
@@ -307,7 +309,7 @@ export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast
   return (
     <div>
       <div className="flex align-center justify-between mb-16" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>🎯 Goals</div>
+        <div className="section-title" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}><RsIcon name="goals" size={16} /> Goals</div>
         <div className="flex gap-8 align-center" style={{ flexWrap: 'wrap' }}>
           <select className="form-select" style={{ width: 'auto' }} value={filter} onChange={e => setFilter(e.target.value)}>
             <option value="all">All Goals</option>
@@ -318,11 +320,11 @@ export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast
             <option value="complete">Completed</option>
           </select>
           <button className="btn btn-secondary btn-sm" onClick={loadSuggestions} disabled={loadingSugg}>
-            {loadingSugg ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '💡'} Suggestions
+            {loadingSugg ? <span className="spinner" style={{ width: 12, height: 12 }} /> : <RsIcon name="browser" size={13} />} Suggestions
           </button>
           {canWrite
             ? <button className="btn btn-primary btn-sm" onClick={() => { setPrefill({}); setShowModal(true); }}>+ Add Goal</button>
-            : <span style={{fontSize:12,color:'var(--text-dim)'}}>🔒 Claim group to add</span>
+            : <span style={{fontSize:12,color:'var(--text-dim)'}}><RsIcon name="key" size={12} /> Claim group to add</span>
           }
         </div>
       </div>
@@ -331,7 +333,7 @@ export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast
       {showSugg && suggestions.length > 0 && (
         <div className="panel mb-16">
           <div className="panel-header">
-            <span className="panel-title">💡 Suggested Goals</span>
+            <span className="panel-title"><RsIcon name="browser" size={14} /> Suggested Goals</span>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowSugg(false)}>✕</button>
           </div>
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -371,7 +373,7 @@ export default function GoalsPanel({ goals, players, groupId, onRefresh, onToast
 
       {filtered.length === 0 && (
         <div className="empty-state">
-          <div className="icon">🎯</div>
+          <div className="icon"><RsIcon name="goals" size={40} /></div>
           <p>No goals yet. Add your first group or personal goal.</p>
         </div>
       )}

@@ -24,13 +24,14 @@ export const STAGES = {
 };
 
 export const CATEGORIES = [
-  { id: 'quest_series',   label: 'Quest Series',        icon: '📜' },
-  { id: 'skill_unlock',   label: 'Skill / Unlock',      icon: '📈' },
-  { id: 'important_item', label: 'Important Item',      icon: '⚔️' },
-  { id: 'item_request',   label: 'Item Requests',       icon: '🎁' },
-  { id: 'diary',          label: 'Area Tasks',          icon: '📋' },
-  { id: 'boss_kill',      label: 'Boss Kills',          icon: '💀' },
-  { id: 'slayer',         label: 'Slayer Drops',        icon: '🔪' },
+  // `rs` is the name of the official RuneScape icon (see components/RsIcon.jsx); `icon` is the fallback.
+  { id: 'quest_series',   label: 'Quest Series',        rs: 'quests',    icon: '📜' },
+  { id: 'skill_unlock',   label: 'Skill / Unlock',      rs: 'skills',    icon: '📈' },
+  { id: 'important_item', label: 'Important Item',      rs: 'backpack',  icon: '⚔️' },
+  { id: 'item_request',   label: 'Item Requests',       rs: 'drops',     icon: '🎁' },
+  { id: 'diary',          label: 'Area Tasks',          rs: 'areaTasks', icon: '📋' },
+  { id: 'boss_kill',      label: 'Boss Kills',          rs: 'bosses',    icon: '💀' },
+  { id: 'slayer',         label: 'Slayer Drops',        rs: 'slayer',    icon: '🔪' },
 ];
 
 // ── Suggestions ───────────────────────────────────────────────────────────────

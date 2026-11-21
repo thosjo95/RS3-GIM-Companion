@@ -1,3 +1,5 @@
+import RsIcon from './RsIcon';
+import DiscordLogo from './DiscordLogo';
 import React, { useState } from 'react';
 import { api } from '../api/client';
 import GroupNotesOverlay from './GroupNotesOverlay';
@@ -81,7 +83,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
               padding: '0 12px', fontSize: 12, fontWeight: 600,
               animation: 'pulse 2s ease-in-out infinite',
             }}>
-            🔒 Claim group
+            <RsIcon name="key" size={14} style={{ marginRight: 5 }} />Claim group
           </button>
         )}
 
@@ -98,7 +100,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
               color: 'var(--text-dim)',
               padding: '0 12px', fontSize: 12,
             }}>
-            🔒 Unlock
+            <RsIcon name="key" size={14} style={{ marginRight: 5 }} />Unlock
           </button>
         )}
 
@@ -134,7 +136,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
               border: `1px solid ${notesOpen ? 'var(--gold)' : 'var(--border)'}`,
               color: 'var(--gold)',
             }}>
-            📝
+            <RsIcon name="journal" size={18} />
           </button>
         )}
 
@@ -152,7 +154,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
               border: '1px solid var(--border)',
               color: 'var(--text-dim)',
             }}>
-            🔔
+            <DiscordLogo size={18} />
           </button>
         )}
 
@@ -192,7 +194,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,168,75,0.22)'}
           onMouseLeave={e => e.currentTarget.style.background = 'rgba(200,168,75,0.10)'}
         >
-          📖 Docs
+          <RsIcon name="wiki" size={14} style={{ marginRight: 5 }} />Docs
         </a>
 
         {/* Discord link */}

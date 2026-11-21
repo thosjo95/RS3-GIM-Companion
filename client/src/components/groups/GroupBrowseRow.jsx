@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React from 'react';
 import GimTypeLabel from '../common/GimTypeLabel';
 
@@ -24,7 +25,7 @@ export default function GroupBrowseRow({ g, isPinned, isFav, onSelect, onFavorit
         <div style={{fontSize:11,color:'var(--text-dim)',display:'inline-flex',alignItems:'center',gap:3,flexWrap:'wrap'}}>
           {g.member_count ?? 0} member{(g.member_count ?? 0) !== 1 ? 's' : ''}
           {' · '}<GimTypeLabel type={g.gim_type} size={11} />
-          {g.is_claimed ? ' · 🔒' : ''}
+          {g.is_claimed ? <>{' · '}<RsIcon name="key" size={11} /></> : ''}
         </div>
       </div>
       {/* Action button */}

@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../../api/client';
 import { fmtXp } from '../../lib/rs3';
@@ -179,7 +180,7 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
                   padding:'8px 12px',background:'var(--bg-panel-alt)',
                   border:'1px solid var(--border)',borderRadius:'var(--radius)',
                 }}>
-                  <span style={{fontWeight:600,color:'var(--text-bright)'}}>👤 {m.rsn}</span>
+                  <span style={{fontWeight:600,color:'var(--text-bright)'}}><RsIcon name="player" size={14} style={{ marginRight: 5 }} />{m.rsn}</span>
                   <div style={{display:'flex',gap:12,fontSize:12,color:'var(--text-dim)'}}>
                     {m.totalLevel > 0 && <span>Lvl {m.totalLevel}</span>}
                     {m.totalXp > 0 && <span>{fmtXp(m.totalXp)} XP</span>}

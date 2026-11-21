@@ -1,3 +1,4 @@
+import RsIcon from './RsIcon';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api/client';
 
@@ -136,7 +137,7 @@ export default function GroupNotesOverlay({ groupId, canWrite, onToast, onClose 
           background: 'var(--bg-panel)',
         }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)' }}>📝 Group Notes</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)' }}><RsIcon name="journal" size={16} style={{ marginRight: 6 }} />Group Notes</div>
           <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>
             Shared pinboard — strategies, loot rules, session notes
           </div>
@@ -187,7 +188,7 @@ export default function GroupNotesOverlay({ groupId, canWrite, onToast, onClose 
         flexShrink: 0,
       }}>
         <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-          {content.length} chars{!canWrite && ' · 🔒 Unlock to edit'}
+          {content.length} chars{!canWrite && ' · Unlock to edit'}
         </span>
         {canWrite && isDirty && (
           <button

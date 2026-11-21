@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React from 'react';
 import GimTypeLabel from '../common/GimTypeLabel';
 
@@ -8,7 +9,7 @@ export default function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, o
       <div className="nav-group">
         <div className="nav-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <span>Groups</span>
-          <button className="btn btn-ghost btn-sm btn-icon" onClick={onSearch} title="Find or manage groups" style={{fontSize:13}}>🔍</button>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onSearch} title="Find or manage groups" style={{fontSize:13}}><RsIcon name="search" size={16} /></button>
         </div>
         {groups.map(g => {
           const isFav = favoriteGroupIds?.includes(g.id);
@@ -27,7 +28,7 @@ export default function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, o
           );
         })}
         <div className="nav-item" onClick={onSearch} style={{marginTop:4}}>
-          <span className="icon">⚙️</span>
+          <span className="icon"><RsIcon name="setup" size={18} /></span>
           <span>Find or Manage Groups</span>
         </div>
       </div>

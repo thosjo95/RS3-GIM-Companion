@@ -213,7 +213,7 @@ export default function App() {
   // Explicitly save a group to "Your groups" sidebar
   function saveGroup(id) {
     pinGroup(id);
-    pushToast('⭐ Saved to your groups!', 'success');
+    pushToast('Saved to your groups', 'success');
   }
 
   function handleSearchAddNew(prefill) {
@@ -228,7 +228,7 @@ export default function App() {
     pinGroup(activeGroupId); // unlock = save to "Your groups"
     if (rsn) setMyRsn(rsn);
     setShowPasswordModal(false);
-    pushToast('Unlocked! 🔓', 'success');
+    pushToast('Unlocked', 'success');
     // If no RSN was chosen, prompt them to pick one now
     if (!rsn) setTimeout(() => setShowRsnModal(true), 300);
   }
@@ -318,12 +318,12 @@ export default function App() {
               borderRadius:'var(--radius)', fontSize:13,
             }}>
               <span style={{flex:1, color:'var(--text-dim)', minWidth:200}}>
-                👁️ Browsing <strong style={{color:'var(--text-bright)'}}>{group.name}</strong> as a guest — read-only.
+                Browsing <strong style={{color:'var(--text-bright)'}}>{group.name}</strong> as a guest — read-only.
               </span>
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => saveGroup(activeGroupId)}>
-                ⭐ Save to your groups
+                ★ Save to your groups
               </button>
             </div>
           )}

@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState, useMemo } from 'react';
 
 // ── Quest helpers ─────────────────────────────────────────────────────────────
@@ -51,7 +52,7 @@ export function PlayerQuestTable({ player }) {
   if (!quests.length) {
     return (
       <div className="empty-state">
-        <div className="icon">📜</div>
+        <div className="icon"><RsIcon name="quests" size={40} /></div>
         <p>No quest data yet.</p>
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
           Sync {player.rsn} to fetch quest data.
@@ -172,7 +173,7 @@ export function QuestsPanel({ players, colorMap }) {
   if (!hasAnyData) {
     return (
       <div className="empty-state">
-        <div className="icon">📜</div>
+        <div className="icon"><RsIcon name="quests" size={40} /></div>
         <p>Quest data not yet loaded.</p>
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
           Sync your players — quest lists are fetched from the Adventurer's Log.

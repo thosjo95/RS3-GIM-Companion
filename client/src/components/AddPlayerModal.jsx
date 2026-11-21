@@ -33,7 +33,7 @@ export default function AddPlayerModal({ groupId, onClose, onAdded, onToast }) {
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{maxWidth:360}}>
         <div className="modal-header">
-          <span className="modal-title">➕ Add Player</span>
+          <span className="modal-title">Add Player</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit}>
@@ -61,7 +61,7 @@ export default function AddPlayerModal({ groupId, onClose, onAdded, onToast }) {
             <button type="submit" className="btn btn-primary" disabled={saving || !rsn.trim()}>
               {saving
                 ? <><span className="spinner" style={{width:12,height:12}}/> Verifying…</>
-                : '➕ Add Player'}
+                : '+ Add Player'}
             </button>
           </div>
         </form>

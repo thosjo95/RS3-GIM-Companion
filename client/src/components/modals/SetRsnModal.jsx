@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState } from 'react';
 
 // Set RSN modal — just pick who you are (no password needed when already unlocked)
@@ -9,7 +10,7 @@ export default function SetRsnModal({ group, myRsn, onConfirm, onCancel }) {
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onCancel()}>
       <div className="modal" style={{ maxWidth: 360 }}>
         <div className="modal-header">
-          <span className="modal-title">👤 Who are you?</span>
+          <span className="modal-title"><RsIcon name="player" size={18} style={{ marginRight: 8 }} />Who are you?</span>
           <button className="btn btn-ghost btn-sm" onClick={onCancel}>✕</button>
         </div>
         <div className="modal-body">

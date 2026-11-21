@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState } from 'react';
 
 // Claim modal — auto-generates a secret, shows it for copying
@@ -33,7 +34,7 @@ export default function ClaimModal({ group, onConfirm, onCancel }) {
     <div className="modal-backdrop">
       <div className="modal" style={{maxWidth:420}}>
         <div className="modal-header">
-          <span className="modal-title">🔒 Claim Group</span>
+          <span className="modal-title"><RsIcon name="key" size={18} style={{ marginRight: 8 }} />Claim Group</span>
           {!secret && <button className="btn btn-ghost btn-sm" onClick={onCancel}>✕</button>}
         </div>
         <div className="modal-body">
@@ -49,7 +50,7 @@ export default function ClaimModal({ group, onConfirm, onCancel }) {
                 background:'rgba(192,64,64,0.10)', border:'1px solid rgba(192,64,64,0.4)',
                 fontSize:12, color:'var(--text-dim)', lineHeight:1.5,
               }}>
-                <span style={{fontWeight:700, color:'var(--red-bright)'}}>⚠️ Only claim groups you own.</span>
+                <span style={{fontWeight:700, color:'var(--red-bright)'}}>Only claim groups you own.</span>
                 {' '}Claiming locks the group to this secret — other members will need it to contribute.
                 <br/><br/>
                 If your group has already been claimed by someone else, or you've lost your secret,{' '}
@@ -96,7 +97,7 @@ export default function ClaimModal({ group, onConfirm, onCancel }) {
             <>
               <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
               <button className="btn btn-primary" onClick={handleClaim} disabled={claiming}>
-                {claiming ? <span className="spinner" style={{width:12,height:12}} /> : '🔒 Claim & Generate Secret'}
+                {claiming ? <span className="spinner" style={{width:12,height:12}} /> : 'Claim & Generate Secret'}
               </button>
             </>
           ) : (

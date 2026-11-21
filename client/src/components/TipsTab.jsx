@@ -1,3 +1,6 @@
+import SkillIcon from './common/SkillIcon';
+import RsIcon from './RsIcon';
+import { ItemIcon } from './GameIcon';
 import React, { useState } from 'react';
 import { api } from '../api/client';
 
@@ -155,7 +158,7 @@ function AddGoalInline({ milestone, type, players, groupId, onSaved, onToast, on
         onChange={e => setOwnerId(e.target.value)}
         style={{ fontSize: 12, padding: '3px 8px', height: 'auto', flex: 1, minWidth: 120 }}
       >
-        {type !== 'level' && <option value="group">👥 Group</option>}
+        {type !== 'level' && <option value="group">Group</option>}
         {players.map(p => <option key={p.id} value={p.id}>{p.rsn}</option>)}
       </select>
       <button onClick={save} disabled={saving} className="btn btn-primary btn-sm" style={{ fontSize: 11 }}>
@@ -171,7 +174,7 @@ function AddGoalInline({ milestone, type, players, groupId, onSaved, onToast, on
 function MilestoneCard({ milestone, type, players, groupId, onSaved, onToast, canWrite }) {
   const [adding, setAdding] = useState(false);
 
-  const icon = type === 'quest' ? '📜' : type === 'level' ? (SKILL_ICONS[milestone.skill] ?? '📊') : '🏆';
+  const icon = type === 'quest' ? <RsIcon name="quests" size={22} /> : type === 'level' ? <SkillIcon name={milestone.skill} size={22} /> : <ItemIcon name={milestone.name} size={28} />;
   const title = type === 'level' ? `${milestone.skill} ${milestone.level}` : milestone.name;
   const wikiTarget = type === 'level' ? milestone.skill : milestone.name;
   const priorityColor = PRIORITY_COLOR[milestone.priority] || 'var(--border)';
@@ -190,10 +193,10 @@ function MilestoneCard({ milestone, type, players, groupId, onSaved, onToast, ca
           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)' }}>{title}</div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 3, lineHeight: 1.5 }}>{milestone.importance}</div>
           {milestone.unlock && (
-            <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 4 }}>🔓 {milestone.unlock}</div>
+            <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 4 }}><RsIcon name="key" size={12} style={{ marginRight: 5 }} />{milestone.unlock}</div>
           )}
           {milestone.category && (
-            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>📁 {milestone.category}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{milestone.category}</div>
           )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0, alignItems: 'flex-end' }}>
@@ -201,7 +204,7 @@ function MilestoneCard({ milestone, type, players, groupId, onSaved, onToast, ca
             href={wikiUrl(wikiTarget)} target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 10, color: 'var(--text-dim)', textDecoration: 'none', padding: '2px 7px', border: '1px solid var(--border)', borderRadius: 6 }}
           >
-            📖 Wiki
+            <RsIcon name="wiki" size={13} style={{ marginRight: 4 }} />Wiki
           </a>
           {canWrite && (
             <button
@@ -254,21 +257,21 @@ function AddCustomForm({ onAdd, onClose }) {
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <select className="form-select" value={form.type} onChange={e => set('type', e.target.value)} style={{ flex: 1, fontSize: 12 }}>
-            <option value="quest">📜 Quest</option>
-            <option value="item">🏆 Item</option>
-            <option value="level">📊 Skill Level</option>
+            <option value="quest">Quest</option>
+            <option value="item">Item</option>
+            <option value="level">Skill Level</option>
           </select>
           <select className="form-select" value={form.priority} onChange={e => set('priority', e.target.value)} style={{ flex: 1, fontSize: 12 }}>
-            <option value="high">🔴 High</option>
-            <option value="medium">🟡 Medium</option>
-            <option value="low">🔵 Low</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
         </div>
 
         {form.type === 'level' ? (
           <div style={{ display: 'flex', gap: 8 }}>
             <select className="form-select" value={form.skill} onChange={e => set('skill', e.target.value)} style={{ flex: 2, fontSize: 12 }}>
-              {SKILL_LIST.map(s => <option key={s} value={s}>{SKILL_ICONS[s]} {s}</option>)}
+              {SKILL_LIST.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <input type="number" className="form-input" value={form.level} min={2} max={120}
               onChange={e => set('level', Number(e.target.value))}
@@ -312,10 +315,10 @@ export default function TipsTab({ players, groupId, onRefresh, onToast, canWrite
   }
 
   const allSections = [
-    { id: 'quest', label: '📜 Quests',         items: KEY_QUESTS,         type: 'quest' },
-    { id: 'level', label: '⚡ Skill Goals',     items: SKILL_MILESTONES,   type: 'level' },
-    { id: 'item',  label: '🏆 Milestone Items', items: MILESTONE_ITEMS,    type: 'item'  },
-    ...(customMilestones.length ? [{ id: 'custom', label: '⭐ Custom', items: customMilestones, type: 'custom' }] : []),
+    { id: 'quest', label: 'Quests',         items: KEY_QUESTS,         type: 'quest' },
+    { id: 'level', label: 'Skill Goals',     items: SKILL_MILESTONES,   type: 'level' },
+    { id: 'item',  label: 'Milestone Items', items: MILESTONE_ITEMS,    type: 'item'  },
+    ...(customMilestones.length ? [{ id: 'custom', label: 'Custom', items: customMilestones, type: 'custom' }] : []),
   ];
 
   const filtered = allSections
@@ -325,16 +328,16 @@ export default function TipsTab({ players, groupId, onRefresh, onToast, canWrite
 
   const CAT_BTNS = [
     { id: 'all',   label: 'All' },
-    { id: 'quest', label: '📜 Quests' },
-    { id: 'level', label: '⚡ Skills' },
-    { id: 'item',  label: '🏆 Items' },
+    { id: 'quest', label: 'Quests' },
+    { id: 'level', label: 'Skills' },
+    { id: 'item',  label: 'Items' },
   ];
 
   const PRI_BTNS = [
     { id: 'all',    label: 'All priorities' },
-    { id: 'high',   label: '🔴 High' },
-    { id: 'medium', label: '🟡 Medium' },
-    { id: 'low',    label: '🔵 Low' },
+    { id: 'high',   label: 'High' },
+    { id: 'medium', label: 'Medium' },
+    { id: 'low',    label: 'Low' },
   ];
 
   function pillBtn(active) {
@@ -352,7 +355,7 @@ export default function TipsTab({ players, groupId, onRefresh, onToast, canWrite
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div className="section-title" style={{ marginBottom: 4 }}>💡 Tips &amp; Milestones</div>
+          <div className="section-title" style={{ marginBottom: 4 }}><RsIcon name="browser" size={18} style={{ marginRight: 7 }} />Tips &amp; Milestones</div>
           <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
             Key RS3 GIM goals — quests, skill targets, and milestone gear. Click <strong style={{ color: 'var(--gold)' }}>+ Goal</strong> to start tracking one.
           </div>
@@ -422,7 +425,7 @@ export default function TipsTab({ players, groupId, onRefresh, onToast, canWrite
 
       {filtered.length === 0 && (
         <div className="empty-state">
-          <div className="icon">💡</div>
+          <div className="icon"><RsIcon name="browser" size={40} /></div>
           <p>No milestones match the current filter.</p>
         </div>
       )}

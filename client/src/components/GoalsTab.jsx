@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import RsIcon, { IconLabel } from './RsIcon';
 import { api } from '../api/client';
 import GoalModal from './GoalModal';
 import {
@@ -13,7 +14,7 @@ import { fmtNum, xpForLevel, normRsn, parseDetails, SKILL_ICON_URLS as SKILL_ICO
 const STATUS_COLS = [
   { id: 'not_started', label: 'Not Started', icon: '⏸',  color: 'var(--text-dim)',      border: 'var(--border)' },
   { id: 'in_progress', label: 'In Progress', icon: '▶',  color: 'var(--gold)',           border: 'rgba(200,168,75,0.4)' },
-  { id: 'blocked',     label: 'Blocked',     icon: '🚫', color: 'var(--red-bright)',     border: 'rgba(192,64,64,0.4)' },
+  { id: 'blocked',     label: 'Blocked',     icon: '⊘', color: 'var(--red-bright)',     border: 'rgba(192,64,64,0.4)' },
   { id: 'complete',    label: 'Done',        icon: '✓',  color: 'var(--green-bright)',   border: 'rgba(90,154,80,0.4)' },
 ];
 
@@ -21,7 +22,10 @@ const STATUS_CYCLE = ['not_started', 'in_progress', 'blocked', 'complete'];
 
 const CAT_ICONS  = { skill: '📈', quest: '📜', item: '📦', item_request: '📦', boss: '⚔️', diary: '📋', other: '✏️' };
 const PRI_COLORS = { high: 'var(--red-bright)', medium: 'var(--gold)', low: 'var(--green-bright)' };
-const PRI_DOT    = { high: '🔴', medium: '🟠', low: '🟢' };
+// Goal category -> official icon; priority is a colour dot.
+const CAT_ICON_NAME = { skill: 'skills', quest: 'quests', item: 'backpack', item_request: 'drops', boss: 'bosses', diary: 'areaTasks', other: 'journal' };
+const CatIcon = ({ category, size = 16 }) => <RsIcon name={CAT_ICON_NAME[category] ?? 'journal'} fallback="•" size={size} />;
+const PriDot  = ({ p }) => <span title={`${p} priority`} style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: PRI_COLORS[p] ?? 'var(--border)' }} />;
 
 // Map goalSuggestions category ids → existing CAT_ICONS keys for active-goal cards
 const SUGG_CAT_ICON = {
@@ -156,21 +160,21 @@ function GoalCard({ goal, players, onCycle, onDelete, onEdit, onSetBlocked, canW
         transition: 'opacity 0.15s',
       }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{CAT_ICONS[goal.category] ?? '✏️'}</span>
+        <span style={{ flexShrink: 0, marginTop: 1 }}><CatIcon category={goal.category} /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-bright)', lineHeight: 1.3, wordBreak: 'break-word' }}>
-            {goal.title}{isHot && <span style={{ marginLeft: 5, fontSize: 11 }}>🔥</span>}
+            {goal.title}{isHot && <span style={{ marginLeft: 5 }} title="Hot"><RsIcon name="fire" fallback="🔥" size={13} /></span>}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            {isGroup ? <span style={{ color: 'var(--gold)' }}>👥 Group</span> : owner && <span>{owner.rsn}</span>}
-            <span>{PRI_DOT[goal.priority]}</span>
+            {isGroup ? <span style={{ color: 'var(--gold)' }}><IconLabel name="group" fallback="👥" size={13} gap={4}>Group</IconLabel></span> : owner && <span>{owner.rsn}</span>}
+            <PriDot p={goal.priority} />
             {wikiHref && (
               <a href={wikiHref} target="_blank" rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
                 style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4,
                   background: 'rgba(74,136,184,0.15)', border: '1px solid rgba(74,136,184,0.3)',
                   color: '#6ab0e0', textDecoration: 'none' }}>
-                📖
+                <RsIcon name="wiki" fallback="📖" size={13} />
               </a>
             )}
           </div>
@@ -181,13 +185,13 @@ function GoalCard({ goal, players, onCycle, onDelete, onEdit, onSetBlocked, canW
             <button onClick={e => { e.stopPropagation(); onEdit?.(goal); }} title="Edit goal"
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,136,184,0.15)'; e.currentTarget.style.borderColor = 'rgba(74,136,184,0.4)'; e.currentTarget.style.color = '#6ab0e0'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
-              style={btnBase}>✏️</button>
+              style={btnBase}>✎</button>
             {/* Blocked — only when not already blocked or complete */}
             {goal.status !== 'blocked' && goal.status !== 'complete' && (
               <button onClick={e => { e.stopPropagation(); onSetBlocked?.(goal.id); }} title="Mark as blocked"
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,64,64,0.12)'; e.currentTarget.style.borderColor = 'rgba(192,64,64,0.4)'; e.currentTarget.style.color = 'var(--red-bright)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
-                style={btnBase}>🚫</button>
+                style={btnBase}>⊘</button>
             )}
             {/* Advance status */}
             <button onClick={e => { e.stopPropagation(); onCycle(goal); }} title="Advance status"
@@ -242,7 +246,7 @@ function StatsBar({ goals }) {
       <span><strong style={{ color: 'var(--text-bright)' }}>{total}</strong> goals</span>
       <span style={{ color: 'var(--green-bright)' }}>✓ {done} done ({pct}%)</span>
       <span style={{ color: 'var(--gold)' }}>▶ {inProgress} in progress</span>
-      {blocked > 0 && <span style={{ color: 'var(--red-bright)' }}>🚫 {blocked} blocked</span>}
+      {blocked > 0 && <span style={{ color: 'var(--red-bright)' }}>⊘ {blocked} blocked</span>}
       {total > 0 && (
         <div style={{ flex: 1, minWidth: 120, maxWidth: 200, height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
           <div style={{ width: `${pct}%`, height: '100%', background: 'var(--green-bright)', borderRadius: 3, transition: 'width 0.4s' }} />
@@ -330,13 +334,13 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
             padding: '8px 12px', background: 'var(--bg-panel-alt)',
             border: '1px solid var(--border)', borderRadius: 'var(--radius)',
           }}>
-            <span style={{ fontSize: 14, flexShrink: 0 }}>{CAT_ICONS[g.category] ?? '✏️'}</span>
+            <span style={{ flexShrink: 0 }}><CatIcon category={g.category} /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-bright)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {g.title}
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                {g.type === 'group' ? '👥 Group' : owner?.rsn ?? '—'}
+                {g.type === 'group' ? 'Group' : owner?.rsn ?? '—'}
               </div>
             </div>
             <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, flexShrink: 0,
@@ -350,7 +354,7 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
                 style={{ fontSize: 10, padding: '2px 5px', borderRadius: 4,
                   background: 'rgba(74,136,184,0.15)', border: '1px solid rgba(74,136,184,0.3)',
                   color: '#6ab0e0', textDecoration: 'none', flexShrink: 0 }}>
-                📖
+                <RsIcon name="wiki" fallback="📖" size={13} />
               </a>
             )}
             <span style={{ fontSize: 11, fontWeight: 600, color: statusCol?.color, flexShrink: 0 }}>
@@ -368,7 +372,7 @@ function ListView({ goals, players, onCycle, onDelete, canWrite }) {
                   onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
                   style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4,
                     cursor: 'pointer', fontSize: 11, padding: '2px 6px', color: 'var(--text-dim)',
-                    transition: 'all 0.12s' }}>🗑</button>
+                    transition: 'all 0.12s' }}>✕</button>
               </div>
             )}
           </div>
@@ -423,7 +427,7 @@ function SuggIcon({ category, iconUrl, skill, size = 34 }) {
   }
 
   // Last resort: emoji (only if even the fallback image 404s)
-  return <span style={{ fontSize: 20, lineHeight: 1 }}>{SUGG_CAT_ICON[category] ?? '🎯'}</span>;
+  return <RsIcon name={{ quest_series: 'quests', skill_unlock: 'skills', important_item: 'backpack', diary: 'areaTasks', boss_kill: 'bosses', slayer: 'slayer', item_request: 'drops' }[category] ?? 'goals'} size={22} />;
 }
 
 // ── Suggestion card ───────────────────────────────────────────────────────────
@@ -481,7 +485,7 @@ function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, o
               background: s.priority === 'high' ? 'rgba(192,64,64,0.12)' : s.priority === 'medium' ? 'rgba(200,168,75,0.10)' : 'rgba(90,154,80,0.10)',
               color: PRI_COLORS[s.priority],
               border: `1px solid ${s.priority === 'high' ? 'rgba(192,64,64,0.3)' : s.priority === 'medium' ? 'rgba(200,168,75,0.25)' : 'rgba(90,154,80,0.25)'}` }}>
-              {PRI_DOT[s.priority]} {s.priority}
+              <PriDot p={s.priority} /> {s.priority}
             </span>
           </div>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.5 }}>
@@ -497,7 +501,7 @@ function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, o
               style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderRadius: 'var(--radius)',
                 background: 'rgba(74,136,184,0.10)', border: '1px solid rgba(74,136,184,0.25)',
                 color: '#6ab0e0', fontSize: 11, textDecoration: 'none', fontWeight: 600 }}>
-              📖
+              <RsIcon name="wiki" fallback="📖" size={13} />
             </a>
           )}
           {alreadyAdded ? (
@@ -617,7 +621,7 @@ function SuggestionCard({ suggestion: s, selectedPlayers, alreadyAdded, onAdd, o
                     fontSize: 11, padding: '2px 8px', borderRadius: 'var(--radius)',
                     background: 'rgba(200,168,75,0.10)', border: '1px solid rgba(200,168,75,0.3)',
                     color: 'var(--gold)',
-                  }}>🎮 {s.requirements.activity}</span>
+                  }}><RsIcon name="combat" fallback="🎮" size={12} /> {s.requirements.activity}</span>
                 </div>
               )}
               {s.unlocks?.length > 0 && (
@@ -882,7 +886,7 @@ function GoalBrowser({ players, goals, onAdd, canWrite, addingId, onCreateCustom
         <button onClick={() => setCategory('all')} style={pillStyle(category === 'all')}>All</button>
         {CATEGORIES.map(c => (
           <button key={c.id} onClick={() => setCategory(c.id)} style={pillStyle(category === c.id)}>
-            {c.icon} {c.label}
+            <IconLabel name={c.rs} fallback={c.icon} size={14} gap={5}>{c.label}</IconLabel>
           </button>
         ))}
       </div>
@@ -1018,7 +1022,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
         // Auto-vault: items added server-side
         const vaulted = result?.autoVaulted ?? [];
         if (vaulted.length > 0) {
-          onToast(`🏆 ${vaulted.length} item${vaulted.length > 1 ? 's' : ''} auto-added to vault: ${vaulted.join(', ')}`, 'success');
+          onToast(`${vaulted.length} item${vaulted.length > 1 ? 's' : ''} auto-added to vault: ${vaulted.join(', ')}`, 'success');
         }
         // Diary auto-tick: refresh achievements so browser hides the completed diary
         if (result?.diaryTicked) {
@@ -1102,10 +1106,10 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
       if (status === 'complete') {
         const vaulted = result?.autoVaulted ?? [];
         if (vaulted.length > 0) {
-          onToast(`🏆 ${vaulted.length} item${vaulted.length > 1 ? 's' : ''} auto-added to vault: ${vaulted.join(', ')}`, 'success');
+          onToast(`${vaulted.length} item${vaulted.length > 1 ? 's' : ''} auto-added to vault: ${vaulted.join(', ')}`, 'success');
         }
         if (result?.diaryTicked) {
-          onToast(`📋 Achievement diary updated: ${s.title}`, 'success');
+          onToast(`Area task updated: ${s.title}`, 'success');
           api.getAchievements(groupId).then(setAchievements).catch(() => {});
         }
         if (!vaulted.length && !result?.diaryTicked) {
@@ -1152,7 +1156,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0, fontSize: 16, color: 'var(--text-bright)' }}>🎯 Goals</h2>
+        <h2 style={{ margin: 0, fontSize: 16, color: 'var(--text-bright)' }}><IconLabel name="goals" fallback="🎯" size={20} gap={8}>Goals</IconLabel></h2>
       </div>
 
       {/* ── Stats bar ── */}
@@ -1161,10 +1165,10 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
       {/* ── Section tabs ── */}
       <div data-tour="goals-sections" style={{ display: 'flex', gap: 6 }}>
         <button onClick={() => setActiveSection('browser')} style={sectionPillStyle(activeSection === 'browser')}>
-          💡 Goal Browser
+          <IconLabel name="browser" fallback="💡" size={16}>Goal Browser</IconLabel>
         </button>
         <button onClick={() => setActiveSection('active')} style={sectionPillStyle(activeSection === 'active')}>
-          📋 Active Goals
+          <IconLabel name="activeGoals" fallback="📋" size={16}>Active Goals</IconLabel>
           {goals.filter(g => g.status !== 'complete' && g.status !== 'vaulted').length > 0 && (
             <span style={{ marginLeft: 7, fontSize: 11, background: 'rgba(200,168,75,0.2)', borderRadius: 10, padding: '1px 7px' }}>
               {goals.filter(g => g.status !== 'complete' && g.status !== 'vaulted').length}
@@ -1196,7 +1200,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
           <div data-tour="goals-filters" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* View toggle */}
             <div style={{ display: 'flex', gap: 2, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius)', padding: 3 }}>
-              {[['board','📋 Board'],['list','☰ List']].map(([id, label]) => (
+              {[['board','Board'],['list','List']].map(([id, label]) => (
                 <button key={id} onClick={() => setView(id)} style={pillStyle(view === id)}>{label}</button>
               ))}
             </div>
@@ -1210,15 +1214,15 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
             {/* Category filter */}
             <select style={selStyle} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
               <option value="all">All types</option>
-              {presentCategories.map(c => <option key={c} value={c}>{CAT_ICONS[c]} {c}</option>)}
+              {presentCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
 
             {/* Priority filter */}
             <select style={selStyle} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
               <option value="all">All priorities</option>
-              <option value="high">🔴 High</option>
-              <option value="medium">🟠 Medium</option>
-              <option value="low">🟢 Low</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
             </select>
 
             {/* Scope pills */}
@@ -1251,7 +1255,7 @@ export default function GoalsTab({ group, goals, players, groupId, onRefresh, on
           {/* Empty state */}
           {goals.length === 0 && (
             <div style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '32px 0' }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>🎯</div>
+              <div style={{ marginBottom: 10 }}><RsIcon name="goals" fallback="🎯" size={40} /></div>
               <div style={{ fontSize: 14, marginBottom: 6, color: 'var(--text)' }}>No goals yet</div>
               <div style={{ fontSize: 12 }}>
                 Browse the{' '}

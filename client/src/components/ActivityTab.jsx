@@ -1,3 +1,4 @@
+import RsIcon from './RsIcon';
 import React, { useState, useMemo } from 'react';
 
 import { parseRMDate } from '../lib/rs3';
@@ -39,7 +40,7 @@ export default function ActivityTab({ players }) {
   if (playersWithActivity.length === 0) {
     return (
       <div className="empty-state" style={{ paddingTop: 48 }}>
-        <div className="icon">📋</div>
+        <div className="icon"><RsIcon name="activeGoals" size={40} /></div>
         <p>No recent activity found. Sync players to load their Adventurer's Log feed.</p>
       </div>
     );

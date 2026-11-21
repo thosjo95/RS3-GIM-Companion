@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import RsIcon from './RsIcon';
 import { api } from '../api/client';
 import { QUESTS, QUEST_NAMES, DIFF_COLOUR } from '../data/quests';
 
@@ -439,7 +440,7 @@ function QuestGoalForm({ players, form, set, onSaved, onToast }) {
                         style={{ accentColor: 'var(--green)', cursor: 'pointer', flexShrink: 0 }}
                       />
                       <span style={{ color: done ? 'var(--green-bright)' : 'var(--text)', flex: 1 }}>
-                        📜 {q}
+                        <RsIcon name="quests" fallback="📜" size={12} /> {q}
                         {QUESTS[q]?.difficulty && (
                           <span style={{ marginLeft: 6, fontSize: 10, color: DIFF_COLOUR[QUESTS[q].difficulty] }}>
                             {QUESTS[q].difficulty}
@@ -469,7 +470,7 @@ function QuestGoalForm({ players, form, set, onSaved, onToast }) {
                 >
                   {addingPrereqs
                     ? '⏳ Adding…'
-                    : `➕ Add ${missingPrereqs.length} uncompleted prerequisite quest goal${missingPrereqs.length !== 1 ? 's' : ''}`}
+                    : `+ Add ${missingPrereqs.length} uncompleted prerequisite quest goal${missingPrereqs.length !== 1 ? 's' : ''}`}
                 </button>
               )}
             </div>
@@ -545,7 +546,7 @@ function QuestGoalForm({ players, form, set, onSaved, onToast }) {
                 >
                   {addingSkills
                     ? '⏳ Adding…'
-                    : `➕ Add ${missingSkills.length} missing skill goal${missingSkills.length !== 1 ? 's' : ''} for ${owner.rsn}`}
+                    : `+ Add ${missingSkills.length} missing skill goal${missingSkills.length !== 1 ? 's' : ''} for ${owner.rsn}`}
                 </button>
               )}
             </div>
@@ -777,7 +778,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
                 background: 'rgba(200,168,75,0.07)', border: '1px solid rgba(200,168,75,0.25)',
                 borderRadius: 'var(--radius)', fontSize: 11, color: 'var(--text-dim)',
               }}>
-                💡 Set <strong style={{ color: 'var(--gold)' }}>👤 Who are you?</strong> in the header to auto-select yourself when adding goals.
+                Set <strong style={{ color: 'var(--gold)' }}>Who are you?</strong> in the header to auto-select yourself when adding goals.
               </div>
             )}
 
@@ -789,7 +790,7 @@ export default function GoalModal({ players, onClose, onSaved, prefill = {}, onT
                   <button key={t} type="button"
                     className={`btn btn-sm ${form.type === t ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => set('type', t)}>
-                    {t === 'personal' ? '👤 Personal' : '👥 Group'}
+                    {t === 'personal' ? 'Personal' : 'Group'}
                   </button>
                 ))}
               </div>

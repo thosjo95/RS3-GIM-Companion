@@ -1,12 +1,14 @@
+import DiscordLogo from './DiscordLogo';
+import RsIcon from './RsIcon';
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 
 const ALL_EVENTS = [
-  { key: 'level_milestones',  label: '🎉 Level 99s & 120s',         desc: 'When a player reaches level 99 or 120 in any skill' },
-  { key: 'diary_completions', label: '📋 Area Tasks',              desc: 'When an area task tier (Easy/Medium/Hard/Elite) is completed' },
-  { key: 'boss_first_kills',  label: '⚔️ Boss First Kills',          desc: 'When a player defeats a boss for the first time' },
-  { key: 'goal_completions',  label: '🎯 Group Goals',               desc: 'When a group goal is marked as complete' },
-  { key: 'drops',             label: '🎁 Drops',                     desc: 'Every drop detected from the activity feed (can be noisy)' },
+  { key: 'level_milestones',  label: 'Level 99s & 120s',   icon: 'maxCape',          desc: 'When a player reaches level 99 or 120 in any skill' },
+  { key: 'diary_completions', label: 'Area Tasks',        icon: 'areaTasks',        desc: 'When an area task tier (Easy/Medium/Hard/Elite) is completed' },
+  { key: 'boss_first_kills',  label: 'Boss First Kills',  icon: 'bosses',            desc: 'When a player defeats a boss for the first time' },
+  { key: 'goal_completions',  label: 'Group Goals',       icon: 'goals',             desc: 'When a group goal is marked as complete' },
+  { key: 'drops',             label: 'Drops',             icon: 'drops',             desc: 'Every drop detected from the activity feed (can be noisy)' },
 ];
 
 export default function WebhookSettings({ groupId, onClose, onToast }) {
@@ -68,7 +70,7 @@ export default function WebhookSettings({ groupId, onClose, onToast }) {
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 480 }}>
         <div className="modal-header">
-          <span className="modal-title">🔔 Discord Notifications</span>
+          <span className="modal-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><DiscordLogo size={20} color="#8b9afc" /> Discord Notifications</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
         </div>
 
@@ -135,6 +137,7 @@ export default function WebhookSettings({ groupId, onClose, onToast }) {
                         onChange={() => toggleEvent(ev.key)}
                         style={{ marginTop: 2, flexShrink: 0, accentColor: 'var(--gold)' }}
                       />
+                      <RsIcon name={ev.icon} size={26} style={{ flexShrink: 0, marginTop: 1 }} />
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-bright)' }}>{ev.label}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{ev.desc}</div>
@@ -148,7 +151,7 @@ export default function WebhookSettings({ groupId, onClose, onToast }) {
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
               <button className="btn btn-ghost" onClick={handleTest} disabled={testing || !url.trim()}>
-                {testing ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Testing…</> : '📨 Test'}
+                {testing ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Testing…</> : 'Send test'}
               </button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                 {saving ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Saving…</> : '✓ Save'}

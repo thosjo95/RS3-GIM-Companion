@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../../api/client';
 
@@ -142,7 +143,7 @@ export default function SnapshotButton({ group, players, goals, onToast }) {
           background: 'rgba(200,168,75,0.10)', border: '1px solid rgba(200,168,75,0.3)',
           color: 'var(--gold)', cursor: 'pointer', fontWeight: 600,
         }}>
-        📸 Share
+        <RsIcon name="player" size={13} style={{ marginRight: 5 }} />Share
       </button>
       {open && (
         <div style={{
@@ -159,7 +160,7 @@ export default function SnapshotButton({ group, players, goals, onToast }) {
           <button onClick={() => { shareToDiscord(); setOpen(false); }} disabled={sharing} style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 12, background: 'none', border: 'none', color: 'var(--text)', cursor: sharing ? 'default' : 'pointer', opacity: sharing ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 8 }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-panel-alt)'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-            {sharing ? '…' : '📤'} Post to Discord
+            {sharing ? '…' : null} Post to Discord
           </button>
         </div>
       )}

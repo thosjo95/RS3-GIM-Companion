@@ -1,3 +1,4 @@
+import RsIcon from './RsIcon';
 import React, { useMemo, useState } from 'react';
 
 import { SKILL_EMOJI as SKILL_ICONS } from '../lib/rs3';
@@ -50,7 +51,7 @@ export default function WeaknessMap({ players }) {
   return (
     <div>
       <div className="flex align-center gap-12 mb-16" style={{flexWrap:'wrap'}}>
-        <div className="section-title" style={{marginBottom:0}}>📊 Group Weakness Map</div>
+        <div className="section-title" style={{marginBottom:0}}><RsIcon name="overview" size={16} style={{ marginRight: 6 }} />Group Weakness Map</div>
         <div className="flex align-center gap-8 text-sm text-dim">
           Alert below level:
           <input
@@ -60,9 +61,9 @@ export default function WeaknessMap({ players }) {
           />
         </div>
         <div className="flex gap-8 text-xs">
-          <span style={{color:'var(--red-bright)'}}>🔴 Below {threshold}</span>
-          <span style={{color:'var(--orange)'}}>🟠 {threshold}–{threshold+14}</span>
-          <span style={{color:'var(--green-bright)'}}>🟢 {threshold+15}+</span>
+          <span style={{color:'var(--red-bright)'}}>● Below {threshold}</span>
+          <span style={{color:'var(--orange)'}}>● {threshold}–{threshold+14}</span>
+          <span style={{color:'var(--green-bright)'}}>● {threshold+15}+</span>
         </div>
       </div>
 

@@ -1,3 +1,5 @@
+import RsIcon from './RsIcon';
+import { ItemIcon, BossIcon } from './GameIcon';
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { BOSSES, BOSS_NAMES, TIER_LABELS, getBossStatus } from '../data/bosses';
@@ -33,7 +35,7 @@ function BossChip({ bossName, players }) {
   const boss = BOSSES[bossName];
   const tooltip = [
     boss ? `Tier: ${TIER_LABELS[boss.tier] ?? boss.tier}` : '',
-    boss?.location ? `📍 ${boss.location}` : '',
+    boss?.location ? `Location: ${boss.location}` : '',
     Object.entries(boss?.requirements ?? {}).map(([s, l]) => `Req: ${s} ${l}`).join(', '),
     status === 'green'  ? `✓ Ready: ${eligible.join(', ')}` : '',
     status === 'orange' && eligible.length > 0 ? `Meets reqs: ${eligible.join(', ')} (not max recommended)` : '',
@@ -49,7 +51,7 @@ function BossChip({ bossName, players }) {
       background: c.bg, border: `1px solid ${c.border}`, color: c.text,
       fontSize: 11, fontWeight: 600, cursor: 'help', whiteSpace: 'nowrap',
     }}>
-      {status === 'green' ? '🟢' : status === 'orange' ? '🟠' : status === 'red' ? '🔴' : '⚪'} {bossName}
+      <BossIcon name={bossName} size={18} fallback={null} /><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', margin: '0 6px 0 2px', background: status === 'green' ? 'var(--green-bright)' : status === 'orange' ? 'var(--orange)' : status === 'red' ? 'var(--red-bright)' : 'var(--border)' }} />{bossName}
     </span>
   );
 }
@@ -71,7 +73,7 @@ function BossReqPopup({ bossName, players }) {
       boxShadow: 'var(--shadow-lg)', fontSize: 12,
     }}>
       <div style={{ fontWeight: 700, color: 'var(--text-bright)', marginBottom: 4 }}>{bossName}</div>
-      <div style={{ color: 'var(--text-dim)', marginBottom: 8 }}>📍 {boss.location}</div>
+      <div style={{ color: 'var(--text-dim)', marginBottom: 8 }}>Location: {boss.location}</div>
       {reqs.length > 0 && (
         <>
           <div style={{ color: 'var(--gold)', fontWeight: 600, marginBottom: 4 }}>Hard requirements</div>
@@ -122,7 +124,7 @@ function AddDropModal({ players, onClose, onSaved, onToast }) {
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 440 }}>
         <div className="modal-header">
-          <span className="modal-title">💎 Log a Drop</span>
+          <span className="modal-title"><RsIcon name="drops" size={18} style={{ marginRight: 8 }} />Log a Drop</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={submit}>
@@ -160,7 +162,7 @@ function AddDropModal({ players, onClose, onSaved, onToast }) {
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '💎 Log Drop'}
+              {saving ? <span className="spinner" style={{ width: 12, height: 12 }} /> : 'Log Drop'}
             </button>
           </div>
         </form>
@@ -196,7 +198,7 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 460 }}>
         <div className="modal-header">
-          <span className="modal-title">🎯 Add Item Request</span>
+          <span className="modal-title"><RsIcon name="goals" size={18} style={{ marginRight: 8 }} />Add Item Request</span>
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={submit}>
@@ -243,9 +245,9 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Priority</label>
                 <select className="form-select" value={form.priority} onChange={e => set('priority', e.target.value)}>
-                  <option value="high">🔴 High</option>
-                  <option value="medium">🟡 Medium</option>
-                  <option value="low">🟢 Low</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
                 </select>
               </div>
             </div>
@@ -257,7 +259,7 @@ function AddRequestModal({ players, onClose, onSaved, onToast }) {
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '🎯 Add Request'}
+              {saving ? <span className="spinner" style={{ width: 12, height: 12 }} /> : 'Add Request'}
             </button>
           </div>
         </form>
@@ -275,7 +277,7 @@ function RequestRow({ req, players, onToggle, onDelete }) {
       <td>
         <div className="flex align-center gap-8">
           <div className={`priority-dot priority-${req.priority}`} title={`${req.priority} priority`} />
-          <span style={{ color: 'var(--text-bright)', fontWeight: 600, fontSize: 12 }}>{req.item_name}</span>
+          <ItemIcon name={req.item_name} size={26} /><span style={{ color: 'var(--text-bright)', fontWeight: 600, fontSize: 12 }}>{req.item_name}</span>
           {req.quantity > 1 && <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>×{req.quantity}</span>}
         </div>
         {req.obtained && <div style={{ fontSize: 10, color: 'var(--green-bright)' }}>✓ Obtained</div>}
@@ -309,8 +311,11 @@ function DropRow({ drop, players, onDelete }) {
     <tr>
       <td style={{ color: 'var(--gold)', fontWeight: 600, fontSize: 12 }}>{drop.rsn}</td>
       <td>
-        <span style={{ color: 'var(--text-bright)', fontWeight: 600, fontSize: 12 }}>{drop.item_name}</span>
-        {drop.quantity > 1 && <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> ×{drop.quantity}</span>}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <ItemIcon name={drop.item_name} size={26} />
+          <span><span style={{ color: 'var(--text-bright)', fontWeight: 600, fontSize: 12 }}>{drop.item_name}</span>
+          {drop.quantity > 1 && <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> ×{drop.quantity}</span>}</span>
+        </span>
       </td>
       <td>
         {drop.boss_name
@@ -406,7 +411,7 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
       <div style={{ ...panelStyle, flex: 1 }}>
         <div style={panelHeaderStyle}>
           <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)' }}>
-            🎯 Item Requests
+            <RsIcon name="goals" size={16} style={{ marginRight: 6 }} />Item Requests
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <select className="form-select" style={{ width: 'auto', fontSize: 11 }} value={reqFilter} onChange={e => setReqFilter(e.target.value)}>
@@ -416,16 +421,16 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
             </select>
             {canWrite
               ? <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => setShowAddReq(true)}>+ Add</button>
-              : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>🔒</span>
+              : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}><RsIcon name="key" size={12} style={{ marginRight: 0 }} /></span>
             }
           </div>
         </div>
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 10, color: 'var(--text-dim)' }}>
-          <span style={{ color: 'var(--green-bright)' }}>🟢 Ready</span>
-          <span style={{ color: 'var(--orange)' }}>🟠 Close</span>
-          <span style={{ color: 'var(--red-bright)' }}>🔴 Missing reqs</span>
+          <span style={{ color: 'var(--green-bright)' }}>● Ready</span>
+          <span style={{ color: 'var(--orange)' }}>● Close</span>
+          <span style={{ color: 'var(--red-bright)' }}>● Missing reqs</span>
         </div>
 
         {filteredRequests.length > 0 ? (
@@ -449,7 +454,7 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
           </div>
         ) : (
           <div className="empty-state" style={{ padding: '20px 0' }}>
-            <div className="icon" style={{ fontSize: 28 }}>🎯</div>
+            <div className="icon"><RsIcon name="goals" size={40} /></div>
             <p style={{ fontSize: 12 }}>{reqFilter === 'pending' ? 'No pending requests.' : 'Nothing here yet.'}</p>
             {canWrite && <button className="btn btn-primary btn-sm mt-12" onClick={() => setShowAddReq(true)}>+ Add Request</button>}
           </div>
@@ -460,7 +465,7 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
       <div style={{ ...panelStyle, flex: 1 }}>
         <div style={panelHeaderStyle}>
           <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)' }}>
-            💎 Drop Log <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-dim)' }}>({drops.length})</span>
+            <RsIcon name="drops" size={16} style={{ marginRight: 6 }} />Drop Log <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-dim)' }}>({drops.length})</span>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <select className="form-select" style={{ width: 'auto', fontSize: 11 }} value={dropFilter} onChange={e => setDropFilter(e.target.value)}>
@@ -493,7 +498,7 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
           </div>
         ) : (
           <div className="empty-state" style={{ padding: '20px 0' }}>
-            <div className="icon" style={{ fontSize: 28 }}>💎</div>
+            <div className="icon"><RsIcon name="drops" size={40} /></div>
             <p style={{ fontSize: 12 }}>No drops logged yet.</p>
             {canWrite && <button className="btn btn-primary btn-sm mt-12" onClick={() => setShowAddDrop(true)}>+ Log Drop</button>}
           </div>
@@ -503,7 +508,7 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
       {/* ── RIGHT: Boss Overview (20%) ── */}
       <div style={{ ...panelStyle, flex: '0 0 20%', minWidth: 180 }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-bright)', flexShrink: 0 }}>
-          🗡️ Boss Overview
+          <RsIcon name="bosses" size={16} style={{ marginRight: 6 }} />Boss Overview
         </div>
         <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>
           Bosses with pending requests
@@ -541,7 +546,8 @@ export default function DropsTab({ players, groupId, onToast, canWrite }) {
                         fontSize: 9, padding: '1px 5px',
                         background: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.3)',
                         borderRadius: 4, color: 'var(--text-bright)',
-                      }}>💎 {item}</span>
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      }}><ItemIcon name={item} size={14} />{item}</span>
                     ))}
                   </div>
 

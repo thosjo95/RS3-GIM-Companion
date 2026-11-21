@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { api } from '../api/client';
+import RsIcon, { IconLabel } from './RsIcon';
+import { BossIcon } from './GameIcon';
 
 import { MEMBER_COLORS, parseRMDate } from '../lib/rs3';
 
@@ -534,7 +536,7 @@ function FirstsBoard({ players, colorMap, groupId, canWrite, onToast }) {
       {achieved.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
-            🏆 Achieved ({achieved.length})
+            <RsIcon name="leaderboards" size={13} style={{ marginRight: 5 }} />Achieved ({achieved.length})
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 6 }}>
             {achieved.map(r => <MilestoneCard key={r.key} result={r} colorMap={colorMap} canWrite={canWrite} onEdit={() => setEditingKey(r.key)} />)}
@@ -634,7 +636,7 @@ function MilestoneCard({ result, colorMap, canWrite, onEdit }) {
         <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>
           {result.skillIcon
             ? <img src={SKILL_ICON_URL(result.skillIcon)} alt={result.skillIcon} style={{ width: 22, height: 22, verticalAlign: 'middle' }} />
-            : result.icon}
+            : <FirstIcon id={result.key} emoji={result.icon} />}
         </span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: isAchieved ? 'var(--text-bright)' : 'var(--text-dim)', lineHeight: 1.3 }}>
@@ -650,7 +652,7 @@ function MilestoneCard({ result, colorMap, canWrite, onEdit }) {
       <div style={{ marginTop: 8, paddingTop: 7, borderTop: `1px solid ${isAchieved ? cs.border : 'var(--border)'}` }}>
         {(result.status === 'achieved' || result.status === 'manual') && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }} title={result.note || undefined}>
-            <span style={{ fontSize: 14 }}>🥇</span>
+            <RsIcon name="leaderboards" size={15} />
             <span style={{ fontSize: 12, fontWeight: 700, color: colorMap[result.winner.playerId] }}>{result.winner.rsn}</span>
             {result.status === 'manual' && (
               <span style={{ fontSize: 9, color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: 6, padding: '0 4px' }}>✎ manual</span>
@@ -742,7 +744,7 @@ function ManualFirstModal({ def, players, existing, groupId, onClose, onSaved, o
           </div>
           <div className="modal-footer">
             {existing && (
-              <button type="button" className="btn btn-ghost" onClick={clear} disabled={saving}>🗑 Clear override</button>
+              <button type="button" className="btn btn-ghost" onClick={clear} disabled={saving}>Clear override</button>
             )}
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
@@ -871,7 +873,7 @@ function MilestonesFeed({ players, colorMap }) {
               padding: '7px 12px', background: 'var(--bg-panel-alt)',
               border: '1px solid var(--border)', borderRadius: 'var(--radius)',
             }}>
-              <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center', lineHeight: 1 }}>{m.icon}</span>
+              <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center', lineHeight: 1 }}><FirstIcon id={m.key} emoji={m.icon} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontWeight: 700, color: colorMap[m.playerId], marginRight: 6, fontSize: 12 }}>{m.rsn}</span>
                 <span style={{ fontSize: 12, color: 'var(--text-bright)' }}>{m.label}</span>
@@ -1044,7 +1046,7 @@ function SetSkillDateModal({ playerId, rsn, skill, level, achievedAt, onClose, o
           </div>
           <div className="modal-footer">
             {achievedAt && (
-              <button type="button" className="btn btn-ghost" onClick={clear} disabled={saving}>🗑 Clear</button>
+              <button type="button" className="btn btn-ghost" onClick={clear} disabled={saving}>Clear</button>
             )}
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
@@ -1169,7 +1171,7 @@ function BossKills({ players, colorMap, groupId }) {
                   background: bi % 2 ? 'rgba(255,255,255,0.015)' : 'transparent',
                 }}>
                   <td style={{ padding: '7px 12px 7px 4px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-bright)' }}>
-                    {boss.label}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><BossIcon name={boss.label} size={24} fallback={<span style={{ width: 24 }} />} />{boss.label}</span>
                   </td>
                   {players.map((p, pi) => {
                     const val = values[pi];
@@ -1239,7 +1241,7 @@ function ClueScrolls({ players, colorMap }) {
             <th align="left" style={{ padding: '4px 8px 8px 4px', fontWeight: 600 }}>Player</th>
             {CLUE_TYPES.map(c => (
               <th key={c.key} align="center" style={{ padding: '4px 8px 8px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {c.icon} {c.label}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><ClueIcon tier={c.key.split(' ').pop().toLowerCase()} size={16} />{c.label}</span>
               </th>
             ))}
           </tr>
@@ -1277,22 +1279,53 @@ function ClueScrolls({ players, colorMap }) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+// Official RuneScape images (runescape.wiki) for the Firsts: boss chatheads / NPC images and item images. An entry
+// without one, or whose image fails to load, keeps its emoji.
+const FIRST_WIKI_IMG = {
+  ghrazi_blood_knights: 'Ghrazi venator', silverquill: 'Silverquill, the Dreadhog', ivar: 'Ivar, King of Bones',
+  fire_cape: 'Fire cape', har_aken: 'Har-Aken', infernal_cape: 'TzKal-Zuk chathead',
+  gwd_graardor: 'General Graardor chathead', gwd_kril: "K'ril Tsutsaroth chathead", gwd_zilyana: 'Commander Zilyana chathead',
+  gwd_kreearra: "Kree'arra chathead", nex: 'Nex chathead', helwyr: 'Helwyr chathead', vindicta: 'Vindicta chathead',
+  gregorovic: 'Gregorovic chathead', telos: 'Telos, the Warden', telos_100: 'Telos, the Warden', kk: 'Kalphite King (Melee)',
+  dagannoth_kings: 'Dagannoth Prime', vorago: 'Vorago chathead', araxxi: 'Araxxi', solak: 'Solak chathead',
+  legiones: 'Legio Primus', zammy_loe: 'Zamorak, Lord of Chaos chathead', rasial: 'Rasial, the First Necromancer', osseous_rex: 'Osseous Rex',
+  quest_cape: 'Quest point cape (2012)', comp_cape: 'Completionist cape', max_cape: 'Max cape',
+  ekzekkil: 'Ek-ZekKil', drygore: 'Drygore longsword', ascension_xbow: 'Ascension crossbow', seismic: 'Seismic wand',
+  nox: 'Noxious longbow', tectonic: 'Tectonic robe top', sirenic: 'Sirenic hauberk', zaros_gs: 'Zaros godsword',
+  eldritch_xbow: 'Eldritch crossbow', seren_godbow: 'Seren godbow', cinderbane: 'Cinderbane gloves',
+};
+function FirstIcon({ id, emoji, size = 22 }) {
+  const [bad, setBad] = useState(false);
+  const file = FIRST_WIKI_IMG[id];
+  if (!file || bad) return <>{emoji}</>;
+  return <img src={`https://runescape.wiki/images/${file.replace(/ /g, '_')}.png`} alt="" onError={() => setBad(true)}
+    style={{ width: size, height: size, objectFit: 'contain', verticalAlign: 'middle' }} />;
+}
+
+const CLUE_IMG = { easy: 'Clue_scroll_%28easy%29.png', medium: 'Clue_scroll_%28medium%29.png', hard: 'Clue_scroll_%28hard%29.png',
+  elite: 'Sealed_clue_scroll_%28elite%29.png', master: 'Clue_scroll_%28master%29.png' };
+function ClueIcon({ tier, size = 20 }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !CLUE_IMG[tier]) return <span style={{ width: size }} />;
+  return <img src={`https://runescape.wiki/images/${CLUE_IMG[tier]}`} alt={`${tier} clue`} onError={() => setFailed(true)} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />;
+}
+
 export default function LeaderboardsTab({ players, groupId, canWrite, onToast }) {
   const [section, setSection] = useState('bosses');
   const colorMap = Object.fromEntries(players.map((p, i) => [p.id, MEMBER_COLORS[i % MEMBER_COLORS.length]]));
 
   const SECTIONS = [
-    { id: 'firsts',     label: '🥇 Firsts' },
-    { id: 'milestones', label: '🏆 Milestones' },
-    { id: 'bosses',     label: '⚔️ Boss Kills' },
-    { id: 'clues',      label: '📜 Clue Scrolls' },
-    { id: 'mastery',    label: '⭐ Skill Mastery' },
+    { id: 'firsts',     label: <IconLabel name="firsts" size={14}>Firsts</IconLabel> },
+    { id: 'milestones', label: <IconLabel name="milestones" size={14}>Milestones</IconLabel> },
+    { id: 'bosses',     label: <IconLabel name="bosses" size={14}>Boss Kills</IconLabel> },
+    { id: 'clues',      label: <IconLabel name="clues" size={14}>Clue Scrolls</IconLabel> },
+    { id: 'mastery',    label: <IconLabel name="mastery" size={14}>Skill Mastery</IconLabel> },
   ];
 
   if (players.length === 0) {
     return (
       <div className="empty-state">
-        <div className="icon">🏆</div>
+        <div className="icon"><RsIcon name="leaderboards" size={40} /></div>
         <p>Add and sync players to see leaderboards.</p>
       </div>
     );

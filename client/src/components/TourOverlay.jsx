@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 const TOUR_STEPS = [
   {
     target: null,
-    title: '👋 Welcome to RS3 GIM Companion!',
+    title: 'Welcome to RS3 GIM Companion!',
     body: "Let's take a quick tour of the key features. Use Next → to walk through each one, or skip if you'd rather explore on your own. You can replay this tour any time from the ? button in the header.",
   },
   {
@@ -15,37 +15,37 @@ const TOUR_STEPS = [
   },
   {
     target: '[data-tour="lock"]',
-    title: '🔒 Claim & Unlock',
+    title: 'Claim & Unlock',
     body: 'Claim your group to generate a one-time secret code. Share it with your teammates — anyone who enters it can edit goals, gear, and the vault. Everyone else gets read-only access.',
   },
   {
     target: '[data-tour="members"]',
-    title: '👤 Member Cards',
+    title: 'Member Cards',
     body: 'Click any member card to focus on that player — the Goals panel and Activity feed filter to their data. Your own card is highlighted in gold with a YOU badge.',
   },
   {
     target: '[data-tour="tab-goals"]',
-    title: '🎯 Goals',
+    title: 'Goals',
     body: "Your group's planning board. Browse 220+ pre-built suggestions across quests, skill milestones, boss kills, and key items — or add fully custom goals. Track status, priority, and XP progress per player.",
   },
   {
     target: '[data-tour="tab-vault"]',
-    title: '🏆 Group Vault & Gear Loadouts',
+    title: 'Group Vault & Gear Loadouts',
     body: "Every drop your group has logged in one tile grid, with dupe indicators and worn-item badges. The Gear Loadouts panel tracks each player's equipment across 5 combat styles with wiki-verified requirements.",
   },
   {
     target: '[data-tour="tab-achievements"]',
-    title: '📋 Area Tasks',
+    title: 'Area Tasks',
     body: 'Track diary completion across all 13 RS3 regions × 4 tiers (Easy → Elite). Auto-detected from the Adventurer\'s Log activity feed, or toggle manually per player.',
   },
   {
     target: '[data-tour="tab-leaderboards"]',
-    title: '🏅 Leaderboards',
+    title: 'Leaderboards',
     body: "Boss kill counts, group 'firsts' (who hit a 99 or killed a boss first), skill mastery, XP milestones, and clue scroll ranks — all built automatically from the activity feed.",
   },
   {
     target: '[data-tour="notes"]',
-    title: '📝 Group Notes',
+    title: 'Group Notes',
     body: 'A shared pinboard for your whole group. Jot down loot rules, strategy notes, or session plans — auto-saves as you type and is visible to everyone.',
   },
 ];
@@ -203,7 +203,7 @@ export default function TourOverlay({ steps: stepsProp, onComplete }) {
               type="button"
               onClick={() => isLast ? onComplete() : setStepIndex(s => s + 1)}
               style={{ padding:'7px 18px', fontSize:13, fontWeight:700, background:'var(--gold)', color:'#111', border:'none', borderRadius:'var(--radius)', cursor:'pointer' }}>
-              {isLast ? '🎉 Done!' : 'Next →'}
+              {isLast ? 'Done' : 'Next →'}
             </button>
           </div>
         </div>

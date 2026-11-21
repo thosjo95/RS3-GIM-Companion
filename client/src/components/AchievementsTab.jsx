@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
+import RsIcon from './RsIcon';
 
 import { MEMBER_COLORS } from '../lib/rs3';
 
@@ -39,6 +40,29 @@ const DIARY_REGIONS = [
 ];
 
 const regionTiers = region => region.tiers ?? TIERS;
+
+// Each region's lodestone icon (the picture the game's lodestone network shows), hosted by the RuneScape Wiki.
+const REGION_ICON = {
+  "diary_lumbridge_draynor": "Lumbridge_lodestone_icon.png",
+  "diary_varrock": "Varrock_lodestone_icon.png",
+  "diary_falador": "Falador_lodestone_icon.png",
+  "diary_karamja": "Karamja_lodestone_icon.png",
+  "diary_ardougne": "Ardougne_lodestone_icon.png",
+  "diary_seers_village": "Seers%27_Village_lodestone_icon.png",
+  "diary_fremennik": "Fremennik_Province_lodestone_icon.png",
+  "diary_morytania": "Canifis_lodestone_icon.png",
+  "diary_desert": "Al_Kharid_lodestone_icon.png",
+  "diary_daemonheim": "Ring_of_kinship.png",
+  "diary_tirannwn": "Tirannwn_lodestone_icon.png",
+  "diary_wilderness": "Wilderness_Crater_lodestone_icon.png",
+  "diary_underworld": "City_of_Um_lodestone_icon.png"
+};
+const WIKI = 'https://runescape.wiki/images/';
+function RegionIcon({ base, size = 34 }) {
+  const [failed, setFailed] = useState(false);
+  if (!REGION_ICON[base] || failed) return <RsIcon name="areaTasks" fallback="" size={size - 6} />;
+  return <img src={WIKI + REGION_ICON[base]} alt="" width={size} height={size} onError={() => setFailed(true)} style={{ objectFit: 'contain', flexShrink: 0 }} />;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -138,19 +162,19 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
       {/* Header */}
       <div className="flex align-center justify-between" style={{ flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div className="section-title" style={{ marginBottom: 4 }}>📋 Area Tasks</div>
+          <div className="section-title" style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}><RsIcon name="areaTasks" size={20} /> Area Tasks</div>
           <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
             Auto-detected from the Adventurer's Log feed · Click a cell to mark manually
           </div>
         </div>
         <div data-tour="achievements-view" className="flex gap-4 tab-bar-scroll" style={{ background: 'var(--bg-root)', borderRadius: 'var(--radius)', padding: 3 }}>
-          {[{ v: 'grid', l: '🗂️ Grid' }, { v: 'player', l: '👤 By Player' }].map(({ v, l }) => (
+          {[{ v: 'grid', l: 'Regions', i: 'areaTasks' }, { v: 'player', l: 'By Player', i: 'player' }].map(({ v, l, i }) => (
             <button key={v} onClick={() => setView(v)} style={{
               fontSize: 11, padding: '3px 12px', borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer',
               background: view === v ? 'var(--gold)' : 'transparent',
               color: view === v ? '#111' : 'var(--text-dim)',
-              fontWeight: view === v ? 700 : 400,
-            }}>{l}</button>
+              fontWeight: view === v ? 700 : 400, display: 'inline-flex', alignItems: 'center', gap: 5,
+            }}><RsIcon name={i} size={13} />{l}</button>
           ))}
         </div>
       </div>
@@ -189,7 +213,7 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
       )}
 
       <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
-        ✅ Auto-detected from the Adventurer's Log &nbsp;·&nbsp; ✏️ Manually marked &nbsp;·&nbsp;
+        Filled circle = completed (hover for how it was detected) &nbsp;·&nbsp; Pencil in the tooltip = marked by hand &nbsp;·&nbsp;
         Click any cell (if claimed) to toggle · Completions are stored permanently once detected
         <div style={{ marginTop: 4 }}>* Lumbridge uses Beginner / Easy / Medium / Hard instead of Easy / Medium / Hard / Elite</div>
       </div>
@@ -197,87 +221,69 @@ export default function AchievementsTab({ players, groupId, canWrite, onToast })
   );
 }
 
-// ── Grid view: Regions × Tiers table, player dots per cell ───────────────────
+// ── Region cards: icon, name, group progress, a row per tier with one circle per member ───────────────────────
 
 function GridView({ players, colorMap, getAchievement, toggleManual, toggling, canWrite }) {
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>
-        <thead>
-          <tr>
-            <th align="left" style={{ padding: '6px 10px 10px 4px', color: 'var(--text-dim)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              Region
-            </th>
-            {TIERS.map(t => (
-              <th key={t.key} align="center" style={{
-                padding: '6px 12px 10px',
-                color: t.color, fontSize: 10, fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: '0.4px',
-              }}>{t.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {DIARY_REGIONS.map((region, ri) => (
-            <tr key={region.base} style={{ borderTop: '1px solid var(--border)', background: ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent' }}>
-              <td style={{ padding: '8px 10px 8px 4px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-bright)' }}>
-                {region.label}
-                {region.tiers && (
-                  <span
-                    title={`Lumbridge uses ${region.tiers.map(t => t.label).join(' / ')} instead of Easy / Medium / Hard / Elite`}
-                    style={{ marginLeft: 5, fontSize: 10, color: 'var(--text-dim)', cursor: 'help' }}>*</span>
-                )}
-              </td>
-              {regionTiers(region).map(tier => {
-                // Check if ALL players have completed this
-                const statuses = players.map(p => getAchievement(p.id, region.base, tier.key));
-                const allDone  = statuses.every(a => a?.achieved);
-                const noneDone = statuses.every(a => !a?.achieved);
-
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 270px), 1fr))', gap: 12 }}>
+      {DIARY_REGIONS.map(region => {
+        const tiers = regionTiers(region);
+        const total = tiers.length * players.length;
+        const done = tiers.reduce((n, t) => n + players.filter(p => getAchievement(p.id, region.base, t.key)?.achieved).length, 0);
+        const complete = total > 0 && done === total;
+        return (
+          <div key={region.base} style={{
+            padding: 12, borderRadius: 'var(--radius-lg)', background: 'var(--bg-panel-alt)',
+            border: `1px solid ${complete ? 'var(--gold)' : 'var(--border)'}`, display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <RegionIcon base={region.base} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-bright)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{region.label}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>{done} / {total} tiers done by the group</div>
+              </div>
+            </div>
+            <div style={{ height: 3, background: 'var(--bg-root)', borderRadius: 2, overflow: 'hidden', marginTop: -4 }}>
+              <div style={{ width: `${total ? (done / total) * 100 : 0}%`, height: '100%', background: complete ? 'var(--gold)' : 'var(--green-bright)', transition: 'width 0.3s' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {tiers.map(tier => {
+                const rows = players.map(p => ({ p, ach: getAchievement(p.id, region.base, tier.key) }));
+                const count = rows.filter(r => r.ach?.achieved).length;
                 return (
-                  <td key={tier.key} align="center" style={{
-                    padding: '6px 8px',
-                    background: allDone  ? tier.bg : noneDone ? 'transparent' : 'rgba(255,255,255,0.02)',
-                    borderLeft: '1px solid var(--border)',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      {players.map(p => {
-                        const ach      = getAchievement(p.id, region.base, tier.key);
-                        const done     = !!ach?.achieved;
-                        const key      = `${region.base}_${tier.key}`;
-                        const toggleId = `${p.id}:${key}`;
-                        const busy     = toggling === toggleId;
-
+                  <div key={tier.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 'var(--radius)', background: count === players.length ? tier.bg : 'transparent' }}>
+                    <span style={{ width: 62, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', color: tier.color }}>{tier.label}</span>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flex: 1 }}>
+                      {rows.map(({ p, ach }) => {
+                        const ok = !!ach?.achieved;
+                        const busy = toggling === `${p.id}:${region.base}_${tier.key}`;
                         return (
-                          <button
-                            key={p.id}
+                          <button key={p.id}
                             disabled={!canWrite || busy}
                             onClick={() => toggleManual(p, region.base, tier.key)}
-                            title={done
-                              ? `${p.rsn} — ${ach.manual ? '✏️ manually marked' : '✅ auto-detected'}${ach.achieved_at ? ' · ' + fmtDate(ach.achieved_at) : ''}\nClick to unmark`
-                              : `${p.rsn} — not completed\n${canWrite ? 'Click to mark manually' : 'Claim group to mark'}`}
+                            title={ok
+                              ? `${p.rsn}: completed (${ach.manual ? 'marked by hand' : 'auto-detected'})${ach.achieved_at ? ' · ' + fmtDate(ach.achieved_at) : ''}${canWrite ? '\nClick to unmark' : ''}`
+                              : `${p.rsn}: not completed${canWrite ? '\nClick to mark by hand' : '\nClaim the group to mark'}`}
                             style={{
-                              width: 22, height: 22, borderRadius: '50%',
-                              border: `2px solid ${done ? colorMap[p.id] : 'var(--border)'}`,
-                              background: done ? colorMap[p.id] : 'transparent',
-                              cursor: canWrite ? 'pointer' : 'default',
+                              width: 20, height: 20, borderRadius: '50%', flexShrink: 0, padding: 0,
+                              border: `2px solid ${ok ? colorMap[p.id] : 'var(--border)'}`, background: ok ? colorMap[p.id] : 'transparent',
+                              cursor: canWrite ? 'pointer' : 'default', opacity: busy ? 0.5 : 1, transition: 'all 0.15s',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 9, fontWeight: 700, color: done ? '#111' : 'var(--text-dim)',
-                              transition: 'all 0.15s', opacity: busy ? 0.5 : 1,
-                              flexShrink: 0,
+                              fontSize: 9, fontWeight: 700, color: ok ? '#111' : 'transparent',
                             }}>
-                            {busy ? '…' : done ? p.rsn.charAt(0).toUpperCase() : ''}
+                            {p.rsn.charAt(0).toUpperCase()}
                           </button>
                         );
                       })}
                     </div>
-                  </td>
+                    <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>{count}/{players.length}</span>
+                  </div>
                 );
               })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -314,7 +320,8 @@ function PlayerView({ players, colorMap, getAchievement, toggleManual, toggling,
                     background: 'var(--bg-panel-alt)',
                     border: `1px solid ${doneCount === tiers.length ? colorMap[p.id] + '80' : 'var(--border)'}`,
                   }}>
-                    <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-bright)', marginBottom: 6 }}>
+                    <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-bright)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <RegionIcon base={region.base} size={20} />
                       {region.label}
                     </div>
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -329,7 +336,7 @@ function PlayerView({ players, colorMap, getAchievement, toggleManual, toggling,
                             disabled={!canWrite || busy}
                             onClick={() => toggleManual(p, region.base, ts.key)}
                             title={done
-                              ? `${ts.label} — ${ts.ach?.manual ? '✏️ manually marked' : '✅ auto-detected'}${ts.ach?.achieved_at ? ' · ' + fmtDate(ts.ach.achieved_at) : ''}\nClick to unmark`
+                              ? `${ts.label} — ${ts.ach?.manual ? 'marked by hand' : 'auto-detected'}${ts.ach?.achieved_at ? ' · ' + fmtDate(ts.ach.achieved_at) : ''}\nClick to unmark`
                               : `${ts.label} — not completed${canWrite ? '\nClick to mark' : ''}`}
                             style={{
                               flex: 1, padding: '4px 0', fontSize: 10, fontWeight: 700,

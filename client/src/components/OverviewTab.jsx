@@ -1,3 +1,4 @@
+import RsIcon from './RsIcon';
 import React, { useState, useMemo } from 'react';
 import { api } from '../api/client';
 import { fmtXp, MEMBER_COLORS, normRsn } from '../lib/rs3';
@@ -122,14 +123,14 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
                 </button>
               )}
               <button className="btn btn-primary btn-sm" onClick={onAddPlayer}>
-                ➕ Add Player
+                + Add Player
               </button>
             </div>
           )}
 
           {players.length === 0 && canWrite ? (
             <div className="empty-state" style={{ marginTop: 8 }}>
-              <div className="icon">👤</div>
+              <div className="icon"><RsIcon name="player" size={40} /></div>
               <p>No members yet. Add your first player to get started.</p>
             </div>
           ) : (
@@ -180,7 +181,7 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
             borderRadius: 'var(--radius-lg)', textAlign: 'left',
           }}
         >
-          <span style={{ fontSize: 18, flexShrink: 0 }}>📦</span>
+          <RsIcon name="backpack" size={22} />
           <div style={{ flex: 1 }}>
             <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--gold)' }}>
               {pendingRequests.length} active item request{pendingRequests.length !== 1 ? 's' : ''}

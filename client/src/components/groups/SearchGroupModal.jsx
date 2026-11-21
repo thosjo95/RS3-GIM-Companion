@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState } from 'react';
 import { api } from '../../api/client';
 import GimTypeLabel from '../common/GimTypeLabel';
@@ -133,7 +134,7 @@ export default function SearchGroupModal({ groups, allDbGroups, onSelect, onAddN
                     style={{minWidth:180}}
                     disabled={!query.trim()}
                     onClick={() => { onClose(); onAddNew({ name: query.trim(), type: 'regular_unranked', size: gimSize }); }}>
-                    👥 Create Unranked Group →
+                    <RsIcon name="group" size={14} style={{ marginRight: 5 }} />Create Unranked Group →
                   </button>
                 </>
               ) : gimType === 'custom' ? (
@@ -174,7 +175,7 @@ export default function SearchGroupModal({ groups, allDbGroups, onSelect, onAddN
                     <div>
                       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
                         <span style={{fontSize:12,color:'var(--green-bright)',flex:1}}>
-                          ✓ Already tracked {alreadyInDb.is_claimed ? '🔒' : '🔓'}
+                          ✓ Already tracked {alreadyInDb.is_claimed ? <RsIcon name="key" size={13} style={{ marginLeft: 4 }} /> : null}
                         </span>
                         <button className="btn btn-primary btn-sm" onClick={() => { onSelect(alreadyInDb.id); onClose(); }}>
                           Switch to it →
@@ -193,7 +194,7 @@ export default function SearchGroupModal({ groups, allDbGroups, onSelect, onAddN
                         onClose();
                         onAddNew({ name: rs3Result.groupName, type: gimType, size: gimSize, members: rs3Result.members });
                       }}>
-                        ➕ Add this group
+                        + Add this group
                       </button>
                     </div>
                   )}

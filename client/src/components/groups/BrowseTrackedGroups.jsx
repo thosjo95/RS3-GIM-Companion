@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../api/client';
 import GimTypeLabel from '../common/GimTypeLabel';
@@ -104,7 +105,7 @@ export default function BrowseTrackedGroups({ pinnedIds = new Set(), onSelect, o
                   <div style={{fontSize:11, color:'var(--text-dim)', marginTop:1}}>
                     {typeLabel(g.gim_type)}
                     {' · '}{g.member_count ?? 0} member{(g.member_count ?? 0) !== 1 ? 's' : ''}
-                    {g.is_claimed ? ' · 🔒' : ''}
+                    {g.is_claimed ? <>{' · '}<RsIcon name="key" size={11} /></> : ''}
                   </div>
                 </div>
                 {/* Browse → */}

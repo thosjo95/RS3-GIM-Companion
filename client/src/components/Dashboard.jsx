@@ -1,3 +1,4 @@
+import RsIcon from './RsIcon';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 function CustomGroupBanner({ groupId }) {
@@ -42,40 +43,40 @@ const TAB_TOURS = {
   goals: [
     {
       target: null,
-      title: '🎯 Goals Tab',
+      title: 'Goals Tab',
       body: "This is your group's planning board. Let's walk through the key parts — it only takes a moment!",
     },
     {
       target: '[data-tour="goals-sections"]',
-      title: '💡 Goal Browser vs Active Goals',
+      title: 'Goal Browser vs Active Goals',
       body: 'Switch between the Goal Browser (220+ pre-built suggestions across quests, skills, bosses, and items) and Active Goals (your group\'s live tracking board).',
     },
     {
       target: '[data-tour="goals-browser"]',
-      title: '📚 Goal Browser',
+      title: 'Goal Browser',
       body: 'Browse pre-built suggestions filtered by category and priority. Each card shows XP requirements, wiki links, and player readiness. Hit Add to move any suggestion to your active board.',
     },
     {
       target: '[data-tour="goals-filters"]',
-      title: '🔍 Filters & Views',
-      body: 'On the Active Goals board, filter by player, category, priority, or scope. Toggle between 📋 Board (Kanban columns) and ☰ List views to suit your style.',
+      title: 'Filters & Views',
+      body: 'On the Active Goals board, filter by player, category, priority, or scope. Toggle between the Board (Kanban columns) and List views to suit your style.',
     },
   ],
 
   vault: [
     {
       target: null,
-      title: '🏆 Vault & Gear Loadouts',
+      title: 'Vault & Gear Loadouts',
       body: "Two panels in one: the Group Vault for logging drops, and Gear Loadouts for tracking each player's equipment. Here's a quick tour.",
     },
     {
       target: '[data-tour="vault-panel"]',
-      title: '🏆 Group Vault',
+      title: 'Group Vault',
       body: 'Every drop your group has logged shown as an icon tile grid. Dupe indicators highlight when multiple members own the same item. Click any tile to see who has it, when they got it, and its GE value.',
     },
     {
       target: '[data-tour="vault-gear"]',
-      title: '⚔️ Gear Loadouts',
+      title: 'Gear Loadouts',
       body: "Track each player's equipped gear across 5 combat styles: Melee, Ranged, Magic, Necromancy, and Hybrid. Requirements are verified against the RS3 wiki so you can see who's ready to upgrade.",
     },
   ],
@@ -83,17 +84,17 @@ const TAB_TOURS = {
   achievements: [
     {
       target: null,
-      title: '📋 Area Tasks',
+      title: 'Area Tasks',
       body: 'Track diary completion across all 14 RS3 regions × 4 tiers (Easy → Elite). Auto-detected from the Adventurer\'s Log, or toggle manually.',
     },
     {
       target: '[data-tour="achievements-progress"]',
-      title: '📊 Player Progress',
+      title: 'Player Progress',
       body: "Each player gets a summary card showing how many diaries they've completed out of the total. The colour-coded bar updates as completions are recorded.",
     },
     {
       target: '[data-tour="achievements-view"]',
-      title: '🗂️ Grid vs By Player',
+      title: 'Grid vs By Player',
       body: 'Grid view shows all regions × tiers in one table with coloured dots per player. By Player view focuses on a single player\'s completion status across every tier.',
     },
   ],
@@ -101,17 +102,17 @@ const TAB_TOURS = {
   leaderboards: [
     {
       target: null,
-      title: '🏅 Leaderboards',
+      title: 'Leaderboards',
       body: "Five automatic leaderboards built from your group's synced activity feeds and hiscores — no manual tracking needed.",
     },
     {
       target: '[data-tour="leaderboards-nav"]',
-      title: '📑 Leaderboard Sections',
-      body: "Browse 5 categories: 🥇 Firsts (who hit a milestone first), 📈 Milestones (XP goals), ⚔️ Boss Kills, 🗺️ Clue Scrolls, and 🎓 Skill Mastery (99s/120s per player).",
+      title: 'Leaderboard Sections',
+      body: "Browse 5 categories: Firsts (who hit a milestone first), Milestones (XP goals), Boss Kills, Clue Scrolls, and Skill Mastery (99s/120s per player).",
     },
     {
       target: '[data-tour="leaderboards-panel"]',
-      title: '🤖 Auto-Updated Data',
+      title: 'Auto-Updated Data',
       body: 'Firsts, Milestones and boss kills are detected from the Adventurer\'s Log feed (updates every ~2 hours). Clue counts and XP pull from RS3 hiscores every time you sync (~5 min delay).',
     },
   ],
@@ -136,11 +137,11 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
   const prevReplayKey               = useRef(0);
 
   const TABS = [
-    { id: 'overview',      label: '📊 Overview' },
-    { id: 'goals',         label: '🎯 Goals',               tour: 'tab-goals' },
-    { id: 'vault',         label: '🏆 Group Vault',         tour: 'tab-vault' },
-    { id: 'achievements',  label: '📋 Area Tasks', tour: 'tab-achievements' },
-    { id: 'leaderboards',  label: '🏅 Leaderboards',        tour: 'tab-leaderboards' },
+    { id: 'overview',      label: 'Overview',      icon: 'overview' },
+    { id: 'goals',         label: 'Goals',         icon: 'goals',        tour: 'tab-goals' },
+    { id: 'vault',         label: 'Group Vault',   icon: 'vault',        tour: 'tab-vault' },
+    { id: 'achievements',  label: 'Area Tasks',    icon: 'areaTasks',    tour: 'tab-achievements' },
+    { id: 'leaderboards',  label: 'Leaderboards',  icon: 'leaderboards', tour: 'tab-leaderboards' },
   ];
 
   // Auto-trigger per-tab tour on first visit
@@ -182,8 +183,9 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
               borderBottom: activeTab === t.id ? '2px solid var(--gold)' : '2px solid transparent',
               borderRadius: 0,
               color: activeTab === t.id ? 'var(--gold)' : 'var(--text-dim)',
-              paddingBottom: 8,
+              paddingBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 7,
             }}>
+            <RsIcon name={t.icon} size={18} />
             {t.label}
           </button>
         ))}
@@ -234,7 +236,7 @@ export default function Dashboard({ group, goals, pendingRequests, onRefresh, on
         players.length > 0
           ? <VaultTab players={players} groupId={groupId} goals={goals} onToast={onToast} canWrite={canWrite} myRsn={myRsn} />
           : <div className="empty-state">
-              <div className="icon">🏆</div>
+              <div className="icon"><RsIcon name="vault" size={40} /></div>
               <p>Add players first to use the vault.</p>
             </div>
       )}

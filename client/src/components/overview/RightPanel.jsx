@@ -1,3 +1,4 @@
+import RsIcon from '../RsIcon';
 import React, { useState } from 'react';
 import { api } from '../../api/client';
 import { normRsn } from '../../lib/rs3';
@@ -44,15 +45,15 @@ export default function RightPanel({ goals, players, filteredPlayerId, groupId, 
   }
 
   async function vaultGoal(id) {
-    try { await api.updateGoal(id, { status: 'vaulted' }); onRefresh(); onToast('Moved to Vault! 🏆', 'success'); }
+    try { await api.updateGoal(id, { status: 'vaulted' }); onRefresh(); onToast('Moved to the Vault', 'success'); }
     catch (err) { onToast(err.message, 'error'); }
   }
 
   const hasActivity = players.some(p => p.activities_json);
 
   const viewBtns = [
-    { id: 'goals',    label: '🎯 Goals' },
-    ...(hasActivity ? [{ id: 'activity', label: '📋 Activity' }, { id: 'both', label: 'Both' }] : []),
+    { id: 'goals',    label: 'Goals' },
+    ...(hasActivity ? [{ id: 'activity', label: 'Activity' }, { id: 'both', label: 'Both' }] : []),
   ];
 
   function pillStyle(active) {
@@ -81,7 +82,7 @@ export default function RightPanel({ goals, players, filteredPlayerId, groupId, 
               setPrefill(defaultOwner ? { owner_id: defaultOwner } : {});
               setShowModal(true);
             }}>+ Add Goal</button>
-          : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>🔒 Claim to add</span>
+          : <span style={{ fontSize: 11, color: 'var(--text-dim)' }}><RsIcon name="key" size={12} style={{ marginRight: 5 }} />Claim to add</span>
         )}
       </div>
 

@@ -241,4 +241,11 @@ router.get('/item-search', wikiSearchLimiter, async (req, res) => {
   }
 });
 
+// POST /api/rs3/item-ids { names: [...] } -> { name: itemId } for the names the Grand Exchange data knows (public data only).
+// The dashboard uses it to draw Jagex's own item picture. Read only; nothing is stored.
+router.post('/item-ids', async (req, res) => {
+  const names = Array.isArray(req.body?.names) ? req.body.names.filter(n => typeof n === 'string' && n.length < 100).slice(0, 400) : [];
+  res.json(await require('../services/itemIndex').idsFor(names));
+});
+
 module.exports = router;

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import RsIcon from '../RsIcon';
+import { ItemIcon } from '../GameIcon';
 import { fmtNum, xpForLevel, wikiUrl, parseDetails } from '../../lib/rs3';
 import SkillIcon from '../common/SkillIcon';
 import { STATUS_LABELS, STATUS_COLORS, getPlayerSkill } from './constants';
@@ -61,7 +63,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-bright)', lineHeight: 1.3 }}>
-            {goal.type === 'group' ? '👥 ' : '👤 '}{goal.title}
+            <RsIcon name={goal.type === 'group' ? 'group' : 'player'} fallback="" size={13} style={{ marginRight: 5 }} />{goal.title}
           </div>
           {goal.owner_rsn && goal.type !== 'group' && (
             <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1 }}>{goal.owner_rsn}</div>
@@ -89,7 +91,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
                 fontSize: 12, padding: '2px 5px', borderRadius: 6,
                 background: 'transparent', border: '1px solid var(--border)',
                 color: 'var(--text-dim)', textDecoration: 'none', lineHeight: 1.4,
-              }}>📖</a>
+              }}><RsIcon name="wiki" fallback="📖" size={13} /></a>
           )}
           <button onClick={() => onCycle(goal)} style={{
             fontSize: 10, padding: '2px 7px', borderRadius: 10, cursor: 'pointer',
@@ -103,7 +105,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
             <button onClick={() => setVaultPrompt(v => !v)} title="Move to Vault" style={{
               fontSize: 12, padding: '2px 4px', background: 'transparent',
               border: 'none', color: vaultPrompt ? 'var(--gold)' : 'var(--text-dim)', cursor: 'pointer',
-            }}>🏆</button>
+            }}><RsIcon name="leaderboards" fallback="🏆" size={14} /></button>
           )}
           {canWrite && (
             <button onClick={() => onDelete(goal.id)} style={{
@@ -133,7 +135,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
       {goalType === 'item' && itemTarget && (
         <div style={{ marginTop: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--text-dim)', marginBottom: 3 }}>
-            <span>📦 {details.itemName}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><ItemIcon name={details.itemName} size={18} /> {details.itemName}</span>
             {canWrite && !editingCount ? (
               <button onClick={() => { setCountDraft(itemCurrent); setEditingCount(true); }} style={{
                 fontSize: 10, padding: '1px 6px', background: 'transparent',
@@ -169,7 +171,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
               {goal.description && <div style={{ color: 'var(--text-dim)' }}>{goal.description}</div>}
               <a href={wikiUrl(goal.skill)} target="_blank" rel="noopener noreferrer"
                 style={{ color: 'var(--gold)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                📖 {goal.skill} on RS Wiki
+                <RsIcon name="wiki" fallback="📖" size={12} /> {goal.skill} on RS Wiki
               </a>
             </div>
           )}
@@ -205,10 +207,10 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
                         border: `1px solid ${m.raw ? 'var(--border)' : 'var(--blue)'}`,
                         color: 'var(--text)',
                       }}>
-                        {m.raw ? '🪨' : '⚙️'} {m.item}: <strong style={{ color: 'var(--gold)' }}>{fmtNum(m.quantity * (details.quantity || 1))}</strong>
+                        <RsIcon name={m.raw ? 'rawMaterial' : 'crafted'} fallback="" size={12} /> {m.item}: <strong style={{ color: 'var(--gold)' }}>{fmtNum(m.quantity * (details.quantity || 1))}</strong>
                         <a href={wikiUrl(m.item)} target="_blank" rel="noopener noreferrer"
                           title={`${m.item} on RS Wiki`}
-                          style={{ color: 'var(--text-dim)', textDecoration: 'none', fontSize: 10, lineHeight: 1 }}>📖</a>
+                          style={{ color: 'var(--text-dim)', textDecoration: 'none', fontSize: 10, lineHeight: 1 }}><RsIcon name="wiki" fallback="📖" size={13} /></a>
                       </span>
                     ))}
                   </div>
@@ -217,7 +219,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
               {goal.description && <div style={{ color: 'var(--text-dim)' }}>{goal.description}</div>}
               <a href={wikiUrl(details.itemName)} target="_blank" rel="noopener noreferrer"
                 style={{ color: 'var(--gold)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                📖 {details.itemName} on RS Wiki
+                <RsIcon name="wiki" fallback="📖" size={12} /> {details.itemName} on RS Wiki
               </a>
             </div>
           )}
@@ -227,7 +229,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
               {goal.description && <div style={{ color: 'var(--text-dim)', marginBottom: 6 }}>{goal.description}</div>}
               <a href={wikiUrl(details.questName || goal.title)} target="_blank" rel="noopener noreferrer"
                 style={{ color: 'var(--gold)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                📖 {details.questName || goal.title} on RS Wiki
+                <RsIcon name="wiki" fallback="📖" size={12} /> {details.questName || goal.title} on RS Wiki
               </a>
             </div>
           )}
@@ -247,7 +249,7 @@ export default function GoalItem({ goal, players, onCycle, onDelete, onUpdateCou
           borderRadius: 'var(--radius)',
           display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
         }}>
-          <span style={{ fontSize: 11, color: 'var(--text-dim)', flex: 1 }}>🏆 Showcase this in the Vault?</span>
+          <span style={{ fontSize: 11, color: 'var(--text-dim)', flex: 1 }}>Showcase this in the Vault?</span>
           <button
             onClick={() => { onVault(goal.id); setVaultPrompt(false); }}
             className="btn btn-primary btn-sm"
