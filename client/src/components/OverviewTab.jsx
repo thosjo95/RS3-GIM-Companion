@@ -154,20 +154,22 @@ export default function OverviewTab({ group, goals, players, groupId, onRefresh,
         </div>
       )}
 
-      {/* Stat boxes */}
-      <div className="grid-4">
-        {statBoxes.map(b => (
-          <div
-            key={b.label}
-            className="stat-box"
-          >
-            <div className="stat-label">{b.label}</div>
-            <div className="stat-value" style={{ color: b.dim ? 'var(--text-dim)' : undefined }}>
-              {b.value}
+      {/* One player is picked: that player's numbers. The group's numbers (members, XP, levels, active) are in the top bar. */}
+      {selectedPlayer && (
+        <div className="grid-4">
+          {statBoxes.map(b => (
+            <div
+              key={b.label}
+              className="stat-box"
+            >
+              <div className="stat-label">{b.label}</div>
+              <div className="stat-value" style={{ color: b.dim ? 'var(--text-dim)' : undefined }}>
+                {b.value}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Pending item requests banner */}
       {pendingRequests.length > 0 && (
