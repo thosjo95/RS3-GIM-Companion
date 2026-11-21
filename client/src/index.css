@@ -167,12 +167,12 @@ a:hover { color: var(--gold-light); }
 .panel-body { padding: 16px; }
 
 /* Grid layouts */
-.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 
-@media (max-width: 1200px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 900px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 1200px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .grid-3, .grid-2 { grid-template-columns: minmax(0, 1fr); } }
 
 /* Stat boxes */
 .stat-box {
@@ -630,6 +630,10 @@ a:hover { color: var(--gold-light); }
   .last-sync { display: none; }
   .sync-btn { padding: 5px 9px; font-size: 11px; }
   .header-right { gap: 6px; }
+  /* the buttons on the right scroll within the top bar instead of widening the whole page */
+  .header-right { min-width: 0; overflow-x: auto; scrollbar-width: none; flex: 0 1 auto; }
+  .header-right::-webkit-scrollbar { display: none; }
+  .header-right > * { flex-shrink: 0; }
 
   /* ── Content ── */
   .content { padding: 10px; }
@@ -643,9 +647,9 @@ a:hover { color: var(--gold-light); }
   .skills-grid { grid-template-columns: repeat(3, 1fr); }
 
   /* ── Grid layouts ── */
-  .grid-2 { grid-template-columns: 1fr !important; }
-  .grid-3 { grid-template-columns: 1fr !important; }
-  .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-2 { grid-template-columns: minmax(0, 1fr) !important; }
+  .grid-3 { grid-template-columns: minmax(0, 1fr) !important; }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 
   /* ── Tab bars: horizontal scroll ── */
   .tab-bar-scroll {
