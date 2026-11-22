@@ -11,6 +11,9 @@ import { ItemIcon } from '../GameIcon';
 const FILTERS = [['all', 'All'], ['level', 'Levels'], ['quest', 'Quests'], ['milestone', 'XP'], ['other', 'Other']];
 const PAGE = 30;
 
+// "I killed X." -> "killed X" (it follows the player's name); other sentences just start with a small letter.
+const asVerb = t => { const s = t.replace(/^I\s+/, '').replace(/\.$/, ''); return s.charAt(0).toLowerCase() + s.slice(1); };
+
 /** What kind of event this is and the plain sentence for it. */
 function describe(a) {
   const text = String(a.text ?? '');
@@ -29,9 +32,9 @@ function describe(a) {
   if ((m = /^(?:Item found|I found|Found)[:\s]+(.+?)\.?$/i.exec(text))) {
     return { kind: 'drop', item: m[1].replace(/^an? /i, ''), verb: `found ${m[1]}`, sub: details || null };
   }
-  if (/killed|defeated|slain/i.test(text)) return { kind: 'boss', verb: text.replace(/\.$/, ''), sub: details && details !== text ? details : null };
-  if (/challenged by/i.test(text)) return { kind: 'boss', verb: text.charAt(0).toLowerCase() + text.slice(1).replace(/\.$/, ''), sub: details && details !== text ? details : null };
-  return { kind: 'other', verb: text.charAt(0).toLowerCase() + text.slice(1).replace(/\.$/, ''), sub: details && details !== text ? details : null };
+  if (/killed|defeated|slain/i.test(text)) return { kind: 'boss', verb: asVerb(text), sub: details && details !== text ? details : null };
+  if (/challenged by/i.test(text)) return { kind: 'boss', verb: asVerb(text), sub: details && details !== text ? details : null };
+  return { kind: 'other', verb: asVerb(text), sub: details && details !== text ? details : null };
 }
 
 function Icon({ d }) {
