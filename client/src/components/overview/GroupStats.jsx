@@ -262,7 +262,7 @@ export default function GroupStats({ players, goals, groupId }) {
                               <SkillIcon name={skill} size={20} />
                               <span style={{ fontSize: 12, color: filteredSkill === skill ? 'var(--gold)' : 'var(--text)' }}>{skill}</span>
                             </div>
-                            {players.map(p => <Cell key={p.id} p={p} skill={skill} />)}
+                            {players.map(p => <React.Fragment key={p.id}>{Cell({ p, skill })}</React.Fragment>)}   {/* called as a function: a component made inside render would be rebuilt on every update and lose the hover */}
                           </div>
                         ))}
                       </div>
