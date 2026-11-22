@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { api } from '../../api/client';
+import { loadGlobalStats } from './globalData';
 import RsIcon from '../RsIcon';
 import { BossIcon, ItemIcon } from '../GameIcon';
 import SkillIcon from '../common/SkillIcon';
@@ -18,6 +18,7 @@ const MODES = [
 ];
 const MEASURES = [
   { key: 'gain', label: 'XP gained' }, { key: 'perMember', label: 'Per member' }, { key: 'total', label: 'Total XP' },
+  { key: 'clues', label: 'Clues' },
 ];
 const FILTER_KEY = 'globalLeaderboardFilter';
 
@@ -185,7 +186,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
 
   useEffect(() => {
     let live = true;
-    api.getGlobalStats().then(d => live && setData(d)).catch(e => live && setError(e.message));
+    loadGlobalStats().then(d => live && setData(d)).catch(e => live && setError(e.message));
     return () => { live = false; };
   }, []);
   useEffect(() => { try { localStorage.setItem(FILTER_KEY, JSON.stringify(filter)); } catch { /* not kept */ } }, [filter]);
@@ -202,7 +203,10 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
     const named = groups.filter(g => !g.anon);
     const sum = f => groups.reduce((s, g) => s + (f(g) ?? 0), 0);
     const best = f => named.filter(g => f(g) > 0).sort((a, b) => f(b) - f(a))[0] ?? null;
-    const measureOf = g => measure === 'total' ? g.totalXp : measure === 'perMember' ? g[gainKey] / Math.max(1, g.members) : g[gainKey];
+    // clue scrolls: in 2.0 the clues gained in the period; in 1.x (no clue history) the all-time count
+    const cluesOf = g => (data.clueGains ? g.clueGain?.[period] : g.clues) ?? 0;
+    const measureOf = g => measure === 'total' ? g.totalXp : measure === 'clues' ? cluesOf(g)
+      : measure === 'perMember' ? g[gainKey] / Math.max(1, g.members) : g[gainKey];
     const buckets = (data.buckets || []).filter(pass);
     return {
       totals: {
@@ -214,6 +218,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
         xp: sum(g => g[gainKey]),
         milestones: sum(g => g.milestones[period]),
         bossKills: sum(g => g.bossKills[period]),
+        clues: sum(cluesOf),
         drops: sum(g => g.drops[period]),
         newMonth: groups.filter(g => (g.createdAt ?? '') >= data.periods.month).length,
       },
@@ -244,7 +249,11 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
   const modeSplit = MODES.slice(1).map(m => ({ ...m, n: count(g => g.type === m.key) }));
   const sizeSplit = sizes.map(s => ({ key: s, label: sizeLabel(s), n: count(g => g.size === s) }));
   const splitMax = Math.max(1, ...modeSplit.map(m => m.n), ...sizeSplit.map(s => s.n));
-  const measureLabel = measure === 'total' ? 'total XP' : measure === 'perMember' ? `XP per member ${periodWord}` : `XP gained ${periodWord}`;
+  const measureLabel = measure === 'total' ? 'total XP'
+    : measure === 'clues' ? (data.clueGains ? `clue scrolls completed ${periodWord}` : 'clue scrolls completed, all time')
+    : measure === 'perMember' ? `XP per member ${periodWord}` : `XP gained ${periodWord}`;
+  const showValue = g => measure === 'total' ? fmtXp(g.value)
+    : measure === 'clues' ? (data.clueGains ? `+${fmtInt(g.value)}` : fmtInt(g.value)) : `+${fmtXp(g.value)}`;
   const each = (g, key) => g && `${g.members} member${g.members === 1 ? '' : 's'} · ${fmtXp(g[key] / Math.max(1, g.members))} each`;
 
   return (
@@ -286,6 +295,8 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
         <Stat icon="lamp" label={`XP gained ${periodWord}`} value={fmtXp(totals.xp)} sub="these groups together" />
         <Stat icon="maxCape" label={`99s and 120s ${periodWord}`} value={fmtInt(totals.milestones)} sub="from the Adventurer's Log" />
         <Stat icon="bosses" label={`Boss kills ${periodWord}`} value={fmtInt(totals.bossKills)} sub="from the Adventurer's Log" />
+        <Stat icon="clues" label={data.clueGains ? `Clue scrolls ${periodWord}` : 'Clue scrolls'} value={fmtInt(totals.clues)}
+          sub={data.clueGains ? 'completed, from the hiscores' : 'completed, all time'} />
       </div>
 
       <div className="grid-3" style={{ marginTop: 16 }}>
@@ -311,7 +322,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
               <Rank i={groupPage * PAGE + i} />
               <GimTypeLabel type={g.type} size={18} iconOnly />
               <GroupLink name={g.name} sub={`${g.members} member${g.members === 1 ? '' : 's'}${g.activeWeek ? ` · ${g.activeWeek} active this week` : ''}`} />
-              <span className="gl-num">{measure === 'total' ? fmtXp(g.value) : `+${fmtXp(g.value)}`}</span>
+              <span className="gl-num">{showValue(g)}</span>
             </Row>
           ))}
           <Pager page={groupPage} total={v.ranked.length} onPage={setGroupPage} what="groups" />

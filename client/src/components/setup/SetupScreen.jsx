@@ -3,7 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../../api/client';
 import { fmtXp } from '../../lib/rs3';
 import GimTypeLabel from '../common/GimTypeLabel';
-import BrowseTrackedGroups from '../groups/BrowseTrackedGroups';
+import TrackedGroupsPanel from '../groups/TrackedGroupsPanel';
+import GlobalTeaser from '../global/GlobalTeaser';
 
 // ── Custom group name generator ───────────────────────────────────────────────
 const CUSTOM_NAME_ADJECTIVES = [
@@ -258,8 +259,19 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
       <p style={{maxWidth:460,textAlign:'center',lineHeight:1.7,color:'var(--text-dim)',fontSize:14,marginTop:0}}>
         Auto-sync hiscores · track weekly XP gains · manage group goals · log drops · share progress to Discord
       </p>
-      <div className="panel" style={cardStyle}>
-        <div className="panel-header"><span className="panel-title">Find Your Group</span></div>
+
+      {/* ── The Global Leaderboard: every tracked group side by side ── */}
+      {onGlobal && <div className="setup-wide"><GlobalTeaser onOpen={onGlobal} /></div>}
+
+      {/* ── Two ways in: find (and add) your group, or open one that is already tracked ── */}
+      <div className="setup-hub">
+      <div className="panel" style={{ textAlign: 'left', minWidth: 0 }}>
+        <div className="panel-header">
+          <span className="panel-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><RsIcon name="search" size={16} />Find your group</span>
+        </div>
+        <div style={{ padding: '12px 16px 0', fontSize: 12, color: 'var(--text-dim)', textAlign: 'center' }}>
+          Not on the list? Look it up on the RS3 hiscores and start tracking it.
+        </div>
         <form onSubmit={handleSearch}>
           <div className="panel-body" style={{textAlign:'center'}}>
 
@@ -341,21 +353,9 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
         </form>
       </div>
 
-      {/* ── Browse groups already tracked in this app (collapsible) ── */}
-      <div style={{...cardStyle, marginTop:12}}>
-        <BrowseTrackedGroups
-          onSelect={id => onSwitchToGroup?.(id)}
-          onStar={onStar}
-        />
+      {/* ── Every group already tracked: search, filter, sort, open ── */}
+      <TrackedGroupsPanel onSelect={id => onSwitchToGroup?.(id)} onStar={onStar} />
       </div>
-
-      {/* ── The Global Leaderboard: every tracked group side by side ── */}
-      {onGlobal && (
-        <button type="button" className="btn btn-secondary" onClick={onGlobal}
-          style={{ marginTop: 12, width: '100%', justifyContent: 'center', gap: 8 }}>
-          <RsIcon name="leaderboards" size={18} /> See the Global Leaderboard: every group, top groups of the week and month
-        </button>
-      )}
     </div>
   );
 }

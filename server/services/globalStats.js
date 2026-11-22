@@ -28,6 +28,7 @@ const parseJson = s => { try { return JSON.parse(s); } catch { return null; } };
 const hasColumn = (table, col) => { try { return db.prepare(`PRAGMA table_info(${table})`).all().some(c => c.name === col); } catch { return false; } };
 const hasTable = name => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
 const add = (obj, key, n) => { obj[key] = (obj[key] ?? 0) + n; };
+const CLUE_FIELDS = ['Clue Scrolls Easy', 'Clue Scrolls Medium', 'Clue Scrolls Hard', 'Clue Scrolls Elite', 'Clue Scrolls Master'];
 
 // "I killed 17 Hermods." -> 17, "I killed  The Gate of Elidinis." -> 1
 const batchKills = text => {
@@ -50,9 +51,10 @@ function build() {
     unlisted: isV2 && parseJson(g.settings_json)?.unlisted === true,
     members: 0, totalXp: 0, weekGain: 0, monthGain: 0, yearGain: 0, activeWeek: 0, bossKills: { week: 0, month: 0, year: 0 },
     drops: { week: 0, month: 0, year: 0 }, milestones: { week: 0, month: 0, year: 0 },
+    clues: 0, clueGain: { week: 0, month: 0, year: 0 },
   }]));
 
-  const players = db.prepare('SELECT id, rsn, group_id FROM players').all().filter(p => groupById.has(p.group_id));
+  const players = db.prepare('SELECT id, rsn, group_id, stats_json FROM players').all().filter(p => groupById.has(p.group_id));
   const playerById = new Map(players.map(p => [p.id, p]));
   const groupOf = id => groupById.get(playerById.get(id)?.group_id);
   // XP per skill and boss kills, per mode and size: "regular|5" -> { skills: { week, month, year }, bosses: { week, month, year } }
@@ -113,6 +115,33 @@ function build() {
     if (w > 0) g.activeWeek++;
   }
 
+  // clue scrolls completed (public hiscores, all five tiers added up). Every version has today's count; 2.0 also keeps
+  // dated metric snapshots (up to 120 days), so there clues gained in a period can be worked out too.
+  const clueNow = new Map();
+  for (const p of players) {
+    const acts = parseJson(p.stats_json)?.activities;
+    if (!acts) continue;
+    const n = CLUE_FIELDS.reduce((s, f) => s + (Number.isFinite(acts[f]) && acts[f] > 0 ? acts[f] : 0), 0);
+    clueNow.set(p.id, n);
+    groupById.get(p.group_id).clues += n;
+  }
+  const clueGains = hasTable('metric_snapshots');
+  if (clueGains) {
+    const clueOf = json => parseJson(json)?.clues?._total;
+    const firstClue = new Map(db.prepare(`SELECT m.player_id, m.data_json FROM metric_snapshots m
+      JOIN (SELECT player_id, MIN(taken_at) t FROM metric_snapshots GROUP BY player_id) b ON b.player_id = m.player_id AND b.t = m.taken_at`)
+      .all().map(r => [r.player_id, clueOf(r.data_json)]));
+    const clueAt = db.prepare(`SELECT m.player_id, m.data_json FROM metric_snapshots m
+      JOIN (SELECT player_id, MAX(taken_at) t FROM metric_snapshots WHERE taken_at <= ? GROUP BY player_id) b ON b.player_id = m.player_id AND b.t = m.taken_at`);
+    for (const [key, cut] of Object.entries(periods)) {
+      const base = new Map(clueAt.all(cut + 'T23:59:59Z').map(r => [r.player_id, clueOf(r.data_json)]));
+      for (const [id, now] of clueNow) {
+        const b = base.get(id) ?? firstClue.get(id);
+        if (Number.isFinite(b) && now > b) groupById.get(playerById.get(id).group_id).clueGain[key] += now - b;
+      }
+    }
+  }
+
   // boss kills from the Adventurer's Log, per group and boss
   for (const [key, cut] of Object.entries(periods)) {
     const rows = db.prepare(`SELECT player_id, text, details FROM player_activities
@@ -145,10 +174,12 @@ function build() {
 
   const out = {
     updatedAt: new Date().toISOString(),
+    clueGains,                      // true: groups carry clues gained per period; false (1.x): only the all-time count
     anchor, periods,
     // unlisted groups are sent without id and name: they only add to the numbers
     groups: [...groupById.values()].filter(g => g.members > 0).map(({ unlisted, ...g }) => {
       if (unlisted) { delete g.id; delete g.name; g.anon = true; }
+      if (!clueGains) delete g.clueGain;
       return g;
     }),
     buckets: Object.values(buckets),
