@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 
 // ── Site-wide announcement ────────────────────────────────────────────────────
-// Shown once per browser session on page load. "Don't show again" hides it
-// permanently in this browser. To publish a new announcement later, change
+// Shown once per browser: as soon as it has been on screen it is remembered and never shown again there. To publish a new announcement later, change
 // ANNOUNCEMENT.id (so earlier dismissals no longer apply) and the text below.
 
 export const ANNOUNCEMENT = {
   id: 'gim2-preview-2026-11b',                 // a new id: everyone who closed the old announcement sees this one
   title: 'A new version is coming',
   linkUrl: 'https://beta.groupiron.com/misthalin-five-demo',   // the demo group: everything the plugin adds, live
-  linkLabel: 'See the new tracker: demo group →',
+  linkLabel: 'See the new tracker →',
 };
 
 const storageKey = id => `announcementDismissed_${id}`;
@@ -29,12 +28,12 @@ export function shouldShowAnnouncement(id = ANNOUNCEMENT.id) {
 }
 
 export default function AnnouncementModal({ onClose }) {
-  const [dontShow, setDontShow] = useState(false);
   const key = storageKey(ANNOUNCEMENT.id);
 
+  // seen once is enough: remember it the moment it opens, so it never comes back in this browser
+  useEffect(() => { writeFlag(window.localStorage, key); writeFlag(window.sessionStorage, key); }, [key]);
+
   function close() {
-    writeFlag(window.sessionStorage, key);
-    if (dontShow) writeFlag(window.localStorage, key);
     onClose();
   }
 
@@ -75,11 +74,7 @@ export default function AnnouncementModal({ onClose }) {
             {ANNOUNCEMENT.linkUrl.replace(/^https?:\/\//, '')}
           </div>
         </div>
-        <div className="modal-footer" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-dim)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={dontShow} onChange={e => setDontShow(e.target.checked)} />
-            Don't show again
-          </label>
+        <div className="modal-footer" style={{ justifyContent: 'flex-end', alignItems: 'center' }}>
           <button className="btn btn-secondary" onClick={close}>Close</button>
         </div>
       </div>
