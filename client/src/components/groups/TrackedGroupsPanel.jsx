@@ -15,10 +15,13 @@ const SORTS = [['active', 'Most active'], ['xp', 'Most XP'], ['newest', 'Newest'
 const PAGE = 8;
 const norm = s => String(s || '').replace(/\s/g, ' ').toLowerCase().trim();
 
-export default function TrackedGroupsPanel({ onSelect, onStar }) {
+// excludeIds: groups not to list (in the Find or Manage Groups window, the ones already in your sidebar).
+// search: when given, the panel uses that text (from a search box outside it) and shows no search box of its own.
+export default function TrackedGroupsPanel({ onSelect, onStar, excludeIds = null, search = null }) {
   const [groups, setGroups] = useState(null);
   const [failed, setFailed] = useState(false);
-  const [query, setQuery] = useState('');
+  const [ownQuery, setQuery] = useState('');
+  const query = search ?? ownQuery;
   const [mode, setMode] = useState('all');
   const [size, setSize] = useState('all');
   const [sort, setSort] = useState('active');
@@ -27,7 +30,7 @@ export default function TrackedGroupsPanel({ onSelect, onStar }) {
 
   useEffect(() => {
     let live = true;
-    loadGlobalStats().then(d => live && setGroups(d.groups.filter(g => !g.anon))).catch(() => live && setFailed(true));
+    loadGlobalStats().then(d => live && setGroups(d.groups.filter(g => !g.anon && !excludeIds?.has(g.id)))).catch(() => live && setFailed(true));
     return () => { live = false; };
   }, []);
   useEffect(() => setPage(0), [query, mode, size, sort]);
@@ -46,7 +49,7 @@ export default function TrackedGroupsPanel({ onSelect, onStar }) {
       .sort(by);
   }, [groups, query, mode, size, sort]);
 
-  if (failed) return <BrowseTrackedGroups onSelect={onSelect} onStar={onStar} />;
+  if (failed) return <BrowseTrackedGroups pinnedIds={excludeIds ?? undefined} onSelect={onSelect} onStar={onStar} />;
 
   const sizes = [...new Set((groups || []).map(g => g.size).filter(Boolean))].sort((a, b) => a - b);
   const pages = Math.max(1, Math.ceil(list.length / PAGE));
@@ -61,7 +64,7 @@ export default function TrackedGroupsPanel({ onSelect, onStar }) {
         {groups && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{groups.length.toLocaleString('en-US')} groups</span>}
       </div>
       <div className="panel-body">
-        <input className="form-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search a group by name…" />
+        {search == null && <input className="form-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search a group by name…" />}
         <div className="tg-controls">
           <div className="tg-chips">
             {MODES.map(([k, label]) => (
