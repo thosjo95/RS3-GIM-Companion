@@ -29,6 +29,7 @@ const hasColumn = (table, col) => { try { return db.prepare(`PRAGMA table_info($
 const hasTable = name => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
 const add = (obj, key, n) => { obj[key] = (obj[key] ?? 0) + n; };
 const CLUE_FIELDS = ['Clue Scrolls Easy', 'Clue Scrolls Medium', 'Clue Scrolls Hard', 'Clue Scrolls Elite', 'Clue Scrolls Master'];
+const CLUE_TIERS = ['easy', 'medium', 'hard', 'elite', 'master'];          // the same order, as metric snapshots name them
 
 // "I killed 17 Hermods." -> 17, "I killed  The Gate of Elidinis." -> 1
 const batchKills = text => {
@@ -117,27 +118,33 @@ function build() {
 
   // clue scrolls completed (public hiscores, all five tiers added up). Every version has today's count; 2.0 also keeps
   // dated metric snapshots (up to 120 days), so there clues gained in a period can be worked out too.
+  // Per player and tier: clueNow id -> [easy, medium, hard, elite, master]; cluePeriod[period] id -> the same, gained.
   const clueNow = new Map();
   for (const p of players) {
     const acts = parseJson(p.stats_json)?.activities;
     if (!acts) continue;
-    const n = CLUE_FIELDS.reduce((s, f) => s + (Number.isFinite(acts[f]) && acts[f] > 0 ? acts[f] : 0), 0);
-    clueNow.set(p.id, n);
-    groupById.get(p.group_id).clues += n;
+    const tiers = CLUE_FIELDS.map(f => (Number.isFinite(acts[f]) && acts[f] > 0 ? acts[f] : 0));
+    clueNow.set(p.id, tiers);
+    groupById.get(p.group_id).clues += tiers.reduce((s, n) => s + n, 0);
   }
   const clueGains = hasTable('metric_snapshots');
+  const cluePeriod = { week: new Map(), month: new Map(), year: new Map() };
   if (clueGains) {
-    const clueOf = json => parseJson(json)?.clues?._total;
+    const tiersOf = json => { const c = parseJson(json)?.clues; return c ? CLUE_TIERS.map(t => (Number.isFinite(c[t]) ? c[t] : null)) : null; };
     const firstClue = new Map(db.prepare(`SELECT m.player_id, m.data_json FROM metric_snapshots m
       JOIN (SELECT player_id, MIN(taken_at) t FROM metric_snapshots GROUP BY player_id) b ON b.player_id = m.player_id AND b.t = m.taken_at`)
-      .all().map(r => [r.player_id, clueOf(r.data_json)]));
+      .all().map(r => [r.player_id, tiersOf(r.data_json)]));
     const clueAt = db.prepare(`SELECT m.player_id, m.data_json FROM metric_snapshots m
       JOIN (SELECT player_id, MAX(taken_at) t FROM metric_snapshots WHERE taken_at <= ? GROUP BY player_id) b ON b.player_id = m.player_id AND b.t = m.taken_at`);
     for (const [key, cut] of Object.entries(periods)) {
-      const base = new Map(clueAt.all(cut + 'T23:59:59Z').map(r => [r.player_id, clueOf(r.data_json)]));
+      const base = new Map(clueAt.all(cut + 'T23:59:59Z').map(r => [r.player_id, tiersOf(r.data_json)]));
       for (const [id, now] of clueNow) {
         const b = base.get(id) ?? firstClue.get(id);
-        if (Number.isFinite(b) && now > b) groupById.get(playerById.get(id).group_id).clueGain[key] += now - b;
+        if (!b) continue;
+        // a tier the old snapshot did not have counts as no gain (not as everything)
+        const gained = now.map((n, i) => (b[i] == null ? 0 : Math.max(0, n - b[i])));
+        const sum = gained.reduce((s, n) => s + n, 0);
+        if (sum > 0) { cluePeriod[key].set(id, gained); groupById.get(playerById.get(id).group_id).clueGain[key] += sum; }
       }
     }
   }
@@ -190,6 +197,16 @@ function build() {
       .map(r => ({ ...tag(r.player_id), skill: r.skill, level: r.level, at: r.achieved_at })),
     drops: dropRows.filter(r => !groupOf(r.player_id).unlisted).slice(0, RECENT_MAX)
       .map(r => ({ ...tag(r.player_id), item: r.item_name, at: r.dropped_at })),
+    // clue scrolls per player and tier, kept short because there is a row for nearly every player:
+    // g = group id and r = name (listed groups) or ty / sz = mode and size (unlisted groups, no names);
+    // t = completed [easy, medium, hard, elite, master]; w / m / y = gained this week / month / year (2.0 only, when any)
+    clues: [...clueNow.entries()].filter(([, t]) => t.some(n => n > 0)).map(([id, t]) => {
+      const g = groupOf(id);
+      const row = g.unlisted ? { ty: g.type, sz: g.size } : { g: g.id, r: playerById.get(id).rsn };
+      row.t = t;
+      for (const [k, short] of [['week', 'w'], ['month', 'm'], ['year', 'y']]) { const v = cluePeriod[k].get(id); if (v) row[short] = v; }
+      return row;
+    }),
   };
 
   // ── 2.0, the plugin: totals over everyone, never per group, mode, size or player ──

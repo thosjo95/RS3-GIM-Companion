@@ -54,8 +54,9 @@ export default function ClaimModal({ group, onConfirm, onCancel }) {
                 {' '}Claiming locks the group to this secret — other members will need it to contribute.
                 <br/><br/>
                 If your group has already been claimed by someone else, or you've lost your secret,{' '}
-                <strong style={{color:'var(--text-bright)'}}>contact the developer</strong> for help:
-                {' '}<a href="mailto:support@example.com" style={{color:'var(--gold)'}}>Discord / GitHub issues</a>.
+                <strong style={{color:'var(--text-bright)'}}>contact the developer</strong> on{' '}
+                <a href="https://discord.gg/xbB2T2Q6A" target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>Discord</a> or at{' '}
+                <a href="mailto:rs3groupiron@pm.me" style={{color:'var(--gold)'}}>rs3groupiron@pm.me</a>.
               </div>
 
               {players.length > 0 && (

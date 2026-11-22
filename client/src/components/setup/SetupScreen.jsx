@@ -211,6 +211,9 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
             )}
             <div style={{padding:'10px 12px',borderRadius:'var(--radius)',background:'rgba(192,64,64,0.10)',border:'1px solid rgba(192,64,64,0.4)',fontSize:12,color:'var(--text-dim)',lineHeight:1.5}}>
               <span style={{fontWeight:700,color:'var(--red-bright)'}}>Only claim your own group.</span> Whoever claims it holds the secret for the whole group.
+              {' '}If someone else claimed your group, contact the developer on{' '}
+              <a href="https://discord.gg/xbB2T2Q6A" target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>Discord</a> or at{' '}
+              <a href="mailto:rs3groupiron@pm.me" style={{color:'var(--gold)'}}>rs3groupiron@pm.me</a>.
             </div>
             <button type="button" className="btn btn-primary" onClick={claimOffered} disabled={claiming} style={{justifyContent:'center'}}>
               {claiming ? <><span className="spinner" style={{width:12,height:12}} /> Claiming…</> : 'Claim group and create the secret'}

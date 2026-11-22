@@ -779,3 +779,15 @@ a:hover { color: var(--gold-light); }
 .gr-message { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 10px 12px; background: var(--bg-panel-alt); border: 1px solid var(--border); border-radius: var(--radius); }
 .gr-message pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 12px; color: var(--text); }
 .gr-note { font-size: 12px; color: var(--text-dim); padding: 8px 10px; margin-bottom: 8px; border-left: 2px solid var(--gold-dark); background: rgba(200,168,75,0.05); }
+
+/* Global Leaderboard: the clue scrolls board */
+.gl-clue-tiers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.gl-clue-tier { background: var(--bg-panel-alt); border: 1px solid var(--border); border-top: 3px solid var(--tier); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; font: inherit; color: inherit; min-width: 0; transition: border-color 0.15s, background 0.15s; }
+.gl-clue-tier:hover { border-color: var(--tier); }
+.gl-clue-tier.active { border-color: var(--tier); background: rgba(200,168,75,0.08); }
+.gl-clue-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 16px; }
+.gl-clue-head { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); margin-bottom: 6px; }
+.gl-clue-mix { display: inline-flex; gap: 8px; font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.gl-clue-mix > span { display: inline-flex; align-items: center; gap: 2px; }
+@media (max-width: 1100px) { .gl-clue-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); } .gl-clue-mix { display: none; } }
+@media (max-width: 800px) { .gl-clue-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gl-clue-lists { grid-template-columns: minmax(0, 1fr); } }

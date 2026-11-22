@@ -173,6 +173,131 @@ function PluginStrip({ plugin, period, periodWord }) {
   );
 }
 
+// ── Clue scrolls: the five tiers side by side, then the top groups and players of the chosen tier ──
+// From the public hiscores. 1.x only has the count completed (all time); 2.0 keeps dated snapshots, so there it follows
+// the week / month / year switch. Follows the Mode and Size filter like every other board.
+const CLUE_TIERS = [
+  { name: 'Easy', file: 'Clue_scroll_%28easy%29.png', color: '#8fd18f' },
+  { name: 'Medium', file: 'Clue_scroll_%28medium%29.png', color: '#7eb8f7' },
+  { name: 'Hard', file: 'Clue_scroll_%28hard%29.png', color: '#d07ef7' },
+  { name: 'Elite', file: 'Sealed_clue_scroll_%28elite%29.png', color: '#f7c97e' },
+  { name: 'Master', file: 'Clue_scroll_%28master%29.png', color: '#f77e7e' },
+];
+const ClueIcon = ({ tier, size = 22 }) => (
+  <img src={`https://runescape.wiki/images/${CLUE_TIERS[tier].file}`} alt="" width={size} height={size} loading="lazy" style={{ objectFit: 'contain', flexShrink: 0 }} />
+);
+
+function ClueBoard({ data, mode, size, period, periodWord, onOpenGroup }) {
+  const [tier, setTier] = useState('all');
+  const [groupPage, setGroupPage] = useState(0);
+  const [playerPage, setPlayerPage] = useState(0);
+  useEffect(() => { setGroupPage(0); setPlayerPage(0); }, [tier, mode, size, period]);
+
+  const live = !!data.clueGains;                                    // 2.0: clues gained in the period; 1.x: all time
+  const key = live ? { week: 'w', month: 'm', year: 'y' }[period] : 't';
+  const view = useMemo(() => {
+    const groupById = new Map(data.groups.filter(g => !g.anon).map(g => [g.id, g]));
+    const pass = x => (mode === 'all' || x.type === mode) && (size === 'all' || x.size === size);
+    const rows = (data.clues || []).map(c => {
+      const g = c.g != null ? groupById.get(c.g) : null;
+      return { rsn: c.r, group: g, type: g?.type ?? c.ty, size: g?.size ?? c.sz, v: c[key] || [0, 0, 0, 0, 0] };
+    }).filter(pass);
+    const pick = r => (tier === 'all' ? r.v.reduce((s, n) => s + n, 0) : r.v[tier]);
+    const totals = CLUE_TIERS.map((_, i) => rows.reduce((s, r) => s + r.v[i], 0));
+    const named = rows.filter(r => r.group && r.rsn);
+    const topOfTier = CLUE_TIERS.map((_, i) => named.reduce((best, r) => (r.v[i] > (best?.v[i] ?? 0) ? r : best), null));
+    const players = named.map(r => ({ ...r, value: pick(r) })).filter(r => r.value > 0).sort((a, b) => b.value - a.value);
+    const byGroup = new Map();
+    for (const r of named) {
+      const n = pick(r); if (!n) continue;
+      const e = byGroup.get(r.group.id) ?? { group: r.group, value: 0, best: null };
+      e.value += n;
+      if (!e.best || n > e.best.value) e.best = { rsn: r.rsn, value: n };
+      byGroup.set(r.group.id, e);
+    }
+    return { totals, topOfTier, players, groups: [...byGroup.values()].sort((a, b) => b.value - a.value) };
+  }, [data, mode, size, key, tier]);
+
+  const all = view.totals.reduce((s, n) => s + n, 0);
+  const what = tier === 'all' ? 'clue scrolls' : `${CLUE_TIERS[tier].name.toLowerCase()} clues`;
+  const when = live ? periodWord : 'completed, all time';
+  const tierChips = [{ key: 'all', label: 'All tiers' }, ...CLUE_TIERS.map((t, i) => ({ key: i, label: t.name }))];
+
+  return (
+    <div className="panel gl-clues" style={{ marginTop: 16, marginBottom: 24 }}>
+      <div className="panel-header" style={{ flexWrap: 'wrap' }}>
+        <span className="panel-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <RsIcon name="clues" size={18} />Clue scrolls <span style={{ textTransform: 'none', letterSpacing: 0, color: 'var(--text-dim)', fontWeight: 400 }}>· {when}</span>
+        </span>
+        <Chips options={tierChips} value={tier} onChange={setTier} />
+      </div>
+      <div className="panel-body">
+        {/* the five tiers: how many, and who has done the most */}
+        <div className="gl-clue-tiers">
+          {CLUE_TIERS.map((t, i) => {
+            const top = view.topOfTier[i];
+            return (
+              <button key={t.name} type="button" className={`gl-clue-tier${tier === i ? ' active' : ''}`} style={{ '--tier': t.color }}
+                onClick={() => setTier(tier === i ? 'all' : i)} title={`Show the top ${t.name.toLowerCase()} clue solvers`}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <ClueIcon tier={i} size={32} />
+                  <div style={{ minWidth: 0, textAlign: 'left' }}>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: t.color }}>{t.name}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-bright)', fontVariantNumeric: 'tabular-nums' }}>{fmtInt(view.totals[i])}</div>
+                  </div>
+                </div>
+                <div className="gl-bar" style={{ marginTop: 8 }}><div style={{ width: `${all ? (view.totals[i] / all) * 100 : 0}%`, background: t.color }} /></div>
+                <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {top ? <>Most: <span style={{ color: 'var(--text-bright)' }}>{top.rsn}</span> · {fmtInt(top.v[i])}</> : 'Nobody yet'}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="gl-clue-lists">
+          <div style={{ minWidth: 0 }}>
+            <div className="gl-clue-head">Top groups · {what} {when}</div>
+            {view.groups.length === 0 && <Empty>None yet.</Empty>}
+            {view.groups.slice(groupPage * PAGE, groupPage * PAGE + PAGE).map((e, i) => (
+              <Row key={e.group.id} onClick={() => onOpenGroup(e.group.id)} title={`Open ${e.group.name}`}>
+                <Rank i={groupPage * PAGE + i} />
+                <GimTypeLabel type={e.group.type} size={18} iconOnly />
+                <GroupLink name={e.group.name} sub={e.best && `Most: ${e.best.rsn} (${fmtInt(e.best.value)})`} />
+                <span className="gl-num">{live ? '+' : ''}{fmtInt(e.value)}</span>
+              </Row>
+            ))}
+            <Pager page={groupPage} total={view.groups.length} onPage={setGroupPage} what="groups" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div className="gl-clue-head">Top players · {what} {when}</div>
+            {view.players.length === 0 && <Empty>None yet.</Empty>}
+            {view.players.slice(playerPage * PAGE, playerPage * PAGE + PAGE).map((r, i) => (
+              <Row key={r.rsn + r.group.id} onClick={() => onOpenGroup(r.group.id)} title={`Open ${r.group.name}`}>
+                <Rank i={playerPage * PAGE + i} />
+                <GroupLink name={r.rsn} sub={r.group.name} />
+                {/* the tiers this player has, small, so the mix is visible at a glance */}
+                {tier === 'all' && <span className="gl-clue-mix">
+                  {CLUE_TIERS.map((t, k) => r.v[k] > 0 && (
+                    <span key={t.name} title={`${t.name}: ${fmtInt(r.v[k])}`}><ClueIcon tier={k} size={14} />{fmtInt(r.v[k])}</span>
+                  ))}
+                </span>}
+                <span className="gl-num">{live ? '+' : ''}{fmtInt(r.value)}</span>
+              </Row>
+            ))}
+            <Pager page={playerPage} total={view.players.length} onPage={setPlayerPage} what="players" />
+          </div>
+        </div>
+        {!live && (
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>
+            From the RuneScape hiscores: clue scrolls completed so far. Clues per week, month and year come with the new version.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function GlobalLeaderboard({ onOpenGroup }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -375,7 +500,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
         </div>
       </div>
 
-      <div className="gl-boards" style={{ marginTop: 16, marginBottom: 24 }}>
+      <div className="gl-boards" style={{ marginTop: 16 }}>
         <Panel icon="skills" title={`Most trained skills ${periodWord}`}>
           {v.skills.length === 0 && <Empty>No XP gained yet.</Empty>}
           {v.skills.map(([skill, xp]) => (
@@ -428,6 +553,8 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
           ))}
         </Panel>
       </div>
+
+      <ClueBoard data={data} mode={mode} size={size} period={period} periodWord={periodWord} onOpenGroup={onOpenGroup} />
     </div>
   );
 }
