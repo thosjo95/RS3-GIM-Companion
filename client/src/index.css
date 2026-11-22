@@ -725,16 +725,18 @@ a:hover { color: var(--gold-light); }
 .gl-split { display: flex; align-items: center; gap: 8px; padding: 3px 6px; margin: 0 -6px; font-size: 12px; border-radius: var(--radius); cursor: pointer; }
 .gl-split:hover { background: var(--bg-hover); }
 
-.gl-main { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(280px, 0.9fr); }
+.gl-main { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .gl-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .gl-side-panel { background: linear-gradient(160deg, rgba(200,168,75,0.10), rgba(200,168,75,0.02) 55%), var(--bg-panel); border-color: var(--gold-dark); }
 .gl-side-panel .panel-header { border-bottom-color: rgba(200,168,75,0.25); }
 .gl-boards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 1400px) {
-  .gl-main { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .gl-main { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gl-side { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gl-boards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 900px) {
   .gl-main, .gl-side, .gl-boards { grid-template-columns: minmax(0, 1fr); }
 }
+.gl-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
+.gl-pager .btn { padding: 2px 8px; }

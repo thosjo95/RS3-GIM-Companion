@@ -12,7 +12,7 @@
  * never per group, mode or size. Left out entirely: the demo group, custom (non-Group-Ironman) and dev-only groups.
  * Unlisted groups count in the numbers but are never named (they are sent without id and name).
  *
- * "This week" and "this month" count back from the newest daily snapshot (normally today), so the page still makes
+ * "This week", "this month" and "this year" (7, 30 and 365 days) count back from the newest daily snapshot (normally today), so the page still makes
  * sense if a sync is late. The result is built once and kept for 10 minutes.
  */
 const db = require('../database');
@@ -44,18 +44,18 @@ function build() {
     WHERE COALESCE(g.is_dev_only, 0) = 0 AND COALESCE(g.gim_type, 'regular') <> 'custom'
       ${isV2 ? 'AND COALESCE(g.is_demo, 0) = 0' : ''}
   `).all();
-  const periodsEmpty = () => ({ week: {}, month: {} });
+  const periodsEmpty = () => ({ week: {}, month: {}, year: {} });
   const groupById = new Map(groups.map(g => [g.id, {
     id: g.id, name: g.name, type: g.gim_type ?? 'regular', size: g.gim_size ?? null, createdAt: g.created_at,
     unlisted: isV2 && parseJson(g.settings_json)?.unlisted === true,
-    members: 0, totalXp: 0, weekGain: 0, monthGain: 0, activeWeek: 0, bossKills: { week: 0, month: 0 },
-    drops: { week: 0, month: 0 }, milestones: { week: 0, month: 0 },
+    members: 0, totalXp: 0, weekGain: 0, monthGain: 0, yearGain: 0, activeWeek: 0, bossKills: { week: 0, month: 0, year: 0 },
+    drops: { week: 0, month: 0, year: 0 }, milestones: { week: 0, month: 0, year: 0 },
   }]));
 
   const players = db.prepare('SELECT id, rsn, group_id FROM players').all().filter(p => groupById.has(p.group_id));
   const playerById = new Map(players.map(p => [p.id, p]));
   const groupOf = id => groupById.get(playerById.get(id)?.group_id);
-  // XP per skill and boss kills, per mode and size: "regular|5" -> { skills: { week, month }, bosses: { week, month } }
+  // XP per skill and boss kills, per mode and size: "regular|5" -> { skills: { week, month, year }, bosses: { week, month, year } }
   const buckets = {};
   const bucket = g => (buckets[g.type + '|' + g.size] ??= { type: g.type, size: g.size, skills: periodsEmpty(), bosses: periodsEmpty() });
 
@@ -68,7 +68,7 @@ function build() {
   }
 
   const anchor = db.prepare('SELECT MAX(snapshot_date) d FROM snapshots').get()?.d ?? new Date().toISOString().slice(0, 10);
-  const periods = { week: dayBefore(anchor, 7), month: dayBefore(anchor, 30) };
+  const periods = { week: dayBefore(anchor, 7), month: dayBefore(anchor, 30), year: dayBefore(anchor, 365) };
 
   // the starting point of a period: the newest snapshot on or before the cut-off day, or else the oldest one
   // (a player who was added during the period counts from the day they were first tracked)
@@ -81,7 +81,7 @@ function build() {
     JOIN (SELECT player_id, MIN(snapshot_date) d FROM snapshots GROUP BY player_id) b
       ON b.player_id = s.player_id AND b.d = s.snapshot_date`).all().map(r => [r.player_id, r]));
 
-  const playerGain = { week: new Map(), month: new Map() };
+  const playerGain = { week: new Map(), month: new Map(), year: new Map() };
   for (const [key, cut] of Object.entries(periods)) {
     const base = new Map(baseAt.all(cut).map(r => [r.player_id, r]));
     for (const p of players) {
@@ -109,6 +109,7 @@ function build() {
     const w = playerGain.week.get(p.id) ?? 0;
     g.weekGain += w;
     g.monthGain += playerGain.month.get(p.id) ?? 0;
+    g.yearGain += playerGain.year.get(p.id) ?? 0;
     if (w > 0) g.activeWeek++;
   }
 
@@ -133,14 +134,14 @@ function build() {
 
   // 99s and 120s (from the Adventurer's Log, or set by hand by the group)
   const milestoneRows = db.prepare(`SELECT player_id, skill, level, achieved_at FROM player_skill_milestones
-    WHERE achieved_at >= ? ORDER BY achieved_at DESC`).all(periods.month).filter(r => playerById.has(r.player_id));
-  for (const r of milestoneRows) { const g = groupOf(r.player_id); g.milestones.month++; if (r.achieved_at >= periods.week) g.milestones.week++; }
+    WHERE achieved_at >= ? ORDER BY achieved_at DESC`).all(periods.year).filter(r => playerById.has(r.player_id));
+  for (const r of milestoneRows) { const g = groupOf(r.player_id); for (const k of Object.keys(periods)) if (r.achieved_at >= periods[k]) g.milestones[k]++; }
 
   // drops seen in the Adventurer's Log ("I found a ..."); the plugin's own drops are private and only counted below
   const dropRows = db.prepare(`SELECT player_id, item_name, dropped_at FROM drops
-    WHERE notes = 'Auto-detected from activity feed' AND dropped_at >= ? ORDER BY dropped_at DESC`).all(periods.month)
+    WHERE notes = 'Auto-detected from activity feed' AND dropped_at >= ? ORDER BY dropped_at DESC`).all(periods.year)
     .filter(r => playerById.has(r.player_id));
-  for (const r of dropRows) { const g = groupOf(r.player_id); g.drops.month++; if (r.dropped_at >= periods.week) g.drops.week++; }
+  for (const r of dropRows) { const g = groupOf(r.player_id); for (const k of Object.keys(periods)) if (r.dropped_at >= periods[k]) g.drops[k]++; }
 
   const out = {
     updatedAt: new Date().toISOString(),
@@ -151,9 +152,9 @@ function build() {
       return g;
     }),
     buckets: Object.values(buckets),
-    // every player who gained XP this month (names only from listed groups)
-    players: players.filter(p => (playerGain.month.get(p.id) ?? 0) > 0 && !groupById.get(p.group_id).unlisted)
-      .map(p => ({ ...tag(p.id), week: playerGain.week.get(p.id) ?? 0, month: playerGain.month.get(p.id) })),
+    // every player who gained XP this year (names only from listed groups)
+    players: players.filter(p => (playerGain.year.get(p.id) ?? 0) > 0 && !groupById.get(p.group_id).unlisted)
+      .map(p => ({ ...tag(p.id), week: playerGain.week.get(p.id) ?? 0, month: playerGain.month.get(p.id) ?? 0, year: playerGain.year.get(p.id) })),
     milestones: milestoneRows.filter(r => !groupOf(r.player_id).unlisted).slice(0, RECENT_MAX)
       .map(r => ({ ...tag(r.player_id), skill: r.skill, level: r.level, at: r.achieved_at })),
     drops: dropRows.filter(r => !groupOf(r.player_id).unlisted).slice(0, RECENT_MAX)
@@ -182,6 +183,7 @@ function build() {
       onlineNow: liveRows.filter(r => nowMs - Date.parse(r.updated_at) < ONLINE_MS).length,
       week: pluginPeriod(periods.week),
       month: pluginPeriod(periods.month),
+      year: pluginPeriod(periods.year),
     };
   }
   return out;

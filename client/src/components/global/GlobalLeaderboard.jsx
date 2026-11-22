@@ -11,7 +11,7 @@ import { fmtXp } from '../../lib/rs3';
 // top applies to every board; with "All" every group counts. Names only ever come from public data (hiscores,
 // Adventurer's Log). In 2.0 the plugin strip shows totals over all groups only, never filtered (plugin data is private).
 
-const PERIODS = [{ key: 'week', label: 'This week' }, { key: 'month', label: 'This month' }];
+const PERIODS = [{ key: 'week', label: 'This week' }, { key: 'month', label: 'This month' }, { key: 'year', label: 'This year' }];
 const MODES = [
   { key: 'all', label: 'All' }, { key: 'regular', label: 'Regular' },
   { key: 'competitive', label: 'Competitive' }, { key: 'regular_unranked', label: 'Unranked' },
@@ -82,6 +82,26 @@ const RANK_COLORS = ['#e8c35a', '#c9d1d9', '#d38a4f'];
 const Rank = ({ i }) => (
   <span style={{ width: 26, flexShrink: 0, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: RANK_COLORS[i] ?? 'var(--text-dim)' }}>{i + 1}</span>
 );
+
+// page buttons under a long list: everyone who gained XP in the period, PAGE at a time
+const PAGE = 10;
+function Pager({ page, total, onPage, what }) {
+  const pages = Math.ceil(total / PAGE);
+  if (pages <= 1) return total > 0 ? <div className="gl-pager"><span>All {total} {what}</span></div> : null;
+  const go = p => onPage(Math.max(0, Math.min(pages - 1, p)));
+  return (
+    <div className="gl-pager">
+      <span>{page * PAGE + 1}–{Math.min(total, page * PAGE + PAGE)} of {total} {what}</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => go(0)} title="First page">«</button>
+        <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => go(page - 1)} title="Previous page">‹</button>
+        <span style={{ minWidth: 54, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{page + 1} / {pages}</span>
+        <button className="btn btn-ghost btn-sm" disabled={page >= pages - 1} onClick={() => go(page + 1)} title="Next page">›</button>
+        <button className="btn btn-ghost btn-sm" disabled={page >= pages - 1} onClick={() => go(pages - 1)} title="Last page">»</button>
+      </span>
+    </div>
+  );
+}
 
 function Row({ onClick, children, title }) {
   return (
@@ -157,6 +177,9 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
   const [error, setError] = useState(null);
   const [period, setPeriod] = useState('week');
   const [measure, setMeasure] = useState('gain');
+  // the top groups and top players lists show PAGE at a time; any change of what is listed starts again at page 1
+  const [groupPage, setGroupPage] = useState(0);
+  const [playerPage, setPlayerPage] = useState(0);
   const [filter, setFilter] = useState(loadFilter);
   const { mode, size } = filter;
 
@@ -166,9 +189,10 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
     return () => { live = false; };
   }, []);
   useEffect(() => { try { localStorage.setItem(FILTER_KEY, JSON.stringify(filter)); } catch { /* not kept */ } }, [filter]);
+  useEffect(() => { setGroupPage(0); setPlayerPage(0); }, [filter, period, measure]);
 
-  const gainKey = period === 'week' ? 'weekGain' : 'monthGain';
-  const periodWord = period === 'week' ? 'this week' : 'this month';
+  const gainKey = `${period}Gain`;                      // weekGain, monthGain, yearGain
+  const periodWord = `this ${period}`;
 
   // everything below is worked out from the groups that pass the Mode and Size filter
   const v = useMemo(() => {
@@ -195,13 +219,14 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
       },
       groupOfWeek: best(g => g.weekGain),
       groupOfMonth: best(g => g.monthGain),
+      groupOfYear: best(g => g.yearGain),
       bossHunters: best(g => g.bossKills[period]),
       ranked: named.map(g => ({ ...g, value: measureOf(g) })).filter(g => g.value > 0).sort((a, b) => b.value - a.value),
-      players: data.players.filter(p => pass(p) && p[period] > 0).sort((a, b) => b[period] - a[period]).slice(0, 10),
+      players: data.players.filter(p => pass(p) && p[period] > 0).sort((a, b) => b[period] - a[period]),
       skills: sumMaps(buckets.map(b => b.skills[period])).slice(0, 8),
       bosses: sumMaps(buckets.map(b => b.bosses[period])).slice(0, 8),
-      milestones: data.milestones.filter(m => pass(m) && (period === 'month' || m.at >= data.periods.week)).slice(0, 8),
-      drops: data.drops.filter(d => pass(d) && (period === 'month' || d.at >= data.periods.week)).slice(0, 8),
+      milestones: data.milestones.filter(m => pass(m) && m.at >= data.periods[period]).slice(0, 8),
+      drops: data.drops.filter(d => pass(d) && d.at >= data.periods[period]).slice(0, 8),
       newest: [...named].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 6),
     };
   }, [data, mode, size, period, measure, gainKey]);
@@ -266,8 +291,11 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
       <div className="grid-3" style={{ marginTop: 16 }}>
         <Spotlight label="Group of the week" icon="leaderboards" group={v.groupOfWeek} onOpen={onOpenGroup}
           value={v.groupOfWeek && `+${fmtXp(v.groupOfWeek.weekGain)} XP`} sub={each(v.groupOfWeek, 'weekGain')} />
-        <Spotlight label="Group of the month" icon="mastery" group={v.groupOfMonth} onOpen={onOpenGroup}
-          value={v.groupOfMonth && `+${fmtXp(v.groupOfMonth.monthGain)} XP`} sub={each(v.groupOfMonth, 'monthGain')} />
+        {period === 'year'
+          ? <Spotlight label="Group of the year" icon="mastery" group={v.groupOfYear} onOpen={onOpenGroup}
+              value={v.groupOfYear && `+${fmtXp(v.groupOfYear.yearGain)} XP`} sub={each(v.groupOfYear, 'yearGain')} />
+          : <Spotlight label="Group of the month" icon="mastery" group={v.groupOfMonth} onOpen={onOpenGroup}
+              value={v.groupOfMonth && `+${fmtXp(v.groupOfMonth.monthGain)} XP`} sub={each(v.groupOfMonth, 'monthGain')} />}
         <Spotlight label={`Boss hunters of the ${period}`} icon="slayer" group={v.bossHunters} onOpen={onOpenGroup}
           value={v.bossHunters && `${fmtInt(v.bossHunters.bossKills[period])} kills`} sub="boss kills in the Adventurer's Log" />
       </div>
@@ -275,29 +303,31 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
       {data.plugin?.connectedPlayers > 0 && <PluginStrip plugin={data.plugin} period={period} periodWord={periodWord} />}
 
       <div className="gl-main" style={{ marginTop: 16 }}>
-        <Panel icon="leaderboards" title="Group rankings" right={<Chips options={MEASURES} value={measure} onChange={setMeasure} />}>
+        <Panel icon="leaderboards" title="Top groups" right={<Chips options={MEASURES} value={measure} onChange={setMeasure} />}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Ranked by {measureLabel} · click a group to open it</div>
           {v.ranked.length === 0 && <Empty>No groups to rank here yet.</Empty>}
-          {v.ranked.slice(0, 15).map((g, i) => (
+          {v.ranked.slice(groupPage * PAGE, groupPage * PAGE + PAGE).map((g, i) => (
             <Row key={g.id} onClick={() => onOpenGroup(g.id)}>
-              <Rank i={i} />
+              <Rank i={groupPage * PAGE + i} />
               <GimTypeLabel type={g.type} size={18} iconOnly />
               <GroupLink name={g.name} sub={`${g.members} member${g.members === 1 ? '' : 's'}${g.activeWeek ? ` · ${g.activeWeek} active this week` : ''}`} />
               <span className="gl-num">{measure === 'total' ? fmtXp(g.value) : `+${fmtXp(g.value)}`}</span>
             </Row>
           ))}
+          <Pager page={groupPage} total={v.ranked.length} onPage={setGroupPage} what="groups" />
         </Panel>
 
         <Panel icon="player" title={`Top players ${periodWord}`}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Most XP gained by one player</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Most XP gained by one player · click to open the group</div>
           {v.players.length === 0 && <Empty>No XP gained yet.</Empty>}
-          {v.players.map((p, i) => (
+          {v.players.slice(playerPage * PAGE, playerPage * PAGE + PAGE).map((p, i) => (
             <Row key={p.rsn + p.groupId} onClick={() => onOpenGroup(p.groupId)} title={`Open ${p.groupName}`}>
-              <Rank i={i} />
+              <Rank i={playerPage * PAGE + i} />
               <GroupLink name={p.rsn} sub={p.groupName} />
               <span className="gl-num">+{fmtXp(p[period])}</span>
             </Row>
           ))}
+          <Pager page={playerPage} total={v.players.length} onPage={setPlayerPage} what="players" />
         </Panel>
 
         {/* general stats about every group, set apart from the boards */}
