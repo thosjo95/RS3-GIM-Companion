@@ -41,6 +41,7 @@ async function request(path, options = {}) {
 export const api = {
   // Groups
   getGroups: () => request('/groups'),
+  groupBySlug: slug => request(`/groups/by-slug/${encodeURIComponent(slug)}`),   // { id } for groupiron.com/<slug>
   getGroup: (id) => request(`/groups/${id}`),
   getGroupRank: (id) => request(`/groups/${id}/rank`),
   getGlobalStats: () => request('/global/stats'),

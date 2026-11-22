@@ -1,7 +1,8 @@
 // Addresses, page titles, descriptions and canonical links for search engines and link previews.
 // The site is one page app, so these are set here when the view changes; Google runs the script and reads them.
 // The canonical address always names groupiron.com (also on beta and localhost), so copies are never ranked on their own.
-// Addresses: /  (first visit)   /leaderboard  (Global Leaderboard)   /group/<id>/<name-slug>  (one group)
+// Addresses: /  (first visit)   /leaderboard  (Global Leaderboard)   /<name>  (one group; the server decides each
+// group's name part, see server/utils/groupSlugs.js; the older /group/<id>/<name> links still work)
 // Same file in both repos (1.x and 2.0): copy, do not fork.
 
 export const SITE = 'https://groupiron.com';
@@ -23,26 +24,34 @@ const LEADERBOARD = {
 };
 
 // ── Group addresses ──────────────────────────────────────────────────────────
-// The number is what counts; the name part only makes the link readable (a renamed group keeps working).
+// The server sends each group's address name (`slug`, with the group's number added when another group has the same
+// name). It is remembered here, so links can be made from just the id; until it is known the plain name is used.
 export function slugify(name) {
   return String(name || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 }
+const slugs = new Map();
+export function rememberSlugs(groups) {
+  for (const g of groups || []) if (g && g.id != null && g.slug) slugs.set(Number(g.id), g.slug);
+}
 export function groupPath(id, name) {
-  const slug = slugify(name);
-  return `/group/${id}${slug ? `/${slug}` : ''}`;
+  return '/' + (slugs.get(Number(id)) || slugify(name) || `group-${id}`);
 }
 
-// What the address bar asks for: { view: 'leaderboard' } | { view: 'group', id } | { view: 'home' }
+// addresses the site itself uses: never a group name
+const RESERVED = new Set(['leaderboard', 'admin', 'api', 'assets', 'group', 'groups', 'global', 'docs', 'privacy']);
+
+// What the address bar asks for: { view: 'leaderboard' } | { view: 'group', id } | { view: 'group', slug } | { view: 'home' }
 export function readUrl() {
   const path = window.location.pathname.replace(/\/+$/, '');
   if (path === LEADERBOARD_PATH || window.location.hash === '#global') return { view: 'leaderboard' };  // old links used /#global
-  const m = path.match(/^\/group\/(\d+)(?:\/|$)/);
-  if (m) return { view: 'group', id: Number(m[1]) };
+  const old = path.match(/^\/group\/(\d+)(?:\/|$)/);                       // the first form: /group/<id>/<name>
+  if (old) return { view: 'group', id: Number(old[1]) };
+  const m = path.match(/^\/([a-z0-9-]+)$/i);
+  if (m && !RESERVED.has(m[1].toLowerCase())) return { view: 'group', slug: decodeURIComponent(m[1]).toLowerCase() };
   return { view: 'home' };
 }
 export const isLeaderboardUrl = () => readUrl().view === 'leaderboard';
-export const groupIdFromUrl = () => { const u = readUrl(); return u.view === 'group' ? u.id : null; };
 
 // ── Head tags ────────────────────────────────────────────────────────────────
 function setMeta(attr, key, value) {
@@ -76,6 +85,7 @@ export const seoLeaderboard = () => apply(LEADERBOARD);
 // group are never offered to search engines.
 export function seoGroup(group) {
   if (!group) return;
+  rememberSlugs([group]);
   const players = group.players || [];
   const mode = MODE[group.gim_type] || '';
   const size = group.gim_size || players.length;

@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 const db = require('../database');
+const { slugFor, idForSlug } = require('../utils/groupSlugs');
 const { fetchHiscores, calcCombatLevel } = require('../services/runescape');
 const { hashPassword, verifyGroupPassword, checkGroupAuth } = require('../utils/auth');
 const { sendTestWebhook, isValidDiscordWebhookUrl, DEFAULT_EVENTS } = require('../services/discord');
@@ -254,11 +255,19 @@ router.get('/:id/rank', async (req, res) => {
 });
 
 // GET /api/groups/:id - get group with players and aggregates
+// GET /api/groups/by-slug/:slug - which group an address name means (groupiron.com/<slug>): { id } or 404
+router.get('/by-slug/:slug', (req, res) => {
+  const id = idForSlug(req.params.slug);
+  if (!id) return res.status(404).json({ error: 'Group not found' });
+  res.json({ id, slug: slugFor(id) });
+});
+
 router.get('/:id', (req, res) => {
   const group = db.prepare(
     'SELECT id, name, group_rsn, notes, gim_type, gim_size, created_at, last_activity, (password_hash IS NOT NULL) as is_claimed FROM groups WHERE id = ?'
   ).get(req.params.id);
   if (!group) return res.status(404).json({ error: 'Group not found' });
+  group.slug = slugFor(group.id);                        // its address: groupiron.com/<slug>
 
   const players = db.prepare(`
     SELECT p.id, p.rsn, p.quest_points, p.rune_score, p.combat_level, p.group_id,

@@ -17,6 +17,7 @@
  */
 const db = require('../database');
 const { BOSS_KILL_PATTERNS } = require('./activitySync');
+const { slugFor } = require('../utils/groupSlugs');   // the group's address name (groupiron.com/<slug>)
 
 const CACHE_MS = 10 * 60 * 1000;
 const ONLINE_MS = 5 * 60 * 1000;  // "online now": the plugin was heard from in the last 5 minutes
@@ -48,7 +49,7 @@ function build() {
   `).all();
   const periodsEmpty = () => ({ week: {}, month: {}, year: {} });
   const groupById = new Map(groups.map(g => [g.id, {
-    id: g.id, name: g.name, type: g.gim_type ?? 'regular', size: g.gim_size ?? null, createdAt: g.created_at,
+    id: g.id, name: g.name, slug: slugFor(g.id), type: g.gim_type ?? 'regular', size: g.gim_size ?? null, createdAt: g.created_at,
     unlisted: isV2 && parseJson(g.settings_json)?.unlisted === true,
     members: 0, totalXp: 0, weekGain: 0, monthGain: 0, yearGain: 0, activeWeek: 0, bossKills: { week: 0, month: 0, year: 0 },
     drops: { week: 0, month: 0, year: 0 }, milestones: { week: 0, month: 0, year: 0 },
@@ -185,7 +186,7 @@ function build() {
     anchor, periods,
     // unlisted groups are sent without id and name: they only add to the numbers
     groups: [...groupById.values()].filter(g => g.members > 0).map(({ unlisted, ...g }) => {
-      if (unlisted) { delete g.id; delete g.name; g.anon = true; }
+      if (unlisted) { delete g.id; delete g.name; delete g.slug; g.anon = true; }
       if (!clueGains) delete g.clueGain;
       return g;
     }),

@@ -16,7 +16,7 @@ import SetupScreen from './components/setup/SetupScreen';
 import SearchGroupModal from './components/groups/SearchGroupModal';
 import Sidebar from './components/groups/Sidebar';
 import GlobalLeaderboard from './components/global/GlobalLeaderboard';
-import { LEADERBOARD_PATH, isLeaderboardUrl, groupIdFromUrl, groupPath, readUrl, seoHome, seoLeaderboard, seoGroup } from './lib/seo';
+import { LEADERBOARD_PATH, isLeaderboardUrl, groupPath, readUrl, rememberSlugs, seoHome, seoLeaderboard, seoGroup } from './lib/seo';
 
 export default function App() {
   const [allGroups, setAllGroups] = useState([]);
@@ -146,6 +146,7 @@ export default function App() {
         api.getGroup(id),
         api.getGoals(id),
       ]);
+      rememberSlugs([g]);                                 // its address name (groupiron.com/<slug>)
       setGroup(g);
       setGoals(g_goals);
       // Derive pending item requests from goals (category = 'item_request', not yet complete/vaulted)
@@ -161,6 +162,13 @@ export default function App() {
     }
   }
 
+  // the group an address names: /<name> (asked from the server) or the older /group/<id>/<name>; null when none
+  async function groupIdOfUrl(u) {
+    if (u.view !== 'group') return null;
+    if (u.id) return u.id;
+    try { return (await api.groupBySlug(u.slug)).id; } catch { return null; }
+  }
+
   async function refresh() {
     await loadGroup(activeGroupId);
   }
@@ -168,18 +176,18 @@ export default function App() {
   // Initial load
   useEffect(() => {
     setLoading(true);
-    loadGroups().then(data => {
+    loadGroups().then(async data => {
       const pinnedIds = loadMyGroupIds();
       const myGroups  = data.filter(g => pinnedIds.includes(g.id));
       const saved     = localStorage.getItem('activeGroupId');
       const savedId   = saved ? Number(saved) : null;
 
-      const urlId     = groupIdFromUrl();
+      const urlId     = await groupIdOfUrl(readUrl());
 
       if (urlId) {
-        // a shared link to one group (groupiron.com/group/<id>/...) opens that group
+        // a shared link to one group (groupiron.com/<name>) opens that group
         setActiveGroupId(urlId);
-      } else       if (myGroups.length > 0) {
+      } else if (myGroups.length > 0) {
         // Prefer last-used pinned group; fall back to first pinned
         const id = savedId && myGroups.find(g => g.id === savedId) ? savedId : myGroups[0].id;
         setActiveGroupId(id);
@@ -235,11 +243,12 @@ export default function App() {
 
   // the browser's Back and Forward buttons
   useEffect(() => {
-    function onPop() {
+    async function onPop() {
       const u = readUrl();
-      urlKeyRef.current = u.view === 'group' ? `group:${u.id}` : u.view === 'home' ? null : u.view;   // home: the open group's address replaces it
+      const id = await groupIdOfUrl(u);
+      urlKeyRef.current = id ? `group:${id}` : u.view === 'leaderboard' ? 'leaderboard' : null;   // otherwise the open group's address replaces it
       setShowGlobal(u.view === 'leaderboard');
-      if (u.view === 'group') { setActiveGroupId(u.id); setActiveTab('overview'); }
+      if (id) { setActiveGroupId(id); setActiveTab('overview'); }
     }
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);

@@ -1,19 +1,15 @@
 // GET /api/sitemap.xml: the list of pages for search engines: home, the Global Leaderboard and one page per tracked group
-// (/group/<id>/<name>). robots.txt points here. Unlisted groups, the demo group and groups without members are left out.
+// (/<name>, see utils/groupSlugs.js). robots.txt points here. Unlisted groups, the demo group and groups without members are left out.
 // Same file in both repos (1.x and 2.0): copy, do not fork (the 2.0 columns are checked before use).
 const express = require('express');
 const db = require('../database');
+const { slugify, slugFor } = require('../utils/groupSlugs');
 
 const router = express.Router();
 const SITE = 'https://groupiron.com';
 const KEEP_MS = 60 * 60 * 1000;                           // built at most once an hour
 let cached = { at: 0, xml: '' };
 
-// the same slug as client/src/lib/seo.js
-function slugify(name) {
-  return String(name || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
-}
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const day = v => {
   const d = v ? new Date(String(v).replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(v)) ? '' : 'Z')) : null;
@@ -36,8 +32,7 @@ function build() {
     url(`${SITE}/`, today, 'weekly', '1.0'),
     url(`${SITE}/leaderboard`, today, 'daily', '0.9'),
     ...groups.map(g => {
-      const slug = slugify(g.name);
-      return url(`${SITE}/group/${g.id}${slug ? `/${slug}` : ''}`, day(g.last_activity) || day(g.created_at), 'daily', '0.6');
+      return url(`${SITE}/${slugFor(g.id)}`, day(g.last_activity) || day(g.created_at), 'daily', '0.6');
     }),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${lines.join('\n')}\n</urlset>\n`;
