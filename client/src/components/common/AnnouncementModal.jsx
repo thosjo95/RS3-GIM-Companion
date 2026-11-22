@@ -8,8 +8,8 @@ import React, { useState } from 'react';
 export const ANNOUNCEMENT = {
   id: 'gim2-preview-2026-11b',                 // a new id: everyone who closed the old announcement sees this one
   title: 'A new version is coming',
-  linkUrl: 'https://beta.groupiron.com',
-  linkLabel: 'See the new tracker →',
+  linkUrl: 'https://beta.groupiron.com/misthalin-five-demo',   // the demo group: everything the plugin adds, live
+  linkLabel: 'See the new tracker: demo group →',
 };
 
 const storageKey = id => `announcementDismissed_${id}`;
