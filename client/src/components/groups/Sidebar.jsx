@@ -3,9 +3,17 @@ import React from 'react';
 import GimTypeLabel from '../common/GimTypeLabel';
 
 // Group switcher — shown in sidebar when multiple groups exist
-export default function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, favoriteGroupIds, isOpen }) {
+export default function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, onSearch, favoriteGroupIds, isOpen, onGlobal, globalActive }) {
   return (
     <nav className={`sidebar${isOpen ? ' open' : ''}`}>
+      {/* the page for everyone: every tracked group side by side */}
+      <div className="nav-group">
+        <div className="nav-label">Everyone</div>
+        <div className={`nav-item${globalActive ? ' active' : ''}`} onClick={onGlobal}>
+          <span className="icon" style={{display:'inline-flex',alignItems:'center'}}><RsIcon name="leaderboards" size={18} /></span>
+          <span>Global Leaderboard</span>
+        </div>
+      </div>
       <div className="nav-group">
         <div className="nav-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <span>Groups</span>
@@ -16,7 +24,7 @@ export default function Sidebar({ groups, activeGroupId, onSelect, onNewGroup, o
           return (
             <div
               key={g.id}
-              className={`nav-item${g.id === activeGroupId ? ' active' : ''}`}
+              className={`nav-item${g.id === activeGroupId && !globalActive ? ' active' : ''}`}
               onClick={() => onSelect(g.id)}>
               <span className="icon" style={{display:'inline-flex',alignItems:'center'}}><GimTypeLabel type={g.gim_type} size={15} iconOnly /></span>
               <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{g.name}</span>

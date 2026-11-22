@@ -36,7 +36,7 @@ function generateCustomGroupName(existingGroups = []) {
 }
 
 // Setup screen — shown when no group exists
-export default function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup, onStar }) {
+export default function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup, onStar, onGlobal }) {
   const [step, setStep] = useState(() => {
     if (!prefill) return 'search';
     // Unranked groups pre-filled from the search modal → skip straight to RSN entry
@@ -348,6 +348,14 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
           onStar={onStar}
         />
       </div>
+
+      {/* ── The Global Leaderboard: every tracked group side by side ── */}
+      {onGlobal && (
+        <button type="button" className="btn btn-secondary" onClick={onGlobal}
+          style={{ marginTop: 12, width: '100%', justifyContent: 'center', gap: 8 }}>
+          <RsIcon name="leaderboards" size={18} /> See the Global Leaderboard: every group, top groups of the week and month
+        </button>
+      )}
     </div>
   );
 }
