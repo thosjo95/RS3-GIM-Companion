@@ -394,9 +394,13 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
             </div>
           </div>
         </div>
-        <Chips options={PERIODS} value={period} onChange={setPeriod} />
       </div>
+      {/* the filter bar stays at the top of the screen while scrolling (see .gl-filter) */}
       <div className="panel gl-filter">
+        <div className="gl-filter-part">
+          <span className="gl-filter-label">Period</span>
+          <Chips options={PERIODS} value={period} onChange={setPeriod} />
+        </div>
         <div className="gl-filter-part">
           <span className="gl-filter-label">Mode</span>
           <Chips options={MODES} value={mode} onChange={m => setFilter(f => ({ ...f, mode: m }))} />

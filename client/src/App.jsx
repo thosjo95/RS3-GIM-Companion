@@ -328,7 +328,7 @@ export default function App() {
           onGlobal={openGlobal}
           globalActive={showGlobal}
         />
-        <main className="content">
+        <main className={`content${showGlobal ? ' content-global' : ''}`}>
           {/* ── Guest banner: viewing a group that isn't saved to your sidebar ── */}
           {showGlobal ? <GlobalLeaderboard onOpenGroup={selectGroup} /> : <>
           {group && !myGroupIds.includes(activeGroupId) && (
