@@ -768,3 +768,14 @@ a:hover { color: var(--gold-light); }
 .tg-gain { font-size: 13px; font-weight: 700; color: var(--green-bright); font-variant-numeric: tabular-nums; }
 .tg-star { background: none; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; padding: 3px 7px; font-size: 13px; line-height: 1; color: var(--text-dim); flex-shrink: 0; }
 .tg-star:hover, .tg-star.on { color: var(--gold); border-color: var(--gold-dark); }
+
+/* "Your group is ready" (setup/GroupReady.jsx) */
+.gr-panel { width: 100%; max-width: 620px; text-align: left; }
+.gr-secret { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: rgba(200,168,75,0.08); border: 1px solid var(--gold-dark); border-radius: var(--radius-lg); }
+.gr-secret code { flex: 1; font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: 3px; }
+.gr-warn { padding: 10px 12px; border-radius: var(--radius); background: rgba(192,64,64,0.10); border: 1px solid rgba(192,64,64,0.4); font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.gr-warn strong { color: var(--red-bright); }
+.gr-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); margin-bottom: 6px; }
+.gr-message { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 10px 12px; background: var(--bg-panel-alt); border: 1px solid var(--border); border-radius: var(--radius); }
+.gr-message pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 12px; color: var(--text); }
+.gr-note { font-size: 12px; color: var(--text-dim); padding: 8px 10px; margin-bottom: 8px; border-left: 2px solid var(--gold-dark); background: rgba(200,168,75,0.05); }

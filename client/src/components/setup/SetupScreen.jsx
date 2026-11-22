@@ -5,6 +5,7 @@ import { fmtXp } from '../../lib/rs3';
 import GimTypeLabel from '../common/GimTypeLabel';
 import TrackedGroupsPanel from '../groups/TrackedGroupsPanel';
 import GlobalTeaser from '../global/GlobalTeaser';
+import GroupReady from './GroupReady';
 
 // ── Custom group name generator ───────────────────────────────────────────────
 const CUSTOM_NAME_ADJECTIVES = [
@@ -37,7 +38,8 @@ function generateCustomGroupName(existingGroups = []) {
 }
 
 // Setup screen — shown when no group exists
-export default function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup, onStar, onGlobal }) {
+// onClaimed(id, secret): the group was just claimed here; the app keeps the secret in this browser at once.
+export default function SetupScreen({ onCreated, onToast, prefill, onCancel, groups, onSwitchToGroup, onStar, onGlobal, onClaimed }) {
   const [step, setStep] = useState(() => {
     if (!prefill) return 'search';
     // Unranked groups pre-filled from the search modal → skip straight to RSN entry
@@ -79,6 +81,38 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
   );
   const [searching, setSearching] = useState(false);
   const [syncProgress, setSyncProgress] = useState('');
+  const [ready, setReady] = useState(null);           // { group: { id, name }, secret, members }: shown by the 'ready' step
+  const [offer, setOffer] = useState(null);           // a tracked group nobody has claimed yet: { id, name, gim_type, members }
+  const [claiming, setClaiming] = useState(false);
+
+  // A group found here: if it is tracked but nobody claimed it, offer to claim it; otherwise just open it.
+  // (2.0: a group that came over from the old site with a secret is claimed in its Plugin window instead; the demo is never claimed.)
+  function openOrOffer(g) {
+    if (g.is_claimed || g.needs_rekey || g.is_demo) { onSwitchToGroup?.(g.id); return; }
+    setOffer({ id: g.id, name: g.name, gim_type: g.gim_type, members: [] });
+    setStep('claim');
+    api.getGroup(g.id).then(full => setOffer(o => (o?.id === g.id ? { ...o, members: (full.players || []).map(p => p.rsn) } : o))).catch(() => {});
+  }
+
+  // Claim the group (creates its secret), keep the secret in this browser and show how to share it.
+  async function claimAndShow(id, name, members) {
+    const r = await api.claimGroup(id);
+    onClaimed?.(id, r.secret);
+    setReady({ group: { id, name }, secret: r.secret, members });
+    setStep('ready');
+  }
+
+  async function claimOffered() {
+    setClaiming(true);
+    try { await claimAndShow(offer.id, offer.name, offer.members); }
+    catch (err) { onToast(err.message || 'Could not claim the group', 'error'); }
+    finally { setClaiming(false); }
+  }
+
+  function finish(rsn) {
+    try { if (rsn) localStorage.setItem(`myRsn_${ready.group.id}`, rsn.replace(/\s/g, ' ').trim()); } catch { /* not kept */ }
+    onCreated(ready.group.id);
+  }
 
   async function handleSearch(e) {
     e.preventDefault();
@@ -87,12 +121,12 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
     // ── Unranked & custom groups bypass hiscores — go straight to manual RSN entry ──
     if (gimType === 'regular_unranked' || gimType === 'custom') {
       const existing = groups?.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
-      if (existing) { onSwitchToGroup?.(existing.id); return; }
+      if (existing) { openOrOffer(existing); return; }
       setSearching(true);
       try {
         const dbResults = await api.searchGroups(groupName.trim());
         const dbMatch = dbResults.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
-        if (dbMatch) { onSwitchToGroup?.(dbMatch.id); return; }
+        if (dbMatch) { openOrOffer(dbMatch); return; }
       } catch {} finally { setSearching(false); }
       setManualRsns(Array(gimType === 'custom' ? 2 : gimSize).fill(''));
       setStep('manual');
@@ -102,13 +136,13 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
     // ── Ranked groups: search RS3 hiscores ───────────────────────────────────────
     // 1. Already in local sidebar — just switch
     const existing = groups?.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
-    if (existing) { onSwitchToGroup?.(existing.id); return; }
+    if (existing) { openOrOffer(existing); return; }
     setSearching(true);
     try {
       // 2. Already in DB (e.g. user cleared localStorage) — add to sidebar without re-creating
       const dbResults = await api.searchGroups(groupName.trim());
       const dbMatch = dbResults.find(g => g.name.toLowerCase() === groupName.trim().toLowerCase());
-      if (dbMatch) { onSwitchToGroup?.(dbMatch.id); return; }
+      if (dbMatch) { openOrOffer(dbMatch); return; }
       // 3. Search RS3 hiscores
       const result = await api.lookupGroup(groupName.trim(), gimType, gimSize);
       if (result.found && result.members?.length) {
@@ -136,7 +170,9 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
       if (result.failed?.length) {
         onToast(`Setup done. ${result.failed.length} member(s) couldn't sync from RS3.`, 'error');
       }
-      onCreated(result.id);
+      setSyncProgress('Creating your group secret…');
+      try { await claimAndShow(result.id, groupName.trim(), rsns); }
+      catch { onCreated(result.id); }                   // claimed already (or the claim failed): just open the group
     } catch (err) {
       onToast(err.message, 'error');
       setStep(lookupResult ? 'preview' : 'manual');
@@ -144,6 +180,48 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
   }
 
   const cardStyle = { width: '100%', maxWidth: 480, textAlign: 'left' };
+
+  // ── Step: Ready (claimed: the secret and how to share it) ────────────────
+  if (step === 'ready' && ready) {
+    return (
+      <div className="setup-screen">
+        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" width={960} height={462} fetchPriority="high" style={{maxWidth:420,width:'100%',height:'auto',marginBottom:20}} />
+        <GroupReady group={ready.group} secret={ready.secret} members={ready.members} onDone={finish} />
+      </div>
+    );
+  }
+
+  // ── Step: Claim (tracked, but nobody claimed it yet) ─────────────────────
+  if (step === 'claim' && offer) {
+    return (
+      <div className="setup-screen">
+        <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" width={960} height={462} fetchPriority="high" style={{maxWidth:420,width:'100%',height:'auto',marginBottom:20}} />
+        <div className="panel" style={cardStyle}>
+          <div className="panel-header">
+            <span className="panel-title" style={{display:'inline-flex',alignItems:'center',gap:8}}><RsIcon name="key" size={16} />Claim your group</span>
+            <span className="tag" style={{display:'inline-flex',alignItems:'center',gap:5}}><GimTypeLabel type={offer.gim_type} size={12} /></span>
+          </div>
+          <div className="panel-body" style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div style={{fontSize:13,color:'var(--text-dim)',lineHeight:1.6}}>
+              <strong style={{color:'var(--text-bright)'}}>{offer.name}</strong> is already tracked, but nobody has claimed it yet.
+              Claiming it creates the <strong style={{color:'var(--gold)'}}>group secret</strong>: your members use it to unlock the group and change it.
+            </div>
+            {offer.members.length > 0 && (
+              <div style={{fontSize:12,color:'var(--text-dim)'}}>Members: {offer.members.join(', ')}</div>
+            )}
+            <div style={{padding:'10px 12px',borderRadius:'var(--radius)',background:'rgba(192,64,64,0.10)',border:'1px solid rgba(192,64,64,0.4)',fontSize:12,color:'var(--text-dim)',lineHeight:1.5}}>
+              <span style={{fontWeight:700,color:'var(--red-bright)'}}>Only claim your own group.</span> Whoever claims it holds the secret for the whole group.
+            </div>
+            <button type="button" className="btn btn-primary" onClick={claimOffered} disabled={claiming} style={{justifyContent:'center'}}>
+              {claiming ? <><span className="spinner" style={{width:12,height:12}} /> Claiming…</> : 'Claim group and create the secret'}
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSwitchToGroup?.(offer.id)} style={{justifyContent:'center'}}>Just open it</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOffer(null); setStep('search'); }}>← Back</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Step: Setting up ──────────────────────────────────────────────────────
   if (step === 'setting-up') {
@@ -190,7 +268,8 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
               ))}
             </div>
             <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:12}}>
-              Hiscores will be synced automatically for all members.
+              Hiscores will be synced automatically for all members. Confirming also creates your <strong style={{color:'var(--gold)'}}>group secret</strong>,
+              which you share with your members. Only add your own group.
             </div>
             <div style={{display:'flex',gap:8,flexDirection:'column'}}>
               <button className="btn btn-primary" onClick={() => handleConfirm(lookupResult.members.map(m => m.rsn))}>
