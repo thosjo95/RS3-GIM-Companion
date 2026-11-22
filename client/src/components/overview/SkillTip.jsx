@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import SkillIcon from '../common/SkillIcon';
 import { xpForLevel, skillCap } from '../../lib/rs3';
 
@@ -11,7 +11,19 @@ const fmt = n => Number(n).toLocaleString('en-US');
 
 export function useSkillTip() {
   const [tip, setTip] = useState(null);
+  const open = !!tip;
+  // Live refreshes redraw the cells, and a redrawn cell never reports "mouse left": so the box also closes when the pointer
+  // is over anything that is not a skill cell, and when the page scrolls.
+  useEffect(() => {
+    if (!open) return undefined;
+    const away = e => { if (!(e.target instanceof Element) || !e.target.closest('[data-skilltip]')) setTip(null); };
+    const hide = () => setTip(null);
+    document.addEventListener('mousemove', away, true);
+    window.addEventListener('scroll', hide, true);
+    return () => { document.removeEventListener('mousemove', away, true); window.removeEventListener('scroll', hide, true); };
+  }, [open]);
   const bind = data => ({
+    'data-skilltip': '',
     onMouseEnter: e => setTip({ ...data, x: e.clientX, y: e.clientY }),
     onMouseMove: e => setTip(t => (t ? { ...t, x: e.clientX, y: e.clientY } : t)),
     onMouseLeave: () => setTip(null),
