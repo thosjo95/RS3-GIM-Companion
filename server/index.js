@@ -53,6 +53,7 @@ app.use('/api/skill-milestones',  require('./routes/skillMilestones'));
 app.use('/api/rs3',          require('./routes/rs3data'));
 app.use('/api/admin',        require('./routes/admin'));
 app.use('/api/global',       require('./routes/global'));
+app.use('/api',              require('./routes/sitemap'));   // /api/sitemap.xml for search engines
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 

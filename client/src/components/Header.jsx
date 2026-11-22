@@ -165,6 +165,7 @@ export default function Header({ group, onSynced, onToast, isUnlocked, isClaimed
         {group && onTourClick && (
           <button
             className="sync-btn"
+            data-tour="help"
             onClick={onTourClick}
             title="Show feature tour"
             style={{

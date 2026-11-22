@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin
 
 Sitemap: https://groupiron.com/sitemap.xml
+Sitemap: https://groupiron.com/api/sitemap.xml

@@ -5,6 +5,7 @@ import { BossIcon, ItemIcon } from '../GameIcon';
 import SkillIcon from '../common/SkillIcon';
 import GimTypeLabel from '../common/GimTypeLabel';
 import { fmtXp } from '../../lib/rs3';
+import { groupPath } from '../../lib/seo';
 
 // The Global Leaderboard: every Group Ironman group tracked on the site, side by side. (The same file is used in 1.x and 2.0.)
 // All numbers come from GET /api/global/stats (rebuilt by the server every 10 minutes). The Mode and Size filter at the
@@ -104,7 +105,17 @@ function Pager({ page, total, onPage, what }) {
   );
 }
 
-function Row({ onClick, children, title }) {
+// A row that opens a group is a real link (/group/<id>/<name>): search engines follow it and it opens in a new tab with
+// Ctrl or the middle button; a plain click opens the group in place.
+function Row({ onClick, href, children, title }) {
+  if (href) {
+    return (
+      <a className="gl-row" href={href} title={title}
+        onClick={e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onClick?.(); }}>
+        {children}
+      </a>
+    );
+  }
   return (
     <div className="gl-row" onClick={onClick} title={title} role={onClick ? 'button' : undefined}>
       {children}
@@ -260,7 +271,7 @@ function ClueBoard({ data, mode, size, period, periodWord, onOpenGroup }) {
             <div className="gl-clue-head">Top groups · {what} {when}</div>
             {view.groups.length === 0 && <Empty>None yet.</Empty>}
             {view.groups.slice(groupPage * PAGE, groupPage * PAGE + PAGE).map((e, i) => (
-              <Row key={e.group.id} onClick={() => onOpenGroup(e.group.id)} title={`Open ${e.group.name}`}>
+              <Row key={e.group.id} href={groupPath(e.group.id, e.group.name)} onClick={() => onOpenGroup(e.group.id)} title={`Open ${e.group.name}`}>
                 <Rank i={groupPage * PAGE + i} />
                 <GimTypeLabel type={e.group.type} size={18} iconOnly />
                 <GroupLink name={e.group.name} sub={e.best && `Most: ${e.best.rsn} (${fmtInt(e.best.value)})`} />
@@ -273,7 +284,7 @@ function ClueBoard({ data, mode, size, period, periodWord, onOpenGroup }) {
             <div className="gl-clue-head">Top players · {what} {when}</div>
             {view.players.length === 0 && <Empty>None yet.</Empty>}
             {view.players.slice(playerPage * PAGE, playerPage * PAGE + PAGE).map((r, i) => (
-              <Row key={r.rsn + r.group.id} onClick={() => onOpenGroup(r.group.id)} title={`Open ${r.group.name}`}>
+              <Row key={r.rsn + r.group.id} href={groupPath(r.group.id, r.group.name)} onClick={() => onOpenGroup(r.group.id)} title={`Open ${r.group.name}`}>
                 <Rank i={playerPage * PAGE + i} />
                 <GroupLink name={r.rsn} sub={r.group.name} />
                 {/* the tiers this player has, small, so the mix is visible at a glance */}
@@ -447,7 +458,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Ranked by {measureLabel} · click a group to open it</div>
           {v.ranked.length === 0 && <Empty>No groups to rank here yet.</Empty>}
           {v.ranked.slice(groupPage * PAGE, groupPage * PAGE + PAGE).map((g, i) => (
-            <Row key={g.id} onClick={() => onOpenGroup(g.id)}>
+            <Row key={g.id} href={groupPath(g.id, g.name)} onClick={() => onOpenGroup(g.id)}>
               <Rank i={groupPage * PAGE + i} />
               <GimTypeLabel type={g.type} size={18} iconOnly />
               <GroupLink name={g.name} sub={`${g.members} member${g.members === 1 ? '' : 's'}${g.activeWeek ? ` · ${g.activeWeek} active this week` : ''}`} />
@@ -461,7 +472,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Most XP gained by one player · click to open the group</div>
           {v.players.length === 0 && <Empty>No XP gained yet.</Empty>}
           {v.players.slice(playerPage * PAGE, playerPage * PAGE + PAGE).map((p, i) => (
-            <Row key={p.rsn + p.groupId} onClick={() => onOpenGroup(p.groupId)} title={`Open ${p.groupName}`}>
+            <Row key={p.rsn + p.groupId} href={groupPath(p.groupId, p.groupName)} onClick={() => onOpenGroup(p.groupId)} title={`Open ${p.groupName}`}>
               <Rank i={playerPage * PAGE + i} />
               <GroupLink name={p.rsn} sub={p.groupName} />
               <span className="gl-num">+{fmtXp(p[period])}</span>
@@ -475,7 +486,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
           <Panel side icon="group" title="Newest groups">
             {v.newest.length === 0 && <Empty>No groups here yet.</Empty>}
             {v.newest.map(g => (
-              <Row key={g.id} onClick={() => onOpenGroup(g.id)}>
+              <Row key={g.id} href={groupPath(g.id, g.name)} onClick={() => onOpenGroup(g.id)}>
                 <GimTypeLabel type={g.type} size={18} iconOnly />
                 <GroupLink name={g.name} sub={`${g.members} member${g.members === 1 ? '' : 's'} · ${fmtXp(g.totalXp)} XP`} />
                 <span style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{ago(String(g.createdAt).replace(' ', 'T') + (String(g.createdAt).includes('Z') ? '' : 'Z'))}</span>
@@ -535,7 +546,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
         <Panel icon="maxCape" title="Latest 99s and 120s">
           {v.milestones.length === 0 && <Empty>None {periodWord} yet.</Empty>}
           {v.milestones.map((m, i) => (
-            <Row key={i} onClick={() => onOpenGroup(m.groupId)} title={`Open ${m.groupName}`}>
+            <Row key={i} href={groupPath(m.groupId, m.groupName)} onClick={() => onOpenGroup(m.groupId)} title={`Open ${m.groupName}`}>
               <SkillIcon name={m.skill} size={22} />
               <GroupLink name={<><b style={{ color: m.level >= 120 ? '#e8c35a' : 'var(--text-bright)' }}>{m.level}</b> {m.skill} · {m.rsn}</>} sub={m.groupName} />
               <span style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{ago(m.at)}</span>
@@ -549,7 +560,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
           </div>
           {v.drops.length === 0 && <Empty>None {periodWord} yet.</Empty>}
           {v.drops.map((d, i) => (
-            <Row key={i} onClick={() => onOpenGroup(d.groupId)} title={`Open ${d.groupName}`}>
+            <Row key={i} href={groupPath(d.groupId, d.groupName)} onClick={() => onOpenGroup(d.groupId)} title={`Open ${d.groupName}`}>
               <ItemIcon name={d.item} size={26} />
               <GroupLink name={d.item.charAt(0).toUpperCase() + d.item.slice(1)} sub={`${d.rsn} · ${d.groupName}`} />
               <span style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{ago(d.at)}</span>

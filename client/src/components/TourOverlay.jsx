@@ -4,9 +4,11 @@ import { createPortal } from 'react-dom';
 // ── Tour steps ────────────────────────────────────────────────────────────────
 const TOUR_STEPS = [
   {
-    target: null,
+    target: '[data-tour="help"]',
     title: 'Welcome to RS3 GIM Companion!',
-    body: "Let's take a quick tour of the key features. Use Next → to walk through each one, or skip if you'd rather explore on your own. You can replay this tour any time from the ? button in the header.",
+    body: 'Need a guide? Press this ? button at any time for a walk through every function on the page you are on. Want it now? Press Next. If not, just skip: the ? button is always here.',
+    nextLabel: 'Show me around',
+    skipLabel: 'Skip, I will explore',
   },
   {
     target: '[data-tour="sync"]',
@@ -69,8 +71,9 @@ export default function TourOverlay({ steps: stepsProp, onComplete }) {
 
     function measure() {
       const el = document.querySelector(step.target);
-      if (el) {
-        const r = el.getBoundingClientRect();
+      const r = el && el.getBoundingClientRect();
+      // a target outside the screen (phone width: the top-bar buttons scroll sideways) gets the centred box instead
+      if (r && r.width > 0 && r.left >= 0 && r.right <= window.innerWidth) {
         setRect({ top: r.top, left: r.left, width: r.width, height: r.height, bottom: r.bottom, right: r.right });
       } else {
         setRect(null);
@@ -109,7 +112,9 @@ export default function TourOverlay({ steps: stepsProp, onComplete }) {
   function arrowEl() {
     if (!rect) return null;
     const below = rect.bottom + 14 + TT_H < window.innerHeight;
-    const base  = { position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, border: '7px solid transparent' };
+    // the arrow points at the middle of the highlighted element, also when the box is pushed against the screen edge
+    const x = Math.max(16, Math.min(TT_W - 16, rect.left + rect.width / 2 - pos.left));
+    const base  = { position: 'absolute', left: x - 7, width: 0, height: 0, border: '7px solid transparent' };
     return below
       ? <div style={{ ...base, top: -14,   borderBottomColor: '#7a5c1e', borderTop:    'none' }} />
       : <div style={{ ...base, bottom: -14, borderTopColor:   '#7a5c1e', borderBottom: 'none' }} />;
@@ -188,7 +193,7 @@ export default function TourOverlay({ steps: stepsProp, onComplete }) {
             type="button"
             onClick={onComplete}
             style={{ background:'none', border:'none', color:'var(--text-dim)', cursor:'pointer', fontSize:12, padding:'4px 0' }}>
-            Skip tour
+            {step.skipLabel || 'Skip tour'}
           </button>
           <div style={{ display:'flex', gap:8 }}>
             {!isFirst && (
@@ -203,7 +208,7 @@ export default function TourOverlay({ steps: stepsProp, onComplete }) {
               type="button"
               onClick={() => isLast ? onComplete() : setStepIndex(s => s + 1)}
               style={{ padding:'7px 18px', fontSize:13, fontWeight:700, background:'var(--gold)', color:'#111', border:'none', borderRadius:'var(--radius)', cursor:'pointer' }}>
-              {isLast ? 'Done' : 'Next →'}
+              {isLast ? 'Done' : (step.nextLabel || 'Next →')}
             </button>
           </div>
         </div>

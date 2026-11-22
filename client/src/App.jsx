@@ -16,7 +16,7 @@ import SetupScreen from './components/setup/SetupScreen';
 import SearchGroupModal from './components/groups/SearchGroupModal';
 import Sidebar from './components/groups/Sidebar';
 import GlobalLeaderboard from './components/global/GlobalLeaderboard';
-import { LEADERBOARD_PATH, isLeaderboardUrl, seoHome, seoLeaderboard } from './lib/seo';
+import { LEADERBOARD_PATH, isLeaderboardUrl, groupIdFromUrl, groupPath, readUrl, seoHome, seoLeaderboard, seoGroup } from './lib/seo';
 
 export default function App() {
   const [allGroups, setAllGroups] = useState([]);
@@ -155,6 +155,8 @@ export default function App() {
       );
       setPendingRequests(pendingItemGoals);
     } catch (err) {
+      // a link to a group that does not exist (any more): open one of the saved groups (or the start page) instead of 'Loading group…' for ever
+      if (/not found/i.test(err.message)) { if (localStorage.getItem('activeGroupId') === String(id)) localStorage.removeItem('activeGroupId'); const next = groupsRef.current.find(g => g.id !== id)?.id ?? null; setActiveGroupId(cur => (cur === id ? next : cur)); }
       pushToast(err.message, 'error');
     }
   }
@@ -172,7 +174,12 @@ export default function App() {
       const saved     = localStorage.getItem('activeGroupId');
       const savedId   = saved ? Number(saved) : null;
 
-      if (myGroups.length > 0) {
+      const urlId     = groupIdFromUrl();
+
+      if (urlId) {
+        // a shared link to one group (groupiron.com/group/<id>/...) opens that group
+        setActiveGroupId(urlId);
+      } else       if (myGroups.length > 0) {
         // Prefer last-used pinned group; fall back to first pinned
         const id = savedId && myGroups.find(g => g.id === savedId) ? savedId : myGroups[0].id;
         setActiveGroupId(id);
@@ -206,16 +213,37 @@ export default function App() {
     loadGroups().then(() => setActiveGroupId(id));
   }
 
-  // keep the address in step with the Global Leaderboard page (/leaderboard), so it can be shared, survives a reload
-  // and is found by search engines; the title and description follow (lib/seo.js)
+  // keep the address in step with what is on screen, so every view can be shared, survives a reload and can be found by
+  // search engines: /leaderboard, /group/<id>/<name>, or / (lib/seo.js; title, description and canonical follow).
+  // Moving to another view adds a history entry (the browser's Back button works); fixing the same view replaces it.
+  const urlKeyRef = useRef(null);
   useEffect(() => {
-    const want = showGlobal ? LEADERBOARD_PATH : '/';
+    if (loading) return;
+    let want, key;
+    if (showGlobal) { want = LEADERBOARD_PATH; key = 'leaderboard'; }
+    else if (activeGroupId && group?.id === activeGroupId) { want = groupPath(group.id, group.name); key = `group:${group.id}`; }
+    else if (!activeGroupId) { want = '/'; key = 'home'; }
+    else return;                                           // a group is still loading: keep the address until it is here
     const here = window.location.pathname.replace(/\/+$/, '') || '/';
     if (here !== want || window.location.hash === '#global') {
-      window.history.replaceState(null, '', want + window.location.search);
+      const same = urlKeyRef.current === null || urlKeyRef.current === key;
+      window.history[same ? 'replaceState' : 'pushState'](null, '', want + window.location.search);
     }
-    if (showGlobal) seoLeaderboard(); else seoHome(group?.name);
-  }, [showGlobal, group?.name]);
+    urlKeyRef.current = key;
+    if (key === 'leaderboard') seoLeaderboard(); else if (key === 'home') seoHome(); else seoGroup(group);
+  }, [loading, showGlobal, activeGroupId, group]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // the browser's Back and Forward buttons
+  useEffect(() => {
+    function onPop() {
+      const u = readUrl();
+      urlKeyRef.current = u.view === 'group' ? `group:${u.id}` : u.view === 'home' ? null : u.view;   // home: the open group's address replaces it
+      setShowGlobal(u.view === 'leaderboard');
+      if (u.view === 'group') { setActiveGroupId(u.id); setActiveTab('overview'); }
+    }
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   function openGlobal() {
     setShowGlobal(true);
