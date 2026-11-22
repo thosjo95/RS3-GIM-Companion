@@ -13,14 +13,22 @@ export function useSkillTip() {
   const [tip, setTip] = useState(null);
   const open = !!tip;
   // Live refreshes redraw the cells, and a redrawn cell never reports "mouse left": so the box also closes when the pointer
-  // is over anything that is not a skill cell, and when the page scrolls.
+  // is over anything that is not a skill cell, when the page scrolls, and when the pointer leaves the browser window.
   useEffect(() => {
     if (!open) return undefined;
     const away = e => { if (!(e.target instanceof Element) || !e.target.closest('[data-skilltip]')) setTip(null); };
     const hide = () => setTip(null);
+    const out = e => { if (!e.relatedTarget) setTip(null); };          // the pointer went out of the page itself
     document.addEventListener('mousemove', away, true);
+    document.addEventListener('mouseout', out, true);
     window.addEventListener('scroll', hide, true);
-    return () => { document.removeEventListener('mousemove', away, true); window.removeEventListener('scroll', hide, true); };
+    window.addEventListener('blur', hide);
+    return () => {
+      document.removeEventListener('mousemove', away, true);
+      document.removeEventListener('mouseout', out, true);
+      window.removeEventListener('scroll', hide, true);
+      window.removeEventListener('blur', hide);
+    };
   }, [open]);
   const bind = data => ({
     'data-skilltip': '',
