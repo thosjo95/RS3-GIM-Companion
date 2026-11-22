@@ -50,9 +50,9 @@ function Chips({ options, value, onChange }) {
   );
 }
 
-function Panel({ icon, title, right, children }) {
+function Panel({ icon, title, right, children, side = false }) {
   return (
-    <div className="panel" style={{ minWidth: 0 }}>
+    <div className={`panel${side ? ' gl-side-panel' : ''}`} style={{ minWidth: 0 }}>
       <div className="panel-header" style={{ flexWrap: 'wrap' }}>
         <span className="panel-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           {icon && <RsIcon name={icon} size={18} />}{title}
@@ -299,9 +299,42 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
             </Row>
           ))}
         </Panel>
+
+        {/* general stats about every group, set apart from the boards */}
+        <div className="gl-side">
+          <Panel side icon="group" title="Newest groups">
+            {v.newest.length === 0 && <Empty>No groups here yet.</Empty>}
+            {v.newest.map(g => (
+              <Row key={g.id} onClick={() => onOpenGroup(g.id)}>
+                <GimTypeLabel type={g.type} size={18} iconOnly />
+                <GroupLink name={g.name} sub={`${g.members} member${g.members === 1 ? '' : 's'} · ${fmtXp(g.totalXp)} XP`} />
+                <span style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{ago(String(g.createdAt).replace(' ', 'T') + (String(g.createdAt).includes('Z') ? '' : 'Z'))}</span>
+              </Row>
+            ))}
+          </Panel>
+
+          <Panel side icon="overview" title="The community">
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Every tracked group, by mode (click to filter)</div>
+            {modeSplit.map(m => (
+              <div key={m.key} className="gl-split" role="button" onClick={() => setFilter(f => ({ ...f, mode: m.key }))}>
+                <span style={{ width: 110 }}><GimTypeLabel type={m.key} size={16} /></span>
+                <div className="gl-bar" style={{ flex: 1, marginTop: 0 }}><div style={{ width: `${(m.n / splitMax) * 100}%` }} /></div>
+                <span className="gl-num" style={{ fontSize: 12, width: 34 }}>{m.n}</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', margin: '10px 0 4px' }}>By size</div>
+            {sizeSplit.map(s => (
+              <div key={s.key} className="gl-split" role="button" onClick={() => setFilter(f => ({ ...f, size: s.key }))}>
+                <span style={{ width: 110 }}>{s.label}</span>
+                <div className="gl-bar" style={{ flex: 1, marginTop: 0 }}><div style={{ width: `${(s.n / splitMax) * 100}%` }} /></div>
+                <span className="gl-num" style={{ fontSize: 12, width: 34 }}>{s.n}</span>
+              </div>
+            ))}
+          </Panel>
+        </div>
       </div>
 
-      <div className="grid-3" style={{ marginTop: 16 }}>
+      <div className="gl-boards" style={{ marginTop: 16, marginBottom: 24 }}>
         <Panel icon="skills" title={`Most trained skills ${periodWord}`}>
           {v.skills.length === 0 && <Empty>No XP gained yet.</Empty>}
           {v.skills.map(([skill, xp]) => (
@@ -339,9 +372,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
             </Row>
           ))}
         </Panel>
-      </div>
 
-      <div className="grid-3" style={{ marginTop: 16, marginBottom: 24 }}>
         <Panel icon="drops" title="Latest drops">
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
             {fmtInt(totals.drops)} drops in the Adventurer's Log {periodWord}
@@ -353,36 +384,6 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
               <GroupLink name={d.item.charAt(0).toUpperCase() + d.item.slice(1)} sub={`${d.rsn} · ${d.groupName}`} />
               <span style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{ago(d.at)}</span>
             </Row>
-          ))}
-        </Panel>
-
-        <Panel icon="group" title="Newest groups">
-          {v.newest.length === 0 && <Empty>No groups here yet.</Empty>}
-          {v.newest.map(g => (
-            <Row key={g.id} onClick={() => onOpenGroup(g.id)}>
-              <GimTypeLabel type={g.type} size={18} iconOnly />
-              <GroupLink name={g.name} sub={`${g.members} member${g.members === 1 ? '' : 's'} · ${fmtXp(g.totalXp)} XP`} />
-              <span style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{ago(String(g.createdAt).replace(' ', 'T') + (String(g.createdAt).includes('Z') ? '' : 'Z'))}</span>
-            </Row>
-          ))}
-        </Panel>
-
-        <Panel icon="overview" title="The community">
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Every tracked group, by mode (click to filter)</div>
-          {modeSplit.map(m => (
-            <div key={m.key} className="gl-split" role="button" onClick={() => setFilter(f => ({ ...f, mode: m.key }))}>
-              <span style={{ width: 110 }}><GimTypeLabel type={m.key} size={16} /></span>
-              <div className="gl-bar" style={{ flex: 1, marginTop: 0 }}><div style={{ width: `${(m.n / splitMax) * 100}%` }} /></div>
-              <span className="gl-num" style={{ fontSize: 12, width: 34 }}>{m.n}</span>
-            </div>
-          ))}
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', margin: '10px 0 4px' }}>By size</div>
-          {sizeSplit.map(s => (
-            <div key={s.key} className="gl-split" role="button" onClick={() => setFilter(f => ({ ...f, size: s.key }))}>
-              <span style={{ width: 110 }}>{s.label}</span>
-              <div className="gl-bar" style={{ flex: 1, marginTop: 0 }}><div style={{ width: `${(s.n / splitMax) * 100}%` }} /></div>
-              <span className="gl-num" style={{ fontSize: 12, width: 34 }}>{s.n}</span>
-            </div>
           ))}
         </Panel>
       </div>
