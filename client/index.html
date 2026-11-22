@@ -3,33 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RS3 GIM Companion — Group Ironman Dashboard for RuneScape 3</title>
+    <title>RS3 GIM Companion: Group Ironman tracker and dashboard for RuneScape 3</title>
 
-    <!-- SEO -->
-    <meta name="description" content="Free RS3 Group Ironman dashboard. Track hiscores, XP gains, drops, gear loadouts, boss kills, achievement diaries and goals for your entire GIM team — all in one place." />
-    <meta name="keywords" content="RS3, RuneScape 3, Group Ironman, GIM, hiscores, tracker, companion, drops, gear, boss kills, achievement diaries" />
-    <meta name="author" content="RS3 GIM Companion" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://groupiron.com" />
+    <!-- Search engines. The canonical address is set by the page script (src/lib/seo.js), because the
+         leaderboard (/leaderboard) has its own; it always names groupiron.com. -->
+    <meta name="description" content="Free tracker for RuneScape 3 Group Ironman teams. XP gains, hiscores, boss kills, drops, goals and a group leaderboard for your whole GIM team in one place." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#c8a84b" />
 
-    <!-- Open Graph (Discord / Reddit / social link previews) -->
+    <!-- Link previews (Discord, Reddit, Facebook, X) -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="RS3 GIM Companion — Group Ironman Dashboard" />
-    <meta property="og:description" content="Free shared dashboard for RuneScape 3 Group Ironman teams. Track hiscores, drops, gear loadouts, boss kills and achievements together." />
-    <meta property="og:url" content="https://groupiron.com" />
-    <meta property="og:image" content="https://groupiron.com/logo.svg" />
     <meta property="og:site_name" content="RS3 GIM Companion" />
-
-    <!-- Twitter / X card -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="RS3 GIM Companion — Group Ironman Dashboard" />
-    <meta name="twitter:description" content="Free shared dashboard for RuneScape 3 Group Ironman teams." />
-    <meta name="twitter:image" content="https://groupiron.com/logo.svg" />
+    <meta property="og:title" content="RS3 GIM Companion: Group Ironman tracker for RuneScape 3" />
+    <meta property="og:description" content="Free tracker for RuneScape 3 Group Ironman teams. XP gains, hiscores, boss kills, drops, goals and a global leaderboard of every tracked group." />
+    <meta property="og:url" content="https://groupiron.com/" />
+    <meta property="og:image" content="https://groupiron.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="RS3 GIM Companion: Group Ironman tracker for RuneScape 3" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RS3 GIM Companion: Group Ironman tracker for RuneScape 3" />
+    <meta name="twitter:description" content="Free tracker for RuneScape 3 Group Ironman teams, with a global leaderboard of every tracked group." />
+    <meta name="twitter:image" content="https://groupiron.com/og-image.png" />
 
     <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <!-- What the site is, for Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "name": "RS3 GIM Companion",
+          "alternateName": ["Group Ironman Companion", "groupiron.com"],
+          "url": "https://groupiron.com/"
+        },
+        {
+          "@type": "WebApplication",
+          "name": "RS3 GIM Companion",
+          "url": "https://groupiron.com/",
+          "description": "Free tracker and dashboard for RuneScape 3 Group Ironman teams: XP gains, hiscores, boss kills, drops, goals and a global leaderboard of every tracked group.",
+          "applicationCategory": "GameApplication",
+          "operatingSystem": "Any (web browser)",
+          "image": "https://groupiron.com/og-image.png",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "sameAs": ["https://github.com/thosjo95/RS3-GIM-Companion"]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Shown for a moment while the app loads, and read by search engines and link previewers that do not run
+         scripts. The app replaces it as soon as it starts. -->
+    <div id="root">
+      <main style="max-width:720px;margin:0 auto;padding:48px 16px;font-family:system-ui,sans-serif;color:#d8cfbd;line-height:1.6">
+        <h1 style="color:#c8a84b;font-size:28px;margin:0 0 12px">RS3 GIM Companion: the Group Ironman tracker for RuneScape 3</h1>
+        <p>A free dashboard for your RuneScape 3 Group Ironman team. Add your group once and follow every member together:
+          XP gains per day, week, month and year, skills and levels, boss kills, rare drops, clue scrolls,
+          shared goals and a leaderboard inside your group.</p>
+        <p>The <a href="/leaderboard" style="color:#c8a84b">Global Leaderboard</a> ranks every tracked Regular, Hardcore and
+          Competitive Group Ironman group: top groups and players of the week, month and year, clue scrolls, 99s and 120s.</p>
+        <p>Works from the public RuneScape hiscores and the Adventurer's Log. No download, no account.</p>
+        <noscript><p>This site needs JavaScript to show your group.</p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

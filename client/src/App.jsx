@@ -16,6 +16,7 @@ import SetupScreen from './components/setup/SetupScreen';
 import SearchGroupModal from './components/groups/SearchGroupModal';
 import Sidebar from './components/groups/Sidebar';
 import GlobalLeaderboard from './components/global/GlobalLeaderboard';
+import { LEADERBOARD_PATH, isLeaderboardUrl, seoHome, seoLeaderboard } from './lib/seo';
 
 export default function App() {
   const [allGroups, setAllGroups] = useState([]);
@@ -26,8 +27,8 @@ export default function App() {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  // the Global Leaderboard page (every tracked group); groupiron.com/#global opens it directly
-  const [showGlobal, setShowGlobal] = useState(() => window.location.hash === '#global');
+  // the Global Leaderboard page (every tracked group); groupiron.com/leaderboard (or the old /#global) opens it directly
+  const [showGlobal, setShowGlobal] = useState(isLeaderboardUrl);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [toasts, pushToast] = useToasts();
@@ -205,11 +206,16 @@ export default function App() {
     loadGroups().then(() => setActiveGroupId(id));
   }
 
-  // keep the address in step with the Global Leaderboard page, so it can be shared and survives a reload
+  // keep the address in step with the Global Leaderboard page (/leaderboard), so it can be shared, survives a reload
+  // and is found by search engines; the title and description follow (lib/seo.js)
   useEffect(() => {
-    const want = showGlobal ? '#global' : '';
-    if (window.location.hash !== want) window.history.replaceState(null, '', window.location.pathname + window.location.search + want);
-  }, [showGlobal]);
+    const want = showGlobal ? LEADERBOARD_PATH : '/';
+    const here = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (here !== want || window.location.hash === '#global') {
+      window.history.replaceState(null, '', want + window.location.search);
+    }
+    if (showGlobal) seoLeaderboard(); else seoHome(group?.name);
+  }, [showGlobal, group?.name]);
 
   function openGlobal() {
     setShowGlobal(true);
