@@ -170,9 +170,10 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
       if (result.failed?.length) {
         onToast(`Setup done. ${result.failed.length} member(s) couldn't sync from RS3.`, 'error');
       }
-      setSyncProgress('Creating your group secret…');
-      try { await claimAndShow(result.id, groupName.trim(), rsns); }
-      catch { onCreated(result.id); }                   // claimed already (or the claim failed): just open the group
+      // tracking is not claiming: ask whether this is the player's own group before a secret is made (people also add
+      // other groups just to follow them)
+      setOffer({ id: result.id, name: groupName.trim(), gim_type: gimType, members: rsns, fresh: true });
+      setStep('claim');
     } catch (err) {
       onToast(err.message, 'error');
       setStep(lookupResult ? 'preview' : 'manual');
@@ -198,14 +199,23 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
         <img src="/logo-banner.png" alt="Group Ironman RS3 Companion" width={960} height={462} fetchPriority="high" style={{maxWidth:420,width:'100%',height:'auto',marginBottom:20}} />
         <div className="panel" style={cardStyle}>
           <div className="panel-header">
-            <span className="panel-title" style={{display:'inline-flex',alignItems:'center',gap:8}}><RsIcon name="key" size={16} />Claim your group</span>
+            <span className="panel-title" style={{display:'inline-flex',alignItems:'center',gap:8}}><RsIcon name="key" size={16} />{offer.fresh ? 'Is this your group?' : 'Claim your group'}</span>
             <span className="tag" style={{display:'inline-flex',alignItems:'center',gap:5}}><GimTypeLabel type={offer.gim_type} size={12} /></span>
           </div>
           <div className="panel-body" style={{display:'flex',flexDirection:'column',gap:12}}>
-            <div style={{fontSize:13,color:'var(--text-dim)',lineHeight:1.6}}>
-              <strong style={{color:'var(--text-bright)'}}>{offer.name}</strong> is already tracked, but nobody has claimed it yet.
-              Claiming it creates the <strong style={{color:'var(--gold)'}}>group secret</strong>: your members use it to unlock the group and change it.
-            </div>
+            {offer.fresh ? (
+              <div style={{fontSize:13,color:'var(--text-dim)',lineHeight:1.6}}>
+                <strong style={{color:'var(--text-bright)'}}>{offer.name}</strong> is now tracked and everyone can follow it.
+                If it is <strong style={{color:'var(--text-bright)'}}>your own group</strong>, claim it: that creates the{' '}
+                <strong style={{color:'var(--gold)'}}>group secret</strong> your members use to unlock the group and change it.
+                Just following someone else's group? Keep it tracked only; its own members can claim it later.
+              </div>
+            ) : (
+              <div style={{fontSize:13,color:'var(--text-dim)',lineHeight:1.6}}>
+                <strong style={{color:'var(--text-bright)'}}>{offer.name}</strong> is already tracked, but nobody has claimed it yet.
+                Claiming it creates the <strong style={{color:'var(--gold)'}}>group secret</strong>: your members use it to unlock the group and change it.
+              </div>
+            )}
             {offer.members.length > 0 && (
               <div style={{fontSize:12,color:'var(--text-dim)'}}>Members: {offer.members.join(', ')}</div>
             )}
@@ -216,10 +226,14 @@ export default function SetupScreen({ onCreated, onToast, prefill, onCancel, gro
               <a href="mailto:rs3groupiron@pm.me" style={{color:'var(--gold)'}}>rs3groupiron@pm.me</a>.
             </div>
             <button type="button" className="btn btn-primary" onClick={claimOffered} disabled={claiming} style={{justifyContent:'center'}}>
-              {claiming ? <><span className="spinner" style={{width:12,height:12}} /> Claiming…</> : 'Claim group and create the secret'}
+              {claiming ? <><span className="spinner" style={{width:12,height:12}} /> Claiming…</> : 'It is my group: claim it and create the secret'}
             </button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSwitchToGroup?.(offer.id)} style={{justifyContent:'center'}}>Just open it</button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOffer(null); setStep('search'); }}>← Back</button>
+            {/* a group added just now goes to this browser's list (onCreated); a found one is only opened */}
+            <button type="button" className="btn btn-secondary btn-sm" style={{justifyContent:'center'}}
+              onClick={() => (offer.fresh ? onCreated(offer.id) : onSwitchToGroup?.(offer.id))}>
+              {offer.fresh ? 'Not my group: just track it' : 'Not my group: just open it'}
+            </button>
+            {!offer.fresh && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOffer(null); setStep('search'); }}>← Back</button>}
           </div>
         </div>
       </div>
