@@ -132,20 +132,50 @@ const GroupLink = ({ name, sub }) => (
 
 const Empty = ({ children }) => <div className="text-dim" style={{ fontSize: 13 }}>{children}</div>;
 
-function Spotlight({ label, icon, group, value, sub, onOpen }) {
+// A spotlight card: the winner big, then 2nd and 3rd place below. Every place has a bar against the winner's number,
+// in gold, silver and bronze. Each place is a link to its group.
+function Spotlight({ label, icon, podium, value, sub, onOpen }) {
+  const [first, ...rest] = podium;
+  const top = first ? value(first) : 0;
+  const bar = (g, i) => (
+    <div className="gl-bar" style={{ marginTop: 6 }}>
+      <div style={{ width: `${top ? Math.max(3, (value(g) / top) * 100) : 0}%`, background: RANK_COLORS[i] }} />
+    </div>
+  );
   return (
-    <div className="panel gl-spot" onClick={group ? () => onOpen(group.id) : undefined} role={group ? 'button' : undefined}>
+    <div className="panel gl-spot">
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--gold)' }}>
         <RsIcon name={icon} size={18} />{label}
       </div>
-      {group ? (
+      {first ? (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, minWidth: 0 }}>
-            <GimTypeLabel type={group.type} size={20} iconOnly />
-            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-bright)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{group.name}</span>
-          </div>
-          <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, color: 'var(--green-bright)' }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{sub}</div>
+          <a className="gl-spot-first" href={groupPath(first.id, first.name)}
+            onClick={e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(first.id); }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <span className="gl-place" style={{ '--place': RANK_COLORS[0] }}>1</span>
+              <GimTypeLabel type={first.type} size={20} iconOnly />
+              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-bright)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{first.name}</span>
+            </div>
+            <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, color: 'var(--green-bright)' }}>{value.label(first)}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{sub(first)}</div>
+            {rest.length > 0 && bar(first, 0)}
+          </a>
+          {rest.length > 0 && (
+            <div className="gl-spot-rest">
+              {rest.map((g, k) => (
+                <a key={g.id} className="gl-spot-row" href={groupPath(g.id, g.name)} title={`Open ${g.name}`}
+                  onClick={e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(g.id); }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <span className="gl-place gl-place-sm" style={{ '--place': RANK_COLORS[k + 1] }}>{k + 2}</span>
+                    <GimTypeLabel type={g.type} size={16} iconOnly />
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text-bright)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green-bright)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{value.label(g)}</span>
+                  </div>
+                  {bar(g, k + 1)}
+                </a>
+              ))}
+            </div>
+          )}
         </>
       ) : <div className="text-dim" style={{ marginTop: 10 }}>Nobody yet</div>}
     </div>
@@ -338,7 +368,7 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
     const groups = data.groups.filter(pass);
     const named = groups.filter(g => !g.anon);
     const sum = f => groups.reduce((s, g) => s + (f(g) ?? 0), 0);
-    const best = f => named.filter(g => f(g) > 0).sort((a, b) => f(b) - f(a))[0] ?? null;
+    const podium = f => named.filter(g => f(g) > 0).sort((a, b) => f(b) - f(a)).slice(0, 3);   // 1st, 2nd and 3rd
     // clue scrolls: in 2.0 the clues gained in the period; in 1.x (no clue history) the all-time count
     const cluesOf = g => (data.clueGains ? g.clueGain?.[period] : g.clues) ?? 0;
     const measureOf = g => measure === 'total' ? g.totalXp : measure === 'clues' ? cluesOf(g)
@@ -358,10 +388,10 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
         drops: sum(g => g.drops[period]),
         newMonth: groups.filter(g => (g.createdAt ?? '') >= data.periods.month).length,
       },
-      groupOfWeek: best(g => g.weekGain),
-      groupOfMonth: best(g => g.monthGain),
-      groupOfYear: best(g => g.yearGain),
-      bossHunters: best(g => g.bossKills[period]),
+      groupOfWeek: podium(g => g.weekGain),
+      groupOfMonth: podium(g => g.monthGain),
+      groupOfYear: podium(g => g.yearGain),
+      bossHunters: podium(g => g.bossKills[period]),
       ranked: named.map(g => ({ ...g, value: measureOf(g) })).filter(g => g.value > 0).sort((a, b) => b.value - a.value),
       players: data.players.filter(p => pass(p) && p[period] > 0).sort((a, b) => b[period] - a[period]),
       skills: sumMaps(buckets.map(b => b.skills[period])).slice(0, 8),
@@ -390,6 +420,9 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
     : measure === 'perMember' ? `XP per member ${periodWord}` : `XP gained ${periodWord}`;
   const showValue = g => measure === 'total' ? fmtXp(g.value)
     : measure === 'clues' ? (data.clueGains ? `+${fmtInt(g.value)}` : fmtInt(g.value)) : `+${fmtXp(g.value)}`;
+  // what a spotlight card ranks by: the number (for the bars) and how it is written
+  const xpValue = key => Object.assign(g => g[key], { label: g => `+${fmtXp(g[key])} XP` });
+  const killValue = Object.assign(g => g.bossKills[period], { label: g => `${fmtInt(g.bossKills[period])} kills` });
   const each = (g, key) => g && `${g.members} member${g.members === 1 ? '' : 's'} · ${fmtXp(g[key] / Math.max(1, g.members))} each`;
 
   return (
@@ -440,15 +473,15 @@ export default function GlobalLeaderboard({ onOpenGroup }) {
       </div>
 
       <div className="grid-3" style={{ marginTop: 16 }}>
-        <Spotlight label="Group of the week" icon="leaderboards" group={v.groupOfWeek} onOpen={onOpenGroup}
-          value={v.groupOfWeek && `+${fmtXp(v.groupOfWeek.weekGain)} XP`} sub={each(v.groupOfWeek, 'weekGain')} />
+        <Spotlight label="Group of the week" icon="leaderboards" podium={v.groupOfWeek} onOpen={onOpenGroup}
+          value={xpValue('weekGain')} sub={g => each(g, 'weekGain')} />
         {period === 'year'
-          ? <Spotlight label="Group of the year" icon="mastery" group={v.groupOfYear} onOpen={onOpenGroup}
-              value={v.groupOfYear && `+${fmtXp(v.groupOfYear.yearGain)} XP`} sub={each(v.groupOfYear, 'yearGain')} />
-          : <Spotlight label="Group of the month" icon="mastery" group={v.groupOfMonth} onOpen={onOpenGroup}
-              value={v.groupOfMonth && `+${fmtXp(v.groupOfMonth.monthGain)} XP`} sub={each(v.groupOfMonth, 'monthGain')} />}
-        <Spotlight label={`Boss hunters of the ${period}`} icon="slayer" group={v.bossHunters} onOpen={onOpenGroup}
-          value={v.bossHunters && `${fmtInt(v.bossHunters.bossKills[period])} kills`} sub="boss kills in the Adventurer's Log" />
+          ? <Spotlight label="Group of the year" icon="mastery" podium={v.groupOfYear} onOpen={onOpenGroup}
+              value={xpValue('yearGain')} sub={g => each(g, 'yearGain')} />
+          : <Spotlight label="Group of the month" icon="mastery" podium={v.groupOfMonth} onOpen={onOpenGroup}
+              value={xpValue('monthGain')} sub={g => each(g, 'monthGain')} />}
+        <Spotlight label={`Boss hunters of the ${period}`} icon="slayer" podium={v.bossHunters} onOpen={onOpenGroup}
+          value={killValue} sub={() => "boss kills in the Adventurer's Log"} />
       </div>
 
       {data.plugin?.connectedPlayers > 0 && <PluginStrip plugin={data.plugin} period={period} periodWord={periodWord} />}
